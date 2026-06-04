@@ -1,0 +1,9 @@
+paper_id,instrument_id,status,evidence_quote,checked_date,notes
+P001,I001,verified_true,Uses REGO all-sky imager data.,2026-06-04,Example verified paper
+P002,I002,verified_true,Uses NORSTAR riometer observations.,2026-06-04,Example verified paper
+P003,I003,verified_false,Only mentions THEMIS in background.,2026-06-04,Example known false positive
+P004,I004,verified_true,Uses SuperDARN Canada convection maps.,2026-06-04,Example verified paper
+P005,I006,unsure,Mentions a conjunction but the data source is unclear.,2026-06-04,Example unsure paper
+P006,I001,verified_true,Uses REGO observations in the event analysis.,2026-06-04,Example verified paper
+P006,I003,verified_true,Uses THEMIS ground imager observations.,2026-06-04,Example multi-instrument paper
+P007,I004,verified_false,Cites a SuperDARN data paper but does not use the data.,2026-06-04,Example known false positive

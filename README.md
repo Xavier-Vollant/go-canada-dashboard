@@ -1,0 +1,57 @@
+# GO-Canada Publication Analytics Dashboard MVP
+
+This is a Streamlit dashboard for filtering and analyzing an existing GO-Canada publication database.
+It does not search the web.
+
+## Install
+
+```bash
+pip install -r requirements.txt
+```
+
+## Run
+
+```bash
+streamlit run app.py
+```
+
+## Deploy Online
+
+This project is ready for Streamlit Community Cloud. See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the full step-by-step deployment workflow.
+
+For a hosted public version, set this Streamlit Cloud secret:
+
+```toml
+GO_CANADA_READ_ONLY = "true"
+```
+
+Read-only hosted mode keeps filtering, graphs, data quality checks, exports, and session-only exclusions enabled, but disables features that try to permanently write CSV changes online.
+
+## CSV structure
+
+Put your CSV database in the `data/` folder:
+
+- `papers.csv`
+- `authors.csv`
+- `paper_authors.csv`
+- `instruments.csv`
+- `paper_instruments.csv`
+- `verification.csv`
+- `sources.csv`
+- `paper_sources.csv`
+
+The included CSV files are small examples/templates. Replace them with your real database.
+
+## Main features
+
+- Advanced filtering by instrument, author, year range, publisher, journal, paper type, verification status, GO-Canada status, and source.
+- Toggle to remove known false positives.
+- Dynamic paper list.
+- Live statistics for the current filtered subset.
+- Estimated false-positive rate and estimated clean count.
+- Plotly graphs based on current filters.
+- CSV export of the current filtered view.
+- Optional `filter_summary.csv` export.
+- Saved views stored as JSON files in `presets/`.
+- Bulk CSV import and manual paper entry for local editing.
+- Optional hosted read-only mode for online deployment.

@@ -1,0 +1,13 @@
+paper_id,instrument_id,instrument_status
+P001,I001,uses
+P002,I002,uses
+P003,I003,mentioned_only
+P004,I004,uses
+P005,I006,unsure
+P006,I001,uses
+P006,I003,uses
+P007,I004,reference_only
+P008,I005,unchecked
+P009,I002,unchecked
+P009,I005,unchecked
+P010,I001,unchecked

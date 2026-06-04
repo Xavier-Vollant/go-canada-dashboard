@@ -1,0 +1,6 @@
+source_id,source_name,source_type,notes
+S001,Manual seed list,manual,Initial curated source
+S002,Scopus query export,search_export,Imported from existing offline search export
+S003,Web of Science export,search_export,Imported from existing offline citation database export
+S004,Student screening batch,manual,Random screening sample for estimating false positives
+S005,Manual entry,manual,Added through manual entry form
