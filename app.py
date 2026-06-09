@@ -1147,7 +1147,15 @@ def apply_filters(
 
     year_start, year_end = filters["year_range"]
     numeric_year = pd.to_numeric(out["year"], errors="coerce")
-    out = out[numeric_year.between(year_start, year_end, inclusive="both")]
+    known_years = numeric_year.dropna()
+    is_full_year_range = (
+        known_years.empty
+        or (year_start <= int(known_years.min()) and year_end >= int(known_years.max()))
+    )
+    year_mask = numeric_year.between(year_start, year_end, inclusive="both")
+    if is_full_year_range:
+        year_mask = year_mask | numeric_year.isna()
+    out = out[year_mask]
 
     if filters["selected_publishers"]:
         out = out[out["publisher"].isin(filters["selected_publishers"])]

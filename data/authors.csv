@@ -1,9 +1,4298 @@
 author_id,author_name
-A001,E. Donovan
-A002,E. Spanswick
-A003,J. Doe
-A004,K. Kabin
-A005,R. Rankin
-A006,M. Connors
-A007,S. Milan
-A008,L. Trondsen
+A00001,Yukitoshi Nishimura
+A00002,B. Gallardo-Lacourt
+A00003,Eric F. Donovan
+A00004,V. Angelopoulos
+A00005,Nozomu Nishitani
+A00006,Sebastian Lay
+A00007,Jo Vermeulen
+A00008,Charles Perin
+A00009,Eric Donovan
+A00010,Raimund Dachselt
+A00011,Sheelagh Carpendale
+A00012,Yang Liu
+A00013,Sean Picard
+A00014,Carey Williamson
+A00015,Jun Liang
+A00016,Brian Jackel
+A00017,Emma Spanswick
+A00018,M. Gillies
+A00019,D. Megan Gillies
+A00020,David Knudsen
+A00021,Robert Gillies
+A00022,Bing Yang
+A00023,Jonathan Burchill
+A00024,Guy Grubbs
+A00025,Robert Michell
+A00026,Marilia Samara
+A00027,Donald Hampton
+A00028,James Hecht
+A00029,Stanley Solomon
+A00030,Jorg-Micha Jahn
+A00031,F. S. Mozer
+A00032,A. Hull
+A00033,Solène Lejosne
+A00034,Ivan Y. Vasko
+A00035,Bea Gallardo-Lacourt
+A00036,Maxime Grandin
+A00037,Aurélie Marchaudon
+A00038,Mathieu Barthelemy
+A00039,Marc R. Lessard
+A00040,Yuto Katoh
+A00041,Yoshizumi Miyoshi
+A00042,Eric Grono
+A00043,Noora Partamies
+A00044,Nithin Sivadas
+A00045,Keisuke Hosokawa
+A00046,Mizuki Fukizawa
+A00047,Robert G. Michell
+A00048,Ryuho Kataoka
+A00049,Takeshi Sakanoi
+A00050,Daniel K. Whiter
+A00051,Shin-ichiro Oyama
+A00052,Yasunobu Ogawa
+A00053,Satoshi Kurita
+A00054,Hyunju Kim Connor
+A00055,Tianran Sun
+A00056,Andrey Samsonov
+A00057,Andrew Read
+A00058,Dalin Li
+A00059,Gonzalo Cucho-Padin
+A00060,Jaewoong Jung
+A00061,Brenden Bickner
+A00062,C. Philippe Escoubet
+A00063,Colin Forsyth
+A00064,Steven Sembay
+A00065,David Sibeck
+A00066,Dmytro Sydorenko
+A00067,Chi Wang
+A00068,Syau-Yun Hsieh
+A00069,Kan Liou
+A00070,Frank Morgan
+A00071,Abdelaaziz Bouziane
+A00072,Mourad Djebli
+A00073,Gian Luca Delzanno
+A00074,Joseph E. Borovsky
+A00075,Michael G. Henderson
+A00076,Pedro Alberto Resendiz Lira
+A00077,Vadim Roytershteyn
+A00078,Daniel T. Welling
+A00079,Andreas Keiling
+A00080,Ashton Reimer
+A00081,D. Hampton
+A00082,Shasha Zou
+A00083,Roger Varney
+A00084,Robert Rankin
+A00085,Stephen Milan
+A00086,Kazuo Shiokawa
+A00087,Yoichi Kazama
+A00088,Atsushi Kumamoto
+A00089,Fuminori Tsuchiya
+A00090,Yukinaga Miyashita
+A00091,Y.-M. Tanaka
+A00092,Y. Kasahara
+A00093,Mitsunori Ozaki
+A00094,Ayako Matsuoka
+A00095,Shoya Matsuda
+A00096,M. Hikishima
+A00097,S. Oyama
+A00098,Ryoichi Fujii
+A00099,Gareth William Perry
+A00100,William E. Archer
+A00101,O. A. Nava
+A00102,Emma L. Spanswick
+A00103,J. P. St.-Maurice
+A00104,Stephan C. Buchert
+A00105,James H. Hecht
+A00106,James H. Clemmons
+A00107,D. L. Kenward
+A00108,F. B. Sadler
+A00109,Bruce A. Fritz
+A00110,J. Scott Evans
+A00111,Kristina A. Lynch
+A00112,Martin Connors
+A00113,Deborah Gillies
+A00114,J. P. St-Maurice
+A00115,X. Chu
+A00116,Y. Shen
+A00117,Takuo T. Tsuda
+A00118,Chendong Li
+A00119,S. Hamada
+A00120,S.-i. Oyama
+A00121,Satonori Nozawa
+A00122,Tetsuya Kawabata
+A00123,Akira Mizuno
+A00124,J. Kurihara
+A00125,Takanori Nishiyama
+A00126,Michael J. Kosch
+A00127,Simon Wing
+A00128,L. Kepko
+A00129,E. A. Roy
+A00130,Larry R. Lyons
+A00131,Jiang Liu
+A00132,William. A. Bristow
+A00133,Ying Zou
+A00134,Gemma E. Bower
+A00135,S. E. Milan
+A00136,Larry J. Paxton
+A00137,Marc R. Hairston
+A00138,S. S. Babu
+A00139,Ian. R. Mann
+A00140,A. W. Smith
+A00141,Stavros Dimitrakoudis
+A00142,R. D. Sydora
+A00143,Andy Kale
+A00144,Yangyang Shen
+A00145,Anton Artemyev
+A00146,Vassilis Angelopoulos
+A00147,Qianli Ma
+A00148,Larry Lyons
+A00149,Xiao-Jia Zhang
+A00150,Ivan Vasko
+A00151,Donald L. Hampton
+A00152,Ildiko Horvath
+A00153,Brian C. Lovell
+A00154,X. Fang
+A00155,Xu Zhang
+A00156,K. A. Sorathia
+A00157,Mykhaylo Shumko
+A00158,H. Arnold
+A00159,G. Sinha
+A00160,Viacheslav G. Merkin
+A00161,A. Sciola
+A00162,A. Michael
+A00163,Dong Lin
+A00164,S. Bao
+A00165,Y. Pan
+A00166,J. Garretson
+A00167,D. Turner
+A00168,Aleksandr Y. Ukhorskiy
+A00169,Jinghan Wang
+A00170,Jing Liu
+A00171,Shuhan Li
+A00172,Josh Houghton
+A00173,Ping Zhu
+A00174,Jiaxing Liu
+A00175,Sui Wan
+A00176,Fei He
+A00177,Yong Wei
+A00178,Weixing Wan
+A00179,Takuo Tsuda
+A00180,Chris Hall
+A00181,"University of Calgary, Calgary, T2N 1N4, Canada"
+A00182,Farui Jiang
+A00183,Chonghao Liu
+A00184,Jianan Zhao
+A00185,Baode Jiang
+A00186,Fengyan Fan
+A00187,Niharika H. Godbole
+A00188,David R. Kenward
+A00189,Roger. H. Varney
+A00190,Don Hampton
+A00191,Darren Chaddock
+A00192,Alexa Jean Halford
+A00193,I. Thompson
+A00194,Kyle R. Murphy
+A00195,Hannah Parry
+A00196,I. Mann
+A00197,Martin O. Archer
+A00198,Xueling Shi
+A00199,Maria-Theresia Walach
+A00200,Michael D. Hartinger
+A00201,Simone Di Matteo
+A00202,Frances Staples
+A00203,Katariina Nykyri
+A00204,D. Rego
+A00205,Marie-Noëlle Decraene
+A00206,Johanna Marin-Carbonne
+A00207,Christophe Thomazo
+A00208,Arnaud Brayard
+A00209,Anne-Sophie Bouvier
+A00210,Brahimsamba Bomou
+A00211,Thierry Adatte
+A00212,Nicolas Olivier
+A00213,Geoffrey D. Reeves
+A00214,Jean-Francois Ripoll
+A00215,Lauren W. Blum
+A00216,Christopher M. Cully
+A00217,Christopher A. Colpitts
+A00218,Mélanie Cosmides
+A00219,Sadie S. Elliot
+A00220,Reihaneh Ghaffari
+A00221,Ashley D. Greeley
+A00222,Richard B. Horne
+A00223,Allison N. Jaynes
+A00224,Yoshi Kasahara
+A00225,Satoshi Kasahara
+A00226,Kunihiro Keika
+A00227,David M. Malaspina
+A00228,Adam T. Michael
+A00229,Robyn M. Millan
+A00230,Takefumi Mitani
+A00231,Viviane Pierrard
+A00232,Drew L. Turner
+A00233,Hilde N. Nesse
+A00234,Maria E. Usanova
+A00235,Maria Voskresenskaya
+A00236,Shoichiro Yokota
+A00237,Jayanta K. Behera
+A00238,Ashwini Kumar Sinha
+A00239,Geeta Vichare
+A00240,Olga Kozyreva
+A00241,Rahul Rawat
+A00242,Ajay Dhar
+A00243,Neil Christopher Rogers
+A00244,Antti Kero
+A00245,Farideh Honary
+A00246,Pekka T. Verronen
+A00247,E. Michael Warrington
+A00248,Donald W. Danskin
+A00249,Ankush Bhaskar
+A00250,Rajesh Singh
+A00251,Robyn A. D. Fiori
+A00252,Larisa Trichtchenko
+A00253,Christopher Balch
+A00254,Samuel Groleau
+A00255,Lucilla Alfonsi
+A00256,Nicolas Bergeot
+A00257,Pierre J. Cilliers
+A00258,Giorgiana De Franceschi
+A00259,Lisa Baddeley
+A00260,Emilia Correia
+A00261,Domenico Di Mauro
+A00262,Carl-Fredrik Enell
+A00263,Mark Engebretson
+A00264,Reza Ghoddousi-Fard
+A00265,Ingemar Häggström
+A00266,Young-Bae Ham
+A00267,Georg Heygster
+A00268,Geonhwa Jee
+A00269,Michael Kosch
+A00270,Hyuck-Jin Kwon
+A00271,Changsup Lee
+A00272,Stefan Lotz
+A00273,Liliana Macotela
+A00274,Maria Federica Marcucci
+A00275,Wojciech Jacek Miloch
+A00276,Y. Jade Morton
+A00277,Takahiro Naoi
+A00278,Monia Negusini
+A00279,Boyan H. Petkov
+A00280,Eric Pottiaux
+A00281,Paul Prikryl
+A00282,P. R. Shreedevi
+A00283,Rikard Slapak
+A00284,Luca Spogli
+A00285,Judy Stephenson
+A00286,Arantxa M. Triana-Gómez
+A00287,Oleg A. Troshichev
+A00288,Roeland Van Malderen
+A00289,James Michael Weygand
+A00290,S. Chakraborty
+A00291,Lidia Nikitina
+A00292,V. Lobzin
+A00293,E. Rock
+A00294,Erkka Heino
+A00295,Niilo Kalakoski
+A00296,Emma C. Bland
+A00297,J.-F. Ripoll
+A00298,Seth G. Claudepierre
+A00299,C. Colpitts
+A00300,X. Li
+A00301,J. F. Fennell
+A00302,C. Crabtree
+A00303,Adam C. Kellerman
+A00304,Mike Hapgood
+A00305,Matthew J. Angling
+A00306,Gemma Attrill
+A00307,Mario Bisi
+A00308,Paul S. Cannon
+A00309,Clive Dyer
+A00310,Jonathan P. Eastwood
+A00311,Sean Elvidge
+A00312,Mark Gibbs
+A00313,Richard A. Harrison
+A00314,Colin Hord
+A00315,David R. Jackson
+A00316,Bryn Jones
+A00317,Simon Machin
+A00318,Cathryn N. Mitchell
+A00319,John Preston
+A00320,John Rees
+A00321,Graham Routledge
+A00322,Keith Ryden
+A00323,Rick Tanner
+A00324,Alan W. P. Thomson
+A00325,James A. Wild
+A00326,Mike Willis
+A00327,A. V. Nikolaev
+A00328,Victor A. Sergeev
+A00329,M. A. Shukhtina
+A00330,D. D. Rogov
+A00331,N. A. Stepanov
+A00332,Yuto Kato
+A00333,Yoshimasa Tanaka
+A00334,Akira Kadokura
+A00335,Alexey Oinats
+A00336,Dmitry Baishev
+A00337,Taylor G. Cameron
+A00338,J. Issa
+A00339,A. Hupé
+A00340,L. Huang
+A00341,I. Jonathan Rae
+A00342,Clare E. J. Watt
+A00343,Louis G. Ozeke
+A00344,David G. Sibeck
+A00345,Mark A. Clilverd
+A00346,Craig J. Rodger
+A00347,Alex W. Degeling
+A00348,Howard J. Singer
+A00349,G. D. Reeves
+A00350,Joseph Benjamin Harold Baker
+A00351,J. M. Ruohoniemi
+A00352,Bharat Kunduri
+A00353,S. G. Shepherd
+A00354,Tero Raita
+A00355,Boyi Wang
+A00356,Michael Hartinger
+A00357,Larry L. Lyons
+A00358,S. M. Bailey
+A00359,Kate A. Zawdie
+A00360,Lunjin Chen
+A00361,H. Gordon James
+A00362,Andrew W. Yau
+A00363,Andrew David Howarth
+A00364,Jacob Bortnik
+A00365,Jiashu Wu
+A00366,Sheng Tian
+A00367,P. A. Bernhardt
+A00368,M. Hua
+A00369,M. P. McCarthy
+A00370,D. L. Hampton
+A00371,M. Golkowski
+A00372,M. B. Cohen
+A00373,D. K. Richardson
+A00374,N. P. Meredith
+A00375,F. Ghaly
+A00376,Taylor Cameron
+A00377,Susan Skone
+A00378,Allan T. Weatherwax
+A00379,David J. Knudsen
+A00380,Johnathan K. Burchill
+A00381,S. H. Skone
+A00382,V. A. Pinto
+A00383,J. Kuzub
+A00384,Anton V. Artemyev
+A00385,Savvas Raptis
+A00386,Christine Gabrielse
+A00387,Grant K. Stephens
+A00388,Ian James Cohen
+A00389,Colin Wilkins
+A00390,Ethan Tsai
+A00391,Shinichi Ohtani
+A00392,Kareem Sorathia
+A00393,Jesper W. Gjerloev
+A00394,Alexei Kouznetsov
+A00395,Alan J. Stocker
+A00396,David R. Siddle
+A00397,J. Hallam
+A00398,H. A. H. Al-Behadili
+A00399,N. Y. Zaalov
+A00400,David H. Boteler
+A00401,John M. Ruohoniemi
+A00402,Evan G. Thomas
+A00403,Dieter André
+A00404,George J. Sofko
+A00405,James A. Koehler
+A00406,M. J. Mckibben
+A00407,Don D. Wallis
+A00408,Terry J. Hughes
+A00409,Allen G. McNamara
+A00410,Don R. McDiarmid
+A00411,Bruce A. McIntosh
+A00412,Juergen Watermann
+A00413,Fokke Creutzberg
+A00414,W. Liu
+A00415,D. Wallis
+A00416,A. Aasnes
+A00417,T. Hiebert
+A00418,M. Henderson
+A00419,Harald Frey
+A00420,A. V. Koustov
+A00421,Francois A. Marshall
+A00422,David J. Thomson
+A00423,A. D. Chave
+A00424,Robert G. Gillies
+A00425,Leon Olifer
+A00426,D. Zhou
+A00427,M. Patel
+A00428,M. K. Hudson
+A00429,A. W. Degeling
+A00430,C. O. Heinke
+A00431,G. R. Sivakoff
+A00432,T. Hori
+A00433,Takeshi Takashima
+A00434,Atsuki Shinbori
+A00435,Mariko Teramoto
+A00436,Kazuhiro Yamamoto
+A00437,Iku Shinohara
+A00438,Vladimir B. Belakhovsky
+A00439,V. A. Pilipenko
+A00440,S. N. Samsonov
+A00441,D. Lorentsen
+A00442,Greg Baker
+A00443,Xiangning Chu
+A00444,David Malaspina
+A00445,Laila Andersson
+A00446,Robert E. Ergun
+A00447,Scott Thaller
+A00448,Hassanali Akbari
+A00449,Hong Zhao
+A00450,Brian Larsen
+A00451,Geoffrey Reeves
+A00452,John Wygant
+A00453,Aaron Breneman
+A00454,William Archer
+A00455,Elizabeth A. MacDonald
+A00456,V. Svaldi
+A00457,Tomoko Matsuo
+A00458,L. Kilcommons
+A00459,Xing-Xin Zhao
+A00460,Q.-G. Zong
+A00461,J. J. Liu
+A00462,Chao Yue
+A00463,X.-Z. Zhou
+A00464,Y. X. Hao
+A00465,B. C. Zhang
+A00466,Z. J. Hu
+A00467,William K. Peterson
+A00468,Mark J. Engebretson
+A00469,Sean A. Gaffaney
+A00470,Jesus A. Ochoa
+A00471,Andrei Runov
+A00472,Vyacheslav A. Pilipenko
+A00473,Mark B. Moldwin
+A00474,Martin G. Connors
+A00475,Zhonghua Xu
+A00476,Juan V. Rodriguez
+A00477,L. R. Lyons
+A00478,Kathryn A. McWilliams
+A00479,C. Hansen
+A00480,D. Keating
+A00481,Stephanie Erion
+A00482,Jian Yang
+A00483,Frank R. Toffoletto
+A00484,Richard A. Wolf
+A00485,Michael J. Nicolls
+A00486,Stephen B. Mende
+A00487,P. L. Pritchett
+A00488,F. V. Coroniti
+A00489,W. Li
+A00490,Tetsuo Motoba
+A00491,Kazue Takahashi
+A00492,A. Ukhorskiy
+A00493,M. Gkioulidou
+A00494,D. G. Mitchell
+A00495,L. J. Lanzerotti
+A00496,G. I. Korotova
+A00497,John R. Wygant
+A00498,C. A. Kletzing
+A00499,W. S. Kurth
+A00500,J. Bernard Blake
+A00501,M. Patrick
+A00502,J. Yang
+A00503,Evgeny V. Mishin
+A00504,J. Wu
+A00505,Yue Deng
+A00506,Ryan M. McGranaghan
+A00507,Matthew David Zettergren
+A00508,Natalia Buzulukova
+A00509,M.-C. Fok
+A00510,E. Roelof
+A00511,J. Redfern
+A00512,Jerry Goldstein
+A00513,Phil Valek
+A00514,D. McComas
+A00515,Sarah L. Jones
+A00516,K. Rychert
+A00517,Takashi Kikuchi
+A00518,Peter J. Chi
+A00519,Tsutomu Nagatsuma
+A00520,Xiaoyan Xing
+A00521,John W. Bonnell
+A00522,Uli Auster
+A00523,T. M. Loto'aniu
+A00524,Jian Lian
+A00525,Weiguang Wang
+A00526,Stephen Mende
+A00527,Mikko Syrjäsuo
+A00528,Igor Voronkov
+A00529,Trond Trondsen
+A00530,Laura Peticolas
+A00531,Stewart Harris
+A00532,Mike Greffen
+A00533,Margaret G. Kivelson
+A00534,Harald U. Frey
+A00535,R. Redmon
+A00536,J. Barker-Ream
+A00537,Adrian Grocott
+A00538,Olaf Amm
+A00539,J. Michael Ruohoniemi
+A00540,Kathryn McWilliams
+A00541,P. I. Shustov
+A00542,X.-J. Zhang
+A00543,A. A. Petrukovich
+A00544,Weining William Liu
+A00545,George Sofko
+A00546,C.-P. Wang
+A00547,C. J. Heinselman
+A00548,Yong Shi
+A00549,H.-J. Kim
+A00550,Craig Heinselman
+A00551,K.-H. Fornacon
+A00552,M. Hirahara
+A00553,Kazushi Asamura
+A00554,Davin Larson
+A00555,C. Carlson
+A00556,John Bonnell
+A00557,J. McFadden
+A00558,K. Ogasawara
+A00559,Yasumasa Kasaba
+A00560,T. Takada
+A00561,Ari Viljanen
+A00562,David Murr
+A00563,H. Gleisner
+A00564,Michael Nicolls
+A00565,Feifei Jiang
+A00566,Robert J. Strangeway
+A00567,Raymond J. Walker
+A00568,Krishan K. Khurana
+A00569,Tatyana A. Kornilova
+A00570,Ilya A. Kornilov
+A00571,Hermann Lühr
+A00572,Y. S. Ge
+A00573,Joachim Raeder
+A00574,M. L. Gilson
+A00575,Kaori Sakaguchi
+A00576,V. Jordanova
+A00577,J. C. Green
+A00578,Asuka Hirai
+A00579,Takahiro Obara
+A00580,Hiroaki Misawa
+A00581,Masafumi Shoji
+A00582,Lasse Boy Novock Clausen
+A00583,Hannes Nickisch
+A00584,Chigomezyo M. Ngwira
+A00585,Marcos V. D. Silveira
+A00586,Marina Georgiou
+A00587,W. Wang
+A00588,Burcu Kosar
+A00589,Mark Conde
+A00590,Denny M. Oliveira
+A00591,Eftyhia Zesta
+A00592,Barbara L. Giles
+A00593,Daniel J. Gershman
+A00594,Vítor M. Souza
+A00595,Caleb Dowell
+A00596,Banafsheh Ferdousi
+A00597,Haonan Wu
+A00598,Xiyan Tan
+A00599,Qiong Zhang
+A00600,Whitney Huang
+A00601,Xian Lu
+A00602,Yongliang Zhang
+A00603,Stephen Kaeppler
+A00604,John Meriwether
+A00605,Wenbin Wang
+A00606,Jintai Li
+A00607,T. Kelly
+A00608,Periyadan T. Jayachandran
+A00609,Sebastijan Mrak
+A00610,J. L. Semeter
+A00611,Rezy Pradipta
+A00612,Evgeny Mishin
+A00613,Keith M. Groves
+A00614,Sneha Yadav
+A00615,Larry. R. Lyons
+A00616,Shun-Rong Zhang
+A00617,Cheng Sheng
+A00618,M. J. Kim
+A00619,M. G. Conde
+A00620,Jeremiah William Johnson
+A00621,Doğacan Su Öztürk
+A00622,Matthew Blandin
+A00623,Amy Keesee
+A00624,Katherine Davidson
+A00625,Zepeng Liu
+A00626,San Lu
+A00627,Quanming Lu
+A00628,Yuzhang Ma
+A00629,Zhibo Zhang
+A00630,Rongsheng Wang
+A00631,Rajkumar Hajra
+A00632,Sergey Apatenkov
+A00633,E. Grigorenko
+A00634,Swathi Hari
+A00635,Sajan C. Mushini
+A00636,Richard B. Langley
+A00637,Tzu-Fang Chang
+A00638,Chio-Zong Cheng
+A00639,Vassilis Angelopulos
+A00640,Shang ZhiYuan
+A00641,"Key Laboratory of Earth and Planetary Physics, Institute of Geology and Geophysics, Chinese Academy of Sciences, Beijing 100029, China"
+A00642,Yao ZhongHua
+A00643,Liu Jian
+A00644,Xu LinLi
+A00645,Xu Yan
+A00646,Zhang BinZheng
+A00647,Guo RuiLong
+A00648,Yu Yuan
+A00649,Wei Yong
+A00650,"College of Earth and Planetary Sciences, University of Chinese Academy of Sciences, Beijing 100029, China"
+A00651,"Weihai Institute for Interdisciplinary Research, Shandong University, Weihai Shandong 264200, China"
+A00652,"SDU-ANU Joint Science College, Shandong University, Weihai Shandong 264200, China"
+A00653,"School of Nuclear Science and Technology, University of Science and Technology of China, Hefei 230000, China"
+A00654,"Anhui Province Key Laboratory of Big Data Analysis and Application, School of Computer Science and Technology, University of Science and Technology of China, Hefei 230000, China"
+A00655,"Anhui Province Key Laboratory of Big Data Analysis and Application, School of Computer Science and Technology, State Key Laboratory of Cognitive Intelligence, Hefei 230000, China"
+A00656,"Department of Earth Sciences, The University of Hong Kong, Hong Kong SAR 999077, China"
+A00657,"Laboratory of Optical Astronomy and Solar-Terrestrial Environment, Institute of Space Sciences, School of Space Science and Physics, Shandong University, Weihai Shandong 264200, China"
+A00658,Toshi Nishimura
+A00659,Margaret Chen
+A00660,Stephen R. Kaeppler
+A00661,Ashton S. Reimer
+A00662,Sahel Hakimi
+A00663,Cynthia A. Cattell
+A00664,John Dombeck
+A00665,Michael Maas
+A00666,Katsuki Nishi
+A00667,Harlan Spence
+A00668,Shinobu Machida
+A00669,Akimasa Ieda
+A00670,Masahito Nosé
+A00671,James P. McFadden
+A00672,Quanqi Shi
+A00673,Zhonghua Yao
+A00674,V. M. Uritsky
+A00675,K. H. Glassmeier
+A00676,Hui Zhang
+A00677,Xiao-Chen Shen
+A00678,Yusuke Ebihara
+A00679,Allan Weatherwax
+A00680,Andrew J. Gerrard
+A00681,W. Zhang
+A00682,B. Wang
+A00683,K.-J. Hwang
+A00684,Chao-Ling Tang
+A00685,R. M. Thorne
+A00686,Olivier Le Contel
+A00687,Christopher Cully
+A00688,R. Ergun
+A00689,I. V. Golovchanskaya
+A00690,Z. Y. Pu
+A00691,A. Radioti
+A00692,Marina V. Kubyshkina
+A00693,Eduardo Perez Macho
+A00694,William Bristow
+A00695,E. Correia
+A00696,J. Liu
+A00697,K. Glassmeier
+A00698,Christopher T. Russell
+A00699,T. F. Chang
+A00700,C.-Y. Chiang
+A00701,A. B. Chen
+A00702,Robert Clayton
+A00703,Kristina Lynch
+A00704,Matt Zettergren
+A00705,Meghan Burleigh
+A00706,David Hysell
+A00707,Marc Lessard
+A00708,T. Maximillian Roberts
+A00709,Maryam Najmafshar
+A00710,Terry Z. Liu
+A00711,S. Ohtani
+A00712,V. Sergeev
+A00713,Jennifer Alyson Carter
+A00714,"Planetary Sciences Group, School of Physics and Astronomy, University of Leicester, University Road, Leicester, LE1 7RH, UK"
+A00715,Malcolm Dunlop
+A00716,Kjellmar Oksavik
+A00717,E. Donovon
+A00718,A. Kavanagh
+A00719,Tima Sergienko
+A00720,Robert C. Fear
+A00721,T. Yeoman
+A00722,Matthew G. G. T. Taylor
+A00723,Jesper Gjerloev
+A00724,Robin Barnes
+A00725,D. D. Billet
+A00726,Gareth Chisham
+A00727,Andrew Dimmock
+A00728,Mervyn. P. Freeman
+A00729,D.-S. Han
+A00730,S.-Y. W. Hsieh
+A00731,Z.-J. Hu
+A00732,Matthew K. James
+A00733,Liisa Juusola
+A00734,Kirsti Kauristie
+A00735,Elena A. Kronberg
+A00736,Mark Lester
+A00737,John Manuel
+A00738,Jürgen Matzka
+A00739,Ian McCrea
+A00740,Jonathan Rae
+A00741,L. Ren
+A00742,Fred Sigernes
+A00743,Kevin Sterne
+A00744,A. Steuwer
+A00745,M.-T. Walach
+A00746,Brian Walsh
+A00747,C. Wang
+A00748,James Weygand
+A00749,J. Wild
+A00750,Jingye Yan
+A00751,J. Zhang
+A00752,Q.-H. Zhang
+A00753,"Rutherford Appleton Laboratory Space, Science Technology Facilities Council, Oxfordshire, UK"
+A00754,"School of Space and Environment, Beihang University, Beijing 100191, China"
+A00755,"Key Laboratory of Space Environment Monitoring and Information Processing, Ministry of Industry and Information Technology, Beijing 100017, China"
+A00756,"Department of Space and Climate Physics, UCL, Mullard Space Science Laboratory, Holmbury St. Mary, Dorking, Surrey, RH5 6NT, UK"
+A00757,"Birkeland Centre for Space Science, Department of Physics and Technology., University of Bergen, Bergen, Norway"
+A00758,"Department of Physics and Astronomy, University of Calgary, 2500 University Drive, Calgary, Alberta, Canada T2N 1N4"
+A00759,"British Antarctic Survey, Cambridge, UK"
+A00760,"Swedish Institute of Space Physics, Kiruna, Sweden"
+A00761,"West Highfield Campus, University of Southampton, University Road, SO17 1BJ, UK"
+A00762,"Goddard Space Flight Center, NASA, Greenbelt, Maryland, USA"
+A00763,"Athabasca University, Athabasca, Canada"
+A00764,"ESTEC, European Space Agency, Netherlands"
+A00765,"University of Saskatchewan, Saskatoon, Canada"
+A00766,"The Johns Hopkins University Applied Physics Laboratory, Laurel, Maryland, USA"
+A00767,"Swedish Institude of Space Physics, Uppsala, SE 75121, Sweden"
+A00768,"Tongji University, Shanghai 200092, China"
+A00769,"Center for Space Plasma Physics, Space Science Institute, 4765 Walnut Street Suite B, Boulder, Colorado, 80301, USA"
+A00770,"Polar Research Institute of China, Shanghai 200136, China"
+A00771,"Finnish Meteorological Institute (FMI), Finland"
+A00772,"Department of Earth and Environmental Sciences (Geophysics), Ludwig Maximilian University of Munich (LMU) Munich, Theresienstr. 41, Munich, D-80333, Germany"
+A00773,"Canadian Space Agency, Montreal, Canada"
+A00774,"GFZ German Research Centre for Geosciences, Potsdam, Germany"
+A00775,"Nagoya University, Institute for Space Earth Environment Research, Center for Integrated Data Science, Nagoya, Aichi, JP 464-8601"
+A00776,"Northumbria University, Newcastle upon Tyne, Tyne and Wear, UK NE1 8ST"
+A00777,"National Space Science Center, Chinese Academy Sciences, Beijing 100190, China"
+A00778,"Arctic Geophysics, University Centre in Svalbard, Longyearbyen, Norway"
+A00779,Sweden Eiscat
+A00780,"Space and Planetary Physics Group, Physics Department, Lancaster University, Lancaster, LA1 4YB, UK"
+A00781,"Center for Space Physics, Boston University, Boston, MA, USA"
+A00782,"Earth, Planetary, and Space Sciences, University of California, Los Angeles, USA"
+A00783,"Shandong Provincial Key Laboratory of Optical Astronomy and Solar-Terrestrial Environment, Institute of Space Sciences, Shandong University, Weihai Shandong 264209, China"
+A00784,Kyle Murphy
+A00785,Mark D. Looper
+A00786,Alan Dyer
+A00787,Lauri Kangas
+A00788,Jøran Idar Moen
+A00789,L. B. Clausen
+A00790,Gerhard Haerendel
+A00791,Robert L. McPherron
+A00792,Tung-Shin Hsu
+A00793,Zuyin Pu
+A00794,M.-C. H. Fok
+A00795,Y. Zheng
+A00796,J.-J. Lee
+A00797,A. Glocer
+A00798,T. Onsager
+A00799,Masafumi Hirahara
+A00800,Steve Chen
+A00801,Natsuo Sato
+A00802,Tomoaki Hori
+A00803,Akira Sessai Yukimatu
+A00804,Nadine M. E. Kalmoni
+A00805,C. J. Owen
+A00806,Costel Bunescu
+A00807,Octav Marghitu
+A00808,D. Constantinescu
+A00809,Y. Narita
+A00810,Joachim Vogt
+A00811,A. Blăgău
+A00812,Brian J. Anderson
+A00813,Haje Korth
+A00814,D. Mitchell
+A00815,Reiko Nomura
+A00816,Yoshiharu Omura
+A00817,Yuichi Otsuka
+A00818,Tsugunobu Nagai
+A00819,D. H. Fairfield
+A00820,J. A. Slavin
+A00821,Heikki Vanhamäki
+A00822,H. Uchino
+A00823,Dennis Frühauff
+A00824,Joshua Semeter
+A00825,A. T. Y. Lui
+A00826,D. Grodent
+A00827,A. M. Du
+A00828,Z. H. Yao
+A00829,L. C. Ray
+A00830,A. J. Coates
+A00831,A. T. Lui
+A00832,J. H. Waite
+A00833,G. H. Jones
+A00834,R. L. Guo
+A00835,W. R. Dunn
+A00836,X. Shi
+A00837,W. Kurth
+A00838,S. A. Kiehas
+A00839,V. Angelopolos
+A00840,Heli Hietala
+A00841,D. Korovinksiy
+A00842,Charles W. Carlson
+A00843,R. P. Lin
+A00844,A. Roux
+A00845,O. LeContel
+A00846,S. Frey
+A00847,Tai Phan
+A00848,R. Strangeway
+A00849,G. Parks
+A00850,M. Fillingim
+A00851,J. Sigwarth
+A00852,P. Cruce
+A00853,Alexander Drozdov
+A00854,E. W. Grimes
+A00855,N. Hatzigeorgiu
+A00856,D. A. King
+A00857,J. W. Lewis
+A00858,J. M. McTiernan
+A00859,D. A. Roberts
+A00860,C. L. Russell
+A00861,J. B. Faden
+A00862,M. McCarthy
+A00863,J. G. Sample
+A00864,D. M. Smith
+A00865,L. A. Woodger
+A00866,Arnaud Masson
+A00867,A. A. Narock
+A00868,T. Segawa
+A00869,Kanako Seki
+A00870,Sunny W. Y. Tam
+A00871,N. Umemura
+A00872,B.-J. Wang
+A00873,S.-Y. Wang
+A00874,J. Vandegriff
+A00875,S. Abe
+A00876,Masahito Nose
+A00877,S. UeNo
+A00878,P. Dunn
+A00879,C. Fowler
+A00880,J. S. Halekas
+A00881,T. Hara
+A00882,Y. Harada
+A00883,C. O. Lee
+A00884,R. Lillis
+A00885,D. L. Mitchell
+A00886,M. R. Argall
+A00887,K. Bromund
+A00888,James L. Burch
+A00889,M. Galloy
+A00890,B. Giles
+A00891,M. Oka
+A00892,T. D. Phan
+A00893,Brian M. Walsh
+A00894,J. Westlake
+A00895,F. D. Wilder
+A00896,S. D. Bale
+A00897,R. Livi
+A00898,M. Pulupa
+A00899,P. Whittlesey
+A00900,A. DeWolfe
+A00901,B. Harter
+A00902,E. Lucas
+A00903,Ferdinand Plaschke
+A00904,P. Robert
+A00905,R. M. Candey
+A00906,R. C. Johnson
+A00907,T. Kovalick
+A00908,M. H. Liu
+A00909,R. E. McGuire
+A00910,K. Kersten
+A00911,P. Schroeder
+A00912,XiaoYing Sun
+A00913,YunPeng Hu
+A00914,Zeren Zhima
+A00915,SuPing Duan
+A00916,FangXian Lv
+A00917,XuHui Shen
+A00918,David Russel Themens
+A00919,Anthony M. McCaffrey
+A00920,Bharat S. R. Kunduri
+A00921,M. Sitnov
+A00922,Rumi Nakamura
+A00923,K.-H. Glassmeier
+A00924,V. Uritsky
+A00925,BinBin Ni
+A00926,M. Kubyshkina
+A00927,Akimasa Yoshikawa
+A00928,Kento Fukui
+A00929,S. Nakano
+A00930,Naoko Takahashi
+A00931,N. Higashio
+A00932,T.-F. Chang
+A00933,Beatriz Gallardo-Lacourt
+A00934,Robert McPherron
+A00935,J. Brent Parham
+A00936,Vincent Beukelaers
+A00937,Lawrence Leung
+A00938,James Mason
+A00939,S.-R. Zhang
+A00940,A. J. Coster
+A00941,Asti Bhatt
+A00942,Elizabeth Kendall
+A00943,M. M. Lam
+A00944,C. M. Jackman
+A00945,Jasmine K. Sandhu
+A00946,Huayu Zhao
+A00947,Xu-Zhi Zhou
+A00948,Qiu-Gang Zong
+A00949,Ying Liu
+A00950,Yongfu Wang
+A00951,Jie Ren
+A00952,Han Liu
+A00953,Anmin Tian
+A00954,M. Bengtson
+A00955,R. Raybell
+A00956,Evgeny V. Panov
+A00957,Wolfgang Baumjohann
+A00958,G. Reeves
+A00959,Jason Derr
+A00960,Wendell Horton
+A00961,Richard Wolf
+A00962,M. El-Alaoui
+A00963,Chih-Ping Wang
+A00964,S. R. Zhang
+A00965,Stephen A. Fuselier
+A00966,Steven M. Petrinec
+A00967,K. Dokgo
+A00968,Craig J. Pollock
+A00969,Y. Khotyaintsev
+A00970,Roy B. Torbert
+A00971,Sota Nanjo
+A00972,Yuta Hozumi
+A00973,Satoshi Yagitani
+A00974,Shion Hashimoto
+A00975,Shipra Sinha
+A00976,Gopi K. Seemala
+A00977,Chae-Woo Jun
+A00978,Wenrui Wang
+A00979,Jun Cui
+A00980,O. Tsareva
+A00981,G. Fruit
+A00982,P. Louarn
+A00983,C. Jacquey
+A00984,A. Tur
+A00985,Don L. Hampton
+A00986,Terry Liu
+A00987,Yu-Zhang Ma
+A00988,Qing-He Zhang
+A00989,Zan-Yang Xing
+A00990,Jinyan Zhao
+A00991,Huizi Wang
+A00992,Shutao Yao
+A00993,Xiao Ma
+A00994,Alexander William Degeling
+A00995,Shi-Chen Bai
+A00996,Wensai Shang
+A00997,Jong-Sun Park
+A00998,C. P. Ferradas
+A00999,A. B. Igl
+A01000,B. A. Larsen
+A01001,Yudai Inaba
+A01002,Ian Schofield
+A01003,Shun Imajo
+A01004,Artem Yu Gololobov
+A01005,Shiang-Yu Wang
+A01006,Bo-Jhou Wang
+A01007,Yoshiya Kasahara
+A01008,Masahiro Kitahara
+A01009,Satoko Nakamura
+A01010,Harlan E. Spence
+A01011,Geoff D. Reeves
+A01012,Robert J. Macdowall
+A01013,Charles W. Smith
+A01014,Dong Wei
+A01015,Fei Zhang
+A01016,Weiqin Sun
+A01017,Qian Wu
+A01018,Simon G. Shepherd
+A01019,Antea Coster
+A01020,Chengming Liu
+A01021,T. Sakurai
+A01022,Andrew N. Wright
+A01023,T. Elsden
+A01024,Xin Cao
+A01025,J. Li
+A01026,Homayon Aryan
+A01027,Shin Ohtani
+A01028,Matt Friel
+A01029,Li-Jen Chen
+A01030,Alex Chartier
+A01031,Sarah Vines
+A01032,Colin L. Waters
+A01033,Robert F. Arritt
+A01034,Ze-Fan Yin
+A01035,Ze-Jun Hu
+A01036,Jian-Jun Liu
+A01037,Shan Wang
+A01038,Hui-Gen Yang
+A01039,Bin Li
+A01040,Brett A. McCuen
+A01041,Shangchun Teng
+A01042,De-Sheng Han
+A01043,Q. Zhang
+A01044,Jicheng Sun
+A01045,S. Wang
+A01046,Su Zhou
+A01047,Z. Wang
+A01048,Y. Huang
+A01049,Masaki Sato
+A01050,Arto Oksanen
+A01051,Hui-Xuan Qiu
+A01052,Run Shi
+A01053,Jianjun Liu
+A01054,Madeeha Talha
+A01055,Antti Pulkkinnen
+A01056,Peter W. Schuck
+A01057,M. W. Chen
+A01058,E. Joshua Rigler
+A01059,Anna Kelbert
+A01060,Greg M. Lucas
+A01061,Mikhail I. Sitnov
+A01062,Nikolai A. Tsyganenko
+A01063,Xinyu Xu
+A01064,Yuda Zhi
+A01065,Yi Wang
+A01066,Xueshang Feng
+A01067,Kanpatom Kasonsuwan
+A01068,Suwicha Wannawichian
+A01069,Hee-Jeong Kim
+A01070,S. Y. Wu
+A01071,L. Lamy
+A01072,M. M. Wang
+A01073,P. Zarka
+A01074,S. Y. Ye
+A01075,J. E. Waters
+A01076,Alexandra R. Fogg
+A01077,N. Kaweeyanun
+A01078,H. Kojima
+A01079,David K. Milling
+A01080,Yukitoshi (Toshi) Nishimura
+A01081,Peter Schuck
+A01082,XiaoXin Zhang
+A01083,",Key Laboratory of Space Weather, National Center for Space Weather, China Meteorological Administration, Beijing 100081, China"
+A01084,Bo Chen
+A01085,Chao Shen
+A01086,HuaNing Wang
+A01087,",Key Laboratory of Earth and Planetary Physics, Institute of Geology and Geophysics, Chinese Academy of Sciences, Beijing 100029, China"
+A01088,",College of Earth Sciences, University of Chinese Academy of Sciences, Beijing 100049, China"
+A01089,",Changchun Institute of Optics, Fine Mechanics and Physics, Chinese Academy of Sciences, Changchun 130033, China"
+A01090,",School of Natural Sciences and Humanity, Harbin Institute of Technology Shenzhen Graduate School, Shenzhen 518005, China"
+A01091,",National Astronomical Observatories, Chinese Academy of Sciences, Beijing 100012, China"
+A01092,"State Key Lab of Space Weather, National Space Science Center, Chinese Sciences Academy, Beijing 100190, China"
+A01093,ZhaoHai He
+A01094,"University of Chinese Academy of Sciences, Beijing 100049, China"
+A01095,Veneta Guineva
+A01096,Irina Despirak
+A01097,Rolf Werner
+A01098,Shunrong Zhang
+A01099,Anthea Coster
+A01100,Leslie Lamarche
+A01101,Qiugang Zong
+A01102,Huigen Yang
+A01103,Zejun Hu
+A01104,Xuzhi Zhou
+A01105,Jinxing Li
+A01106,Adrian Blagau
+A01107,Gordon Rostoker
+A01108,C. R. Hodgson
+A01109,Ayumi Hashimoto
+A01110,S. Y. Fu
+A01111,X. N. Chu
+A01112,Q. Q. Shi
+A01113,A. Strømme
+A01114,S. R. Bounds
+A01115,Y. Kawamura
+A01116,Hiroshi Miyaoka
+A01117,Urban Brändström
+A01118,E. Turunen
+A01119,Magnar G. Johnsen
+A01120,Pascal Sado
+A01121,Nina Kristine Eriksen
+A01122,Dag A. Lorentzen
+A01123,Emma Bland
+A01124,Larry Paxton
+A01125,Tim Yeoman
+A01126,Xiaoyan Zhou
+A01127,S. E. Harris
+A01128,W. Rachelson
+A01129,M. Greffen
+A01130,D. R. Pierce
+A01131,D. J. Dearborn
+A01132,K. Rowe
+A01133,B. Kuo-Tiong
+A01134,J. D. Means
+A01135,Kathryn M. Rowe
+A01136,R. C. Snare
+A01137,L. M. Peticolas
+A01138,Z. C. Kale
+A01139,Adrienne Parent
+A01140,M. Usanova
+A01141,D. M. Pahud
+A01142,E.-A. Lee
+A01143,V. Amalraj
+A01144,H.-U. Auster
+A01145,T. Karlsson
+A01146,M. Syrjaesuo
+A01147,N. L. Bunch
+A01148,James LaBelle
+A01149,J. M. Hughes
+A01150,Z. Y. Li
+A01151,L. Lu
+A01152,A. V. Streltsov
+A01153,T. R. Pedersen
+A01154,A. L. Snyder
+A01155,John C. Samson
+A01156,Konstantin Kabin
+A01157,Christopher C. Chaston
+A01158,SuiYan Fu
+A01159,Betty Lanchester
+A01160,Nikolai Østgaard
+A01161,E. Séran
+A01162,Daniel Whiter
+A01163,E. Panov
+A01164,Martin Volwerk
+A01165,Werner Magnes
+A01166,T. L. Zhang
+A01167,Hao Luo
+A01168,W. Y. Xu
+A01169,Q. M. Lu
+A01170,A. Retinò
+A01171,B. Zieger
+A01172,J.-A. Sauvaud
+A01173,A. Opitz
+A01174,L. Palin
+A01175,Benoit Lavraud
+A01176,L. Kistler
+A01177,J. Luhmann
+A01178,M. A. McCready
+A01179,Yonghui Ma
+A01180,Xinlin Li
+A01181,H. U. Auster
+A01182,E. Seran
+A01183,J. M. Albert
+A01184,Karl-Heinz Glassmeier
+A01185,Larry Kepko
+A01186,William Liu
+A01187,Richard Giroux
+A01188,Matthew O. Fillingim
+A01189,Tsubasa Miura
+A01190,Takahiro Kawashima
+A01191,Dogacan Su Öztürk
+A01192,Xiao-Xin Zhang
+A01193,Jiawei Li
+A01194,Zhaojin Rong
+A01195,David M. Miles
+A01196,A. N. Fazakerley
+A01197,R. Mutel
+A01198,Matthieu Berthomier
+A01199,Claudia Stolle
+A01200,Y. Zhang
+A01201,Andrew P. Walsh
+A01202,Thomas E. Moore
+A01203,Kevin S. Brenneman
+A01204,Charles R. Chappell
+A01205,Glyn A. Collinson
+A01206,Gregory D. Earle
+A01207,Roderick A. Heelis
+A01208,Lynn M. Kistler
+A01209,George Khazanov
+A01210,Robert Pfaff
+A01211,Douglas E. Rowland
+A01212,Ennio Sanchez
+A01213,R. W. Schunk
+A01214,Jeffrey Thayer
+A01215,Charles Lougheed Bennett
+A01216,Florine Enengl
+A01217,Daria Kotova
+A01218,Yaqi Jin
+A01219,Aaron J. Ridley
+A01220,Anthea J. Coster
+A01221,Endawoke Yizengaw
+A01222,Meng Zhou
+A01223,Lorenzo Lovisari
+A01224,Ben J. Maughan
+A01225,Barry B. Narod
+A01226,John R. Bennest
+A01227,G. A. Enno
+A01228,Andrew Howarth
+A01229,Carlos Martinis
+A01230,J. C. Dorelli
+A01231,Reiner Friedel
+A01232,L.-J. Chen
+A01233,Hyunju Connor
+A01234,David Miles
+A01235,S. Fuselier
+A01236,S. Petrinec
+A01237,Scott Bounds
+A01238,I. Christopher
+A01239,D. Da Silva
+A01240,J. Halekas
+A01241,Michael Hesse
+A01242,G. Hospodarsky
+A01243,Y.-H. Liu
+A01244,William Lotko
+A01245,M. Oieroset
+A01246,T. Sotirelis
+A01247,H. Heetderks
+A01248,M. Lampton
+A01249,S. P. Geller
+A01250,S. Habraken
+A01251,E. Renotte
+A01252,C. Jamar
+A01253,P. Rochus
+A01254,J. Spann
+A01255,J.-C. Gerard
+A01256,R. Gladstone
+A01257,Sandy Murphree
+A01258,Leroy Cogger
+A01259,Kanji Hayashi
+A01260,Kiyofumi Yumoto
+A01261,Akira Morioka
+A01262,G. K. Parks
+A01263,R. R. Anderson
+A01264,J. D. Menietti
+A01265,L. Sangalli
+A01266,M. F. Larsen
+A01267,T. Zhan
+A01268,R. F. Pfaff
+A01269,D. Rowland
+A01270,Howard Singer
+A01271,D. Lummerzheim
+A01272,A. Nakajima
+A01273,Y. Hiraki
+A01274,Ennio R. Sanchez
+A01275,T. Uozumi
+A01276,Arthur J. Hull
+A01277,Peter A. Damiano
+A01278,H. K. Nykyri
+A01279,R. L. Lysak
+A01280,X. An
+A01281,D. Ma
+A01282,V. S. Semenov
+A01283,Vivian Cribb
+A01284,Tuija I. Pulkkinen
+A01285,R. H. Chen
+A01286,W. Liao
+A01287,Ethiopia H. Kebede
+A01288,Erik S. Steinmetz
+A01289,M. Vokhmyanin
+A01290,Jiayi Zong
+A01291,Nathan A. Case
+A01292,Notanee Bourassa
+A01293,Matthew Heavner
+A01294,Chris Ratzlaff
+A01295,Satoshi Taguchi
+A01296,Hongqiao Hu
+A01297,Desheng Han
+A01298,Herbert C. Carlson
+A01299,Gabriel Arne Hofstra
+A01300,Elena E. Grigorenko
+A01301,Andrey Yu. Malykhin
+A01302,Mikhail Vladimirovich Vokhmyanin
+A01303,V. Manu
+A01304,Jijin K. Raj
+A01305,Nanan Balan
+A01306,Duan Zhang
+A01307,Shishir Priyadarshi
+A01308,Zanyang Xing
+A01309,Guozhu Li
+A01310,Mayowa Adewuyi
+A01311,Amy M. Keesee
+A01312,Roxanne M. Katus
+A01313,F. Scott Porter
+A01314,Kip D. Kuntz
+A01315,Charles L. Baker
+A01316,Pontus C. Brandt
+A01317,Roman Gomez
+A01318,Gina A. DiBraccio
+A01319,Shingo Kameda
+A01320,Vivek Dwivedi
+A01321,Michael E. Purucker
+A01322,Michael Shoemaker
+A01323,Ravindra T. Desai
+A01324,W. Douglas Cramer
+A01325,Megha Pandya
+A01326,Emma Mirizio
+A01327,Suk-Bin Kang
+A01328,Lois J. Landwer
+A01329,Daniel C. Bush
+A01330,John C. Foster
+A01331,Philip J. Erickson
+A01332,Beatrice Gallardo-Lacourt
+A01333,Vassills Angelopoulos
+A01334,Maha Ashour-Abdalla
+A01335,David Schriver
+A01336,Mostafa El Alaoui
+A01337,Robert Richard
+A01338,Raymond Walker
+A01339,Melvyn L. Goldstein
+A01340,C.-Y. Tu
+A01341,Aaron Ridley
+A01342,T. Immel
+A01343,J. Murphree
+A01344,Tuija Pulkkinen
+A01345,Ingrid Sandahl
+A01346,O. Saka
+A01347,M. F. Thomsen
+A01348,P. Anderson
+A01349,E. Mitchell
+A01350,T. Bondareva
+A01351,D. Gilles
+A01352,Z.-X. Guo
+A01353,J.-Y. Yang
+A01354,Malcolm W. Dunlop
+A01355,J.-B. Cao
+A01356,L.-Y. Li
+A01357,Y.-D. Ma
+A01358,K.-F. Ji
+A01359,Chao Xiong
+A01360,W.-T. Ding
+A01361,Yiding Yuan
+A01362,Brennan Young
+A01363,Björn Gustavsson
+A01364,Yuka Sato
+A01365,S. Suzuki
+A01366,A. Gerrard
+A01367,Hans-Ulrich Auster
+A01368,R. Doe
+A01369,Kyle Reiter
+A01370,Sébastien Guillon
+A01371,Nadine Kalmoni
+A01372,Shu-Ching Chen
+A01373,Mei-Ling Shyu
+A01374,Niu XiangYu
+A01375,"Shandong Provincial Key Laboratory of Optical Astronomy and Solar-Terrestrial Environment, School of Space Science and Physics, Institute of Space Sciences, Shandong University, Weihai Shandong 264209, China"
+A01376,Liu Jing
+A01377,Zhang JiaoJiao
+A01378,Wu HaoNan
+A01379,Liu JianJun
+A01380,Jin YaQi
+A01381,Li ShuHan
+A01382,"Key Laboratory of Solar Activity and Space Weather, National Space Science Center, Chinese Academy of Sciences, Beijing 100190, China"
+A01383,"Siziwang Observatory of Space Weather, National Space Science Center, Chinese Academy of Sciences, Ulanqab, Inner Mongolia 011800, China"
+A01384,"High Altitude Observatory, National Science Foundation (NSF) National Center for Atmospheric Research, Boulder, CO 80301, USA"
+A01385,"Center for Space Physics and Astronomy, Polar Research Institute of China, Shanghai 201209, China"
+A01386,"Department of Physics, University of Oslo, Oslo 0851, Norway"
+A01387,S. Mushini
+A01388,Qian Wang
+A01389,Peiqi Hao
+A01390,Han Pan
+A01391,Lindsay Goodwin
+A01392,Thomas Y. Chen
+A01393,Gareth Perry
+A01394,Larisa Goncharenko
+A01395,Dogacan Ozturk
+A01396,Robert Robinson
+A01397,Katherine Garcia-Sage
+A01398,Peter Damiano
+A01399,Lauren Blum
+A01400,Yiqun Yu
+A01401,Theodoros Sarris
+A01402,Weijia Zhan
+A01403,Allison Jaynes
+A01404,Yu Lin
+A01405,Anita Aikio
+A01406,A. Marchaudon
+A01407,I. W. McCrea
+A01408,H.-J. Opgenoorth
+A01409,T. Johansson
+A01410,S. Eriksson
+A01411,T. Aslaksen
+A01412,J. R. Kan
+A01413,H. Li
+A01414,C. J. Xiao
+A01415,L. H. Lyu
+A01416,W. Sun
+A01417,F. Jiang
+A01418,Hermann Opgenoorth
+A01419,Y. Jiao
+A01420,Y. T. Morton
+A01421,M. V. Uspensky
+A01422,Natalia G. Kleimenova
+A01423,Olga V. Kozyreva
+A01424,M. M. J. L. Van De Kamp
+A01425,S. V. Dubyagin
+A01426,Stefano Massetti
+A01427,Nadezda Yagova
+A01428,Natalia Nosikova
+A01429,Vyacheslav Pilipenko
+A01430,Markus Battarbee
+A01431,Adnane Osmane
+A01432,Urs Ganse
+A01433,Yann Pfau-Kempf
+A01434,Lucile Turc
+A01435,Thiago Brito
+A01436,Tuomas Koskela
+A01437,Maxime Dubart
+A01438,Minna Palmroth
+A01439,Mirjam Kellinsalmi
+A01440,Simon Walker
+A01441,Emma Bruus
+A01442,Vincent E. Ledvina
+A01443,Rowan Dayton-Oxland
+A01444,Katie Herlingshaw
+A01445,Neethal Thomas
+A01446,Eero Karvinen
+A01447,Donna Lach
+A01448,Marjan Spijkers
+A01449,Calle Bergstrand
+A01450,Maik Riechert
+A01451,Alexander Gerst
+A01452,Brian J. Jackel
+A01453,Craig Unick
+A01454,M. T. Syrjäsuo
+A01455,E. E. Woodfield
+A01456,I. McWhirter
+A01457,Julie Barnum
+A01458,Reinhard H. W. Friedel
+A01459,Aaron Roberts
+A01460,Brian A. Thomas
+A01461,Marina Schmidt
+A01462,Carley J. Martin
+A01463,Daniel D. Billett
+A01464,Francis H. Tholley
+A01465,Nathaniel A. Frissell
+A01466,Krishna Khanal
+A01467,Shane Coyle
+A01468,Shibaji Chakraborty
+A01469,Marci Detwiller
+A01470,Kara Lamb
+A01471,Garima Malhotra
+A01472,Athanasios Vlontzos
+A01473,Edward Wagstaff
+A01474,Atılım Günes Baydin
+A01475,Anahita Bhiwandiwalla
+A01476,Yarin Gal
+A01477,Alfredo Kalaitzis
+A01478,Anthony Reina
+A01479,P. A. Forsyth
+A01480,D. R. Moorcroft
+A01481,M. Nakamura
+A01482,C. Waters
+A01483,S. Kokubun
+A01484,K. Tsuruda
+A01485,W. Jeffrey Hughes
+A01486,T. A. Potemra
+A01487,L. J. Zanetti
+A01488,J. B. Gary
+A01489,D. J. Williams
+A01490,A. M. Jorgensen
+A01491,D. McDiarmid
+A01492,C. L. Waters
+A01493,B. J. Fraser
+A01494,A. J. Lazarus
+A01495,K. I. Paularena
+A01496,J. A. Wanliss
+A01497,E. Friedrich
+A01498,P. K. Toivanen
+A01499,Daniel N. Baker
+A01500,Evgeniy N. Fedorov
+A01501,V. O. Papitashvili
+A01502,J. F. Watermann
+A01503,Paul Eglitis
+A01504,Ari T. Viljanen
+A01505,Leroy L. Cogger
+A01506,Hermann J. Opgenoorth
+A01507,V. T. Tikhonchuk
+A01508,N. A. Nicholson
+A01509,I. O. Voronkov
+A01510,Chao-Song Huang
+A01511,Guan Le
+A01512,J.-M. Jahn
+A01513,B.-H. Ahn
+A01514,G. X. Chen
+A01515,Y. Kamide
+A01516,J. B. Sigwarth
+A01517,L. A. Frank
+A01518,J. Y. Lu
+A01519,Richard Marchand
+A01520,Stanley C. Solomon
+A01521,Jiuhou Lei
+A01522,Mathieu Meurant
+A01523,C. W. S. Ziesolleck
+A01524,Q. Feng
+A01525,R. M. Winglee
+A01526,R. P. Lepping
+A01527,A. Vallance Jones
+A01528,C.L. Waters
+A01529,K. Sigsbee
+A01530,D. Fairfield
+A01531,Toshifumi Mukai
+A01532,M. L. Kaiser
+A01533,J. T. Steinberg
+A01534,T. Yamamoto
+A01535,C. Y. Huang
+A01536,W. J. Burke
+A01537,M. S. Gussenhoven
+A01538,D. A. Hardy
+A01539,L. C. Gentile
+A01540,Frances R. Fenrich
+A01541,M. Brittnacher
+A01542,H. Matsumoto
+A01543,K. Hashimoto
+A01544,D. A. Gurnett
+A01545,José M. Da Costa
+A01546,A. Szabo
+A01547,M. Øieroset
+A01548,M. J. Reiner
+A01549,Z. C. Dent
+A01550,Therese Moretto
+A01551,E. Friis-Christensen
+A01552,R. A. Greenwald
+A01553,Matthias Förster
+A01554,G. Paschmann
+A01555,J. M. Quinn
+A01556,A. Balogh
+A01557,R. Skoug
+A01558,Michael H. Denton
+A01559,T. J. Immel
+A01560,S.-I. Akasofu
+A01561,H. C. Stenbaek-Nielsen
+A01562,T. J. Hallinan
+A01563,I. F. Grant
+A01564,Delores J. Knipp
+A01565,B. A. Emery
+A01566,A. H. McAllister
+A01567,D. Evans
+A01568,X. Pi
+A01569,T. Rosenberg
+A01570,M. G. McHarg
+A01571,F. Chun
+A01572,K. Mosely
+A01573,M. Codrescu
+A01574,L. Lanzerotti
+A01575,Frederick J. Rich
+A01576,J. Sharber
+A01577,P. Wilkinson
+A01578,S. Beaudette
+A01579,P. Harrison
+A01580,J.-F. Thibault
+A01581,D. McCabe
+A01582,V. Wehrle
+A01583,R. Fedosejevs
+A01584,K. Balmain
+A01585,B. Blake
+A01586,J. Fennell
+A01587,T. P. O.'Brien
+A01588,Masfumi Hirahara
+A01589,Naoki Terada
+A01590,Andrew J. Kavanagh
+A01591,J. Manninen
+A01592,P. C. Anderson
+A01593,Gang Lu
+A01594,C. R. Martinis
+A01595,H. K. Rikala
+A01596,Magnus Fagernes Ivarsen
+A01597,Jean-Pierre St-Maurice
+A01598,Devin Ray Huyghebaert
+A01599,Megan D. Gillies
+A01600,Frank Lind
+A01601,Brian Pitzel
+A01602,Glenn C. Hussey
+A01603,J.-P. St-Maurice
+A01604,C. Keenan
+A01605,J. Rosehart
+A01606,J.-P. St Maurice
+A01607,L. Claire Gasque
+A01608,Reza Janalizadeh
+A01609,Brian J. Harding
+A01610,Justin D. Yonker
+A01611,John W. MacDougall
+A01612,D. P. Steele
+A01613,Michael Wiltberger
+A01614,J. G. Lyon
+A01615,C. C. Goodrich
+A01616,R. E. Lopez
+A01617,M. J. Wiltberger
+A01618,J.M. Ruohoniemi
+A01619,S.G. Shepherd
+A01620,R.A. Greenwald
+A01621,LiJen Chen
+A01622,Pavlo V. Ponomarenko
+A01623,M. D. Sciffer
+A01624,J. P. Villain
+A01625,S. Wei
+A01626,A. Otto
+A01627,M. Sugino
+A01628,Toshihiko Iyemori
+A01629,J. H. Sastri
+A01630,P. Song
+A01631,L. P. Goncharenko
+A01632,Yoshifumi Saito
+A01633,J. T. Mathews
+A01634,W. Peria
+A01635,Charles J. Farrugia
+A01636,F. T. Gratton
+A01637,E. J. Lund
+A01638,Per Even Sandholt
+A01639,S. W. H. Cowley
+A01640,G. Gnavi
+A01641,L. Bilbao
+A01642,C. Mouikis
+A01643,Tadahiko Ogawa
+A01644,G. Hall
+A01645,Ray Greenwald
+A01646,G. T. Blanchard
+A01647,J. F. Spann
+A01648,R. Elsen
+A01649,G. A. Germany
+A01650,K. Papadopoulos
+A01651,H. E. J. Koskinen
+A01652,A. M. Mälkki
+A01653,E. Yu. Budnik
+A01654,A. O. Fedorov
+A01655,Dieter A. Andre
+A01656,P. Janhunen
+A01657,Stefano Orsini
+A01658,M. Candidi
+A01659,Charles Smith
+A01660,W. F. Denig
+A01661,H. J. Opgenoorth
+A01662,M. Lockwood
+A01663,A. Vaivads
+A01664,M. André
+A01665,N. C. Draper
+A01666,G. Provan
+A01667,A. Lahiff
+A01668,J. A. Davies
+A01669,J.-M. Bosqued
+A01670,J. P. Dewhurst
+A01671,J. Waterman
+A01672,T. Ulich
+A01673,Neil Rogers
+A01674,Lawrence R. Lyons
+A01675,G. Enno
+A01676,J. S. Murphree
+A01677,N. E. Turner
+A01678,F. Mozer
+A01679,T. K. Yeoman
+A01680,R. J. Pellinen
+A01681,J. R. Taylor
+A01682,D. Orr
+A01683,Stepan I. Solovyev
+A01684,H. Kawano
+A01685,J.A. Slavin
+A01686,D.-Y. Lee
+A01687,J. H. Seon
+A01688,K.W. Min
+A01689,S.H. Bae
+A01690,Eunah Lee
+A01691,K.H. Choi
+A01692,J. Wanliss
+A01693,Geoff Crowley
+A01694,D. Deist
+A01695,John Foster
+A01696,Roderick Heelis
+A01697,Marc Hairston
+A01698,B. W. Reinisch
+A01699,O. Rasmussen
+A01700,D. L. McKenzie
+A01701,A. B. Christensen
+A01702,D. J. Strickland
+A01703,J. P. Thayer
+A01704,H. Fukunishi
+A01705,C. G. Maclennan
+A01706,J. H. Doolittle
+A01707,T. J. Rosenberg
+A01708,D. L. De Zeeuw
+A01709,Tamas I. Gombosi
+A01710,K. G. Powell
+A01711,A. S. Rodger
+A01712,J. V. Olson
+A01713,Aleksandr Yahnin
+A01714,H. Hayakawa
+A01715,C.-C. Wu
+A01716,Jøran Moen
+A01717,M. Kaiser
+A01718,R. Lin
+A01719,S. A. Romanov
+A01720,J. Buechner
+A01721,W. R. Paterson
+A01722,K. W. Ogilvie
+A01723,D. O. Cersosimo
+A01724,R. W. McEntire
+A01725,S. P. Christon
+A01726,H. Kusaka
+A01727,Gregory J. Baker
+A01728,A. Korth
+A01729,D. K. Millling
+A01730,Craig W. Unick
+A01731,Benjamin M. Tutolo
+A01732,Elisabeth M. Hausrath
+A01733,Edwin S. Kite
+A01734,Elizabeth B. Rampe
+A01735,Thomas F. Bristow
+A01736,Robert T. Downs
+A01737,Allan Treiman
+A01738,Tanya S. Peretyazhko
+A01739,Michael T. Thorpe
+A01740,John P. Grotzinger
+A01741,Amelie L. Roberts
+A01742,P. Douglas Archer
+A01743,David J. Des Marais
+A01744,David F. Blake
+A01745,David T. Vaniman
+A01746,Shaunna M. Morrison
+A01747,Steve Chipera
+A01748,Robert M. Hazen
+A01749,Richard V. Morris
+A01750,Valerie M. Tu
+A01751,Sarah L. Simpson
+A01752,Aditi Pandey
+A01753,Albert Yen
+A01754,Stephen R. Larter
+A01755,Patricia Craig
+A01756,Nicholas Castle
+A01757,Douglas W. Ming
+A01758,Johannes M. Meusburger
+A01759,Abigail A. Fraeman
+A01760,David G. Burtt
+A01761,Heather B. Franz
+A01762,Brad Sutter
+A01763,Joanna V. Clark
+A01764,William Rapin
+A01765,John C. Bridges
+A01766,Matteo Loche
+A01767,Patrick Gasda
+A01768,Jens Frydenvang
+A01769,Ashwin R. Vasavada
+A01770,Eric Davis
+A01771,Cody Wilson
+A01772,Jarrett Little
+A01773,Neil McGuffin
+A01774,H. Dahlgren
+A01775,J.-P. St.-Maurice
+A01776,Mikko T. Syrjasuo
+A01777,Trond S. Trondsen
+A01778,E. Lucek
+A01779,M. Andre
+A01780,G. Björnsson
+A01781,Anthony Van Eyken
+A01782,John Kelly
+A01783,M. Schutzer
+A01784,Todd Valentic
+A01785,Moyra Malone
+A01786,John Buonocore
+A01787,Jiaen Ren
+A01788,C. J. Graf
+A01789,Delores Knipp
+A01790,Phil Erickson
+A01791,Michael Greffen
+A01792,Young-Sil Kwak
+A01793,R. Gilles
+A01794,Alexander V. Koustov
+A01795,Michael R. Luciuk
+A01796,Sydney Ullrich
+A01797,Bion Larson
+A01798,Marina T. Schmidt
+A01799,Mehdi Ghalamkarian Nejad
+A01800,Hayden Fast
+A01801,Alexander Koustov
+A01802,Peter Bankole
+A01803,Theresa Rexer
+A01804,Juha Vierinen
+A01805,Andres Spicher
+A01806,Andreas Kvammen
+A01807,P. Ponomarenko
+A01808,L. Lomidze
+A01809,Joseph D. Huba
+A01810,A. F. Kouznetsov
+A01811,Leslie J. Lamarche
+A01812,Carl L. Siefring
+A01813,Alanah M. Cardenas-O.'Toole
+A01814,Zihan Wang
+A01815,Kshitija Bharat Deshpande
+A01816,Adam Hoxeng
+A01817,Diana Loucks
+A01818,William Wright
+A01819,Christopher Oxendine
+A01820,P. Richards
+A01821,F. S. Rodrigues
+A01822,M. A. Milla
+A01823,J. M. Smith
+A01824,J. F. Arratia
+A01825,D. B. Lavoie
+A01826,Jyoti K. Atul
+A01827,Rameswar Singh
+A01828,Sanjib Sarkar
+A01829,Oleg V. Kravchenko
+A01830,Sushil K. Singh
+A01831,Prabal K. Chattopadhyaya
+A01832,Predhiman K. Kaw
+A01833,Roman A. Makarevich
+A01834,J. Araújo
+A01835,F. López
+A01836,S. Johansson
+A01837,A. Westman
+A01838,M. Bodin
+A01839,Matthew Zettergren
+A01840,Lisa J. Baddeley
+A01841,Mark E. Redden
+A01842,Kim Schreuders
+A01843,David Tarboton
+A01844,Jennifer Arrigo
+A01845,Chad R. Bryant
+A01846,D. Mori
+A01847,Joaquín Díaz Peña
+A01848,Michael Hirsch
+A01849,Olga Verkhoglyadova
+A01850,Victoriya V. Forsythe
+A01851,Yong Wang
+A01852,Cheng Wang
+A01853,Robert Gilies
+A01854,Lindsay V. Goodwin
+A01855,Thayananthan Thayaparan
+A01856,Magnus Ivarsen
+A01857,C. Negrea
+A01858,Olusegun F. Jonah
+A01859,Mark Redden
+A01860,M. T. Lundquist
+A01861,Michael Cousins
+A01862,John Jorgensen
+A01863,Federica M. Marcucci
+A01864,Ivan P. Pakhotin
+A01865,D. Scipion
+A01866,J. M. Apaza
+A01867,K. M. Kuyeng
+A01868,J. Sousasantos
+A01869,A. A. Massoud
+A01870,C. Padin
+A01871,Dag Lorentzen
+A01872,Stein Haaland
+A01873,Ingrid Mann
+A01874,Wojciech Miloch
+A01875,Shiva David
+A01876,Richard Chadwick
+A01877,Junho Back
+A01878,Khan-Hyuk Kim
+A01879,Nikolay Zabotin
+A01880,J. Throck Watson
+A01881,Romina Nikoukar
+A01882,Devin Huyghebaert
+A01883,Glenn Hussey
+A01884,Draven Galeschuk
+A01885,Jorge L. Chau
+A01886,Jean-Pierre St.-Maurice
+A01887,Paige Rutledge
+A01888,Adam Lozinsky
+A01889,Matthias Clahsen
+A01890,Ralph Latteck
+A01891,Meers Oppenheim
+A01892,Björn J. Gustavsson
+A01893,Daniel Billett
+A01894,Yizhe Zhang
+A01895,Mahith Madhanakumar
+A01896,Anton Kashcheyev
+A01897,Jaeheung Park
+A01898,Saif Marei
+A01899,Daniel Billet
+A01900,Kaili Song
+A01901,Kuntal Panwar
+A01902,Prabhu Babu
+A01903,Petre Stoica
+A01904,David L. Hysell
+A01905,Rafael L. A. Mesquita
+A01906,Enrique Rojas
+A01907,Matthew Young
+A01908,Keith Groves
+A01909,E. Ceren Kalafatoglu Eyiguler
+A01910,Warren Holley
+A01911,Kuldeep Pandey
+A01912,Yihao Xu
+A01913,Chen Zhou
+A01914,Yuqiang Zhang
+A01915,Yi Liu
+A01916,Tong Xu
+A01917,Bin Xu
+A01918,Jian Feng
+A01919,Ting Lan
+A01920,Haiyin Qing
+A01921,Zhongxin Deng
+A01922,Xiang Wang
+A01923,Xinmiao Zhang
+A01924,Jean-Pierre St.- Maurice
+A01925,Lisa M. Buschmann
+A01926,Tomo Hori
+A01927,Jean-Pierre St. Maurice
+A01928,Miguel Urco
+A01929,Jorge Chau
+A01930,Draven Galsechuk
+A01931,Remington Rohel
+A01932,Chris Watson
+A01933,Robert J. Redmon
+A01934,Donald Danskin
+A01935,Dimitry Pokhotelov
+A01936,Abdelhaq M. Hamza
+A01937,Charles S. Carrano
+A01938,C. Watson
+A01939,T. D. Kelly
+A01940,Karim Meziane
+A01941,Ian G. Richardson
+A01942,Benjamin Reid
+A01943,S. Patra
+A01944,Y. Wang
+A01945,Y.-Z. Ma
+A01946,Z.-Y. Xing
+A01947,Chintan Thakrar
+A01948,Nicolas Gachancipa
+A01949,Kshitija Deshpande
+A01950,Anna-Marie Bals
+A01951,K. Sievers
+A01952,A. Rynard
+A01953,Q. Ciardelli
+A01954,Yifei Pan
+A01955,Xiaomin Luo
+A01956,Ge Wang
+A01957,Ningbo Wang
+A01958,Zishen Li
+A01959,Kai Zhou
+A01960,Ang Liu
+A01961,Zhao Dongsheng
+A01962,Li Wang
+A01963,Li Chendong
+A01964,Tang Xu
+A01965,Zhang Kefei
+A01966,Sophie LeGresley
+A01967,Fei-Fei Wang
+A01968,Shu-Ji Sun
+A01969,Veettil Sreeja
+A01970,Marcio Aquino
+A01971,Joe Kinrade
+A01972,Gary Bust
+A01973,Vincenzo Romano
+A01974,Baiqi Ning
+A01975,Martin J. Jarvis
+A01976,Mike Terkildsen
+A01977,H. Mezaoui
+A01978,Irfan Azeem
+A01979,C. Honniball
+A01980,J. M. Holmes
+A01981,R. Athieno
+A01982,Irina Zakharenkova
+A01983,Elvira Astafyeva
+A01984,Iurii Cherniak
+A01985,Ivan Galkin
+A01986,Ben Reid
+A01987,Geoff Crowely
+A01988,Wanli Wu
+A01989,Cora E. Randall
+A01990,V. Lynn Harvey
+A01991,Sharon L. Sharon
+A01992,M. Joan Alexander
+A01993,Karthik Venkatarmani
+A01994,Russell Alan Stoneback
+A01995,Michael Perdue
+A01996,Matthew Depew
+A01997,Erik Stromberg
+A01998,Chad Fish
+A01999,Adam Reynolds
+A02000,Anthony Swenson
+A02001,Ted Tash
+A02002,Yury Yasyukevich
+A02003,Vladislav Demyanov
+A02004,Vladislav V. Demyanov
+A02005,Yury V. Yasyukevich
+A02006,Shuanggen Jin
+A02007,Maria A. Sergeeva
+A02008,Kai Guo
+A02009,Sreeja Vadakke Veettil
+A02010,Brian Jerald Weaver
+A02011,Zichun Xie
+A02012,João Francisco Galera Monico
+A02013,Baocheng Zhang
+A02014,Vinícius Amadeu Stuani Pereira
+A02015,Yidong Lou
+A02016,Alexander V. Kiselev
+A02017,Ilya V. Zhivetiev
+A02018,Ilya K. Edemskiy
+A02019,Semen V. Syrovatskii
+A02020,Boris M. Maletckii
+A02021,Artem M. Vesnin
+A02022,Yu. V. Yasyukevich
+A02023,Anna S. Yasyukevich
+A02024,E. I. Astafyeva
+A02025,Wenfeng Nie
+A02026,Adria Rovira-Garcia
+A02027,Dunyong Zheng
+A02028,Tianhe Xu
+A02029,Dongsheng Zhao
+A02030,Xueli Zhang
+A02031,Wang Li
+A02032,Qianxin Wang
+A02033,Craig M. Hancock
+A02034,Gethin Wyn Roberts
+A02035,Kefei Zhang
+A02036,Peicheng Zhang
+A02037,Hao Liu
+A02038,Shuanglei Cui
+A02039,Giulia D.'Angelo
+A02040,Mirko Piersanti
+A02041,Igino Coco
+A02042,Ning Baiqi
+A02043,Zhuang Chen
+A02044,Yujie Li
+A02045,Jiahua Zhang
+A02046,Lin Liu
+A02047,Corné Kreemer
+A02048,William C. Hammond
+A02049,Geoffrey Blewitt
+A02050,Sergey Sokolovsky
+A02051,Anthony J. Mannucci
+A02052,Brian Wilson
+A02053,Chris A. Mattmann
+A02054,Andrzej Krankowski
+A02055,Takuya Sori
+A02056,Takuya Tsugawa
+A02057,Michi Nishioka
+A02058,Zhe Yang
+A02059,Y. T. Jade Morton
+A02060,Shuli Song
+A02061,Wei Li
+A02062,Tong Dang
+A02063,Michael Negale
+A02064,Jeffrey Holmes
+A02065,Richard Parris
+A02066,Daniel Ober
+A02067,Eugene Dao
+A02068,Ralph Kelly
+A02069,J. Vincent Eccles
+A02070,Jack Hines
+A02071,Todd Pedersen
+A02072,Yuki Obana
+A02073,Naomi Maruyama
+A02074,Kumiko K. Hashimoto
+A02075,Mariangel Fedrizzi
+A02076,Changzhi Zhai
+A02077,Yibin Yao
+A02078,Wenjie Peng
+A02079,Jian Kong
+A02080,Jun Chen
+A02081,Zheng Cao
+A02082,James P. Conroy
+A02083,Wayne Scales
+A02084,Amir Zaghloul
+A02085,Lei Liu
+A02086,Yunxiang Liu
+A02087,Junseok Hong
+A02088,Jong-Kyun Chung
+A02089,Yong Ha Kim
+A02090,Anthony McCaffrey
+A02091,Xu Tang
+A02092,Nedjeljka Žagar
+A02093,Sergiy Vasylkevych
+A02094,Alan Wood
+A02095,Septi Perwitasari
+A02096,Xiaodong Ren
+A02097,Dengkui Mei
+A02098,Hang Liu
+A02099,Xiaohong Zhang
+A02100,Adrià Rovira-Garcia
+A02101,Mowen Li
+A02102,Zhenlong Fang
+A02103,Thomas Ulich
+A02104,Mainul Hoque
+A02105,Andrew J. Mazzella
+A02106,Marie Bals
+A02107,Shantanab Debchoudhury
+A02108,Rayan Imam
+A02109,Šimon Mackovjak
+A02110,Silvia Kostárová
+A02111,Jaroslav Chum
+A02112,Carsten Schmidt
+A02113,Patrick Hannawald
+A02114,Sabine Wüst
+A02115,Lisa Küchelbacher
+A02116,Vladimír Truhlík
+A02117,Petra Koucká Knížová
+A02118,Jaroslav Urbář
+A02119,Lukáš Randuška
+A02120,Filip Štempel
+A02121,Ján Kubančák
+A02122,Cesar E. Valladares
+A02123,Cesar De La Jara Sanchez
+A02124,Yao Chen
+A02125,W. F. Nie
+A02126,Bian-Long Zhao
+A02127,J.-C. Sun
+A02128,Simon Shepherd
+A02129,S. Koustov
+A02130,Hyeyeon Chang
+A02131,Jonathan Brandmeyer
+A02132,Yu-Hao Zhan
+A02133,Qiu-Ju Yang
+A02134,Feng Qiao
+A02135,Sheng Lu
+A02136,Yu-Lin Fang
+A02137,Jincheng Li
+A02138,Qi Liu
+A02139,Manuel Hernández-Pajares
+A02140,Enric Monte-Moreno
+A02141,Guangxia Wang
+A02142,Heng Yang
+A02143,Chuanding Zhang
+A02144,Li Yang
+A02145,Yaoyao Liu
+A02146,Emma-Claire Gurney
+A02147,Matthew K. Brown
+A02148,Ljubomir Nikolić
+A02149,Nathan Olfert
+A02150,Knut Stanley Jacobsen
+A02151,Sarah Schultz Beeck
+A02152,Petri Koskimaa
+A02153,Tibor Durgonics
+A02154,Feng Oiao
+A02155,Rong Wang
+A02156,Liang Zhang
+A02157,Leran Fu
+A02158,Peng Chen
+A02159,Fucai Tang
+A02160,Binyi Huang
+A02161,Yu Yin
+A02162,Guillermo González-Casado
+A02163,José Miguel Juan
+A02164,Cristhian C. Timote
+A02165,Jorge García-Mateos
+A02166,Raul Orús-Pérez
+A02167,Angela Aragon-Angel
+A02168,Long Tang
+A02169,Hong Zhang
+A02170,Yumei Li
+A02171,Fan Xu
+A02172,Fang Zou
+A02173,Yang Pan
+A02174,Benjamin T. Johnson
+A02175,Kyoko Watanabe
+A02176,Hidekatsu Jin
+A02177,Shohei Nishimoto
+A02178,Shinsuke Imada
+A02179,Toshiki Kawai
+A02180,Tomoko Kawate
+A02181,Perwitasari Septi
+A02182,A. B. O. Jensen
+A02183,Kunlin Yang
+A02184,Lingfeng Sun
+A02185,Jinling Wang
+A02186,Artem Smirnov
+A02187,S. V. Syrovatsky
+A02188,A. S. Shabalin
+A02189,Claudio Cesaroni
+A02190,S. Mainella
+A02191,Carlo Marcocci
+A02192,Emanuele Pica
+A02193,Andrey Olegovich Schiriy
+A02194,Alina Alexandrovna Pisarenko
+A02195,Hossein Etemadfard
+A02196,K.N.Toosi University of Technology
+A02197,Masoud Mashhadi Hossainali
+A02198,Jade Morton
+A02199,Sergey P. Moiseev
+A02200,Alexei V. Shindin
+A02201,Kseniya K. Grekhneva
+A02202,Viktoriya A. Pavlova
+A02203,Nikita S. Timukin
+A02204,Jayachandran P. Thayyil
+A02205,Christopher Watson
+A02206,Qinghe Zhang
+A02207,Fedor I. Vybornov
+A02208,Kseniya K. Grechneva
+A02209,Vladimir R. Khashev
+A02210,Yifan Wang
+A02211,Yunbin Yuan
+A02212,Min Li
+A02213,Ting Zhang
+A02214,Hao Geng
+A02215,Guofang Wang
+A02216,Gang Wen
+A02217,Renzhong Zhang
+A02218,Haorui Li
+A02219,Yunxiao Shen
+A02220,Jiayi Yang
+A02221,Andong Hu
+A02222,Zhuojun Han
+A02223,Ruimin Jin
+A02224,Longjiang Chen
+A02225,Weimin Zhen
+A02226,Huaiyun Peng
+A02227,Huiyun Yang
+A02228,Mingyue Gu
+A02229,Xiang Cui
+A02230,Guangwang Ji
+A02231,Silvia Pau
+A02232,Michael Pezzopane
+A02233,Enrico Zuccheretti
+A02234,Jiayu Hu
+A02235,Shengfeng Gu
+A02236,Yazhou Sun
+A02237,Bo Wang
+A02238,Bo Liu
+A02239,Alessio Pignalberi
+A02240,Francisco Azpilicueta
+A02241,Bruno Nava
+A02242,Dieter Bilitza
+A02243,O. A. Maltseva
+A02244,T. V. Nikitenko
+A02245,Tingwei Han
+A02246,Huijun Le
+A02247,Vladimir Truhlik
+A02248,Natalie Reeves
+A02249,Angkita Hazarika
+A02250,Yujin Cho
+A02251,Mei-Yu Chen
+A02252,Libo Liu
+A02253,Yiding Chen
+A02254,Ruilong Zhang
+A02255,I. A. Galkin
+A02256,S. Fridman
+A02257,John Bosco Habarulema
+A02258,O. Veliz
+A02259,Joshua J. Ruck
+A02260,Ling-Xin Zhao
+A02261,Dong-Xing Gao
+A02262,R. M. Hodnett
+A02263,Ciaran D. Beggan
+A02264,Darren M. Wright
+A02265,Marco Pietrella
+A02266,John J. Braun
+A02267,Jan-Peter Weiss
+A02268,Teresa VanHove
+A02269,Douglas Hunt
+A02270,Maggie Sleziak-Sallee
+A02271,Shaoyang Li
+A02272,Zhipeng Ren
+A02273,Tingting Yu
+A02274,Xinan Yue
+A02275,Xing Li
+A02276,Xin-An Yue
+A02277,Jian-Hui He
+A02278,Xu Zhou
+A02279,Yong-Liang Zhang
+A02280,Xiang-Yu Wang
+A02281,Longlong Niu
+A02282,Jiang Wan
+A02283,Wen Liu
+A02284,Olga Maltseva
+A02285,Tatyana Nikitenko
+A02286,Maryna Shulha
+A02287,Oleksandr Bogomaz
+A02288,Taras Zhivolup
+A02289,Oleksander Koloskov
+A02290,Andrey Zalizovski
+A02291,Volodymyr Lisachenko
+A02292,Dmytro Kotov
+A02293,Xiongqi Guan
+A02294,Xiangzhou Meng
+A02295,Xiujiang Pan
+A02296,Xiaoqing Zuo
+A02297,M. Ghezelbash
+A02298,Gary S. Bust
+A02299,C. Robert Clauer
+A02300,Wayne A. Scales
+A02301,C. Mitchell
+A02302,Jean-Marie Sleewaegen
+A02303,Connor D. Flynn
+A02304,Ankang Xie
+A02305,Biyan Chen
+A02306,E. I. Danilchuk
+A02307,François Lahaye
+A02308,Yongqing Su
+A02309,Jiguang Yue
+A02310,Yunfan Yang
+A02311,Seebany Datta-Barua
+A02312,Pau Llado Prat
+A02313,Yannick Béniguel
+A02314,Pierrick Hamel
+A02315,Rafal Sieradzki
+A02316,Jacek Paziewski
+A02317,Y. Beniguel
+A02318,Yu. Yaysukevich
+A02319,Artem Vesnin
+A02320,Anna Yasyukevich
+A02321,A. Vasiliev
+A02322,A. Garashchenko
+A02323,D. Sidorov
+A02324,Houpu Li
+A02325,Xiaopeng Gong
+A02326,Victor I. Zakharov
+A02327,M. A. Titova
+A02328,Alexei Dmitriev
+A02329,Svetlana Dolgacheva
+A02330,Oleg Troshichev
+A02331,Maria Pulinets
+A02332,Юрий Ясюкевич
+A02333,Natalia Perevalova
+A02334,Pierre F. Fogal
+A02335,Lisa M. LeBlanc
+A02336,James R. Drummond
+A02337,Robyn Fiori
+A02338,Mike Warrington
+A02339,Alan Stocker
+A02340,Christine Amory-Mazaudier
+A02341,Rolland Fleury
+A02342,Frederic Masson
+A02343,Sharafat Gadimova
+A02344,Emran Anas
+A02345,G. Li
+A02346,B. D. L. Opperman
+A02347,Alvaro Santamaría-Gómez
+A02348,Jean-Paul Boy
+A02349,Florent Feriol
+A02350,Médéric Gravelle
+A02351,Sylvain Loyer
+A02352,Samuel Nahmani
+A02353,Joëlle Nicolas
+A02354,José Luis García Pallero
+A02355,Aurélie Panetier
+A02356,Arnaud Pollet
+A02357,Pierre Sakic
+A02358,Guy Wöppelmann
+A02359,Yufeng Hu
+A02360,A. K. Kuzmin
+A02361,A. M. Merslyi
+A02362,O. V. Nikiforov
+A02363,A. M. Sadovsky
+A02364,A. A. Pozin
+A02365,Yu.A. Shchukin
+A02366,Y. N. Potanin
+A02367,Peter Kieft
+A02368,Alan Dodson
+A02369,Ian DesJardin
+A02370,Christine Hartzell
+A02371,В. И. Захаров
+A02372,Jean De Dieu Nibigira
+A02373,Y. L. Andalsvik
+A02374,Y.-L. Zhang
+A02375,B.-C. Zhang
+A02376,Z. Y. Xing
+A02377,J.-P. St. Maurice
+A02378,Angeline Gail Burrell
+A02379,Timothy K. Yeoman
+A02380,Stephen E. Milan
+A02381,Russell Stoneback
+A02382,Muhammad Mubasshir Shaikh
+A02383,A. Coster
+A02384,E. R. De Paula
+A02385,E. A. Kherani
+A02386,A. Fæhn Follestad
+A02387,J. Van Den IJssel
+A02388,Roger Haagmans
+A02389,Y. V. Yasyukevich
+A02390,B. Maletckii
+A02391,Semen Syrovatskii
+A02392,N. Guendouz
+A02393,S. Dutta
+A02394,Robert Burston
+A02395,Hannah Villeneuve
+A02396,Michael Warrington
+A02397,Mykhaylo V. Lyashenko
+A02398,Ljubov Pustovalova
+A02399,Dun-Yong Zheng
+A02400,Wen-Cheng Zhou
+A02401,Li-Ming Wang
+A02402,Zhao-Hui Xiong
+A02403,Jade A. Reidy
+A02404,M. Wild
+A02405,Junhong Lv
+A02406,Changrong Ye
+A02407,Zheyu Zhan
+A02408,Haoyu Liu
+A02409,Qingfeng Pei
+A02410,Xv Li
+A02411,Justin Marchioni
+A02412,Alison Kelsall
+A02413,Ryan Riddolls
+A02414,Marana Chiu
+A02415,Hai-Sheng Zhao
+A02416,Le Cao
+A02417,Yuan-Yuan Zhang
+A02418,Kian Sartipzadeh
+A02419,Njål Gulbrandsen
+A02420,Mohammed Mainul Hoque
+A02421,Norbert Jakowski
+A02422,Fabricio S. Prol
+A02423,S. R. Granados
+A02424,Alan G. Wood
+A02425,Sharon L. Vadas
+A02426,Cosme Figueiredo
+A02427,Erich Becker
+A02428,Neil P. Hindley
+A02429,Katrina Bossert
+A02430,Alex Timothy Chartier
+A02431,J. Steele
+A02432,G. Sugar
+A02433,Sarah K. Vines
+A02434,Pasha Ponomarenko
+A02435,Pierdavide Coïsson
+A02436,Haris Haralambous
+A02437,Fabricio Prol
+A02438,Bruno S. Zossi
+A02439,Franco D. Medina
+A02440,Trinidad Duran
+A02441,Dario J. Zamora
+A02442,Ana G. Elias
+A02443,Bruno Zolesi
+A02444,C. Bianchi
+A02445,A. Meloni
+A02446,Lj. R. Cander
+A02447,Roberta Tozzi
+A02448,Mohammad Afraz Ahmed
+A02449,Warrick Ball
+A02450,Peng Xiao
+A02451,Liang Chen
+A02452,David Siddle
+A02453,Yuri Shprits
+A02454,Nicholas Pedatella
+A02455,Bernhard Haas
+A02456,Dedong Wang
+A02457,Arun Kumar Singh
+A02458,Xingqun Zhan
+A02459,Xin Liu
+A02460,Sophie Maguire
+A02461,Gareth Dorrian
+A02462,Roman Vasilyev
+A02463,Konstantin Ratovsky
+A02464,Artem Setov
+A02465,Maria Globa
+A02466,Alexander Kiselev
+A02467,Shuangshuang Shi
+A02468,Yiming Quan
+A02469,Yu Chen
+A02470,Zemin Hao
+A02471,Xing Wang
+A02472,Robert E. Hibbins
+A02473,A. White
+A02474,K. B. Baker
+A02475,J. R. Dudeney
+A02476,Mike Pinnock
+A02477,T. B. Jones
+A02478,E. C. Thomas
+A02479,J. -P. Villain
+A02480,Jean-Claude Cerisier
+A02481,C. Senior
+A02482,C. Hanuise
+A02483,R. D. Hunsucker
+A02484,J. Koehler
+A02485,E. Nielsen
+A02486,R. Pellinen
+A02487,Anthony D. M. Walker
+A02488,Hisao Yamagishi
+A02489,Hasan Bahcivan
+A02490,Ray A. Greenwald
+A02491,Michael C. Kelley
+A02492,Matthias Huber
+A02493,J.-H. Yee
+A02494,X. Zhu
+A02495,Hamza A. M.
+A02496,W. Lyatsky
+A02497,A. V. Kustov
+A02498,D. Andre
+A02499,N. Dubouloz
+A02500,Mehdi Bouhram
+A02501,D. Delcourt
+A02502,M. Malingre
+A02503,Chris E. Meek
+A02504,Alan H. Manson
+A02505,C. M. Hall
+A02506,J. R. Jasperse
+A02507,R. Pottelette
+A02508,I. Roth
+A02509,Jean-Paul Villain
+A02510,L. V. Benkevitch
+A02511,David Boteler
+A02512,Robyn A. Fiori
+A02513,E. E. Kadochnikov
+A02514,K. D. Ruzic
+A02515,Jiahui Hu
+A02516,Sarah McDonald
+A02517,Aurora López Rubio
+A02518,Andreas Schiffler
+A02519,Patrick T. Newell
+A02520,G. E. Hall
+A02521,Zolile Mtumela
+A02522,Judy A. E. Stephenson
+A02523,H. Liu
+A02524,Kyle Ruzic
+A02525,Kevin T. Sterne
+A02526,Andrew Yau
+A02527,James Wilson
+A02528,Nicolas Ringas
+A02529,Oleg I. Berngardt
+A02530,K. Kotyk
+A02531,K. Krieger
+A02532,R. A. Rohel
+A02533,Karl M. Laundal
+A02534,B. H. Qu
+A02535,Zhi-wei Wang
+A02536,Ming Wang
+A02537,J. Y. Li
+A02538,H. Zhang
+A02539,Drew Hamilton
+A02540,Sebastien Guillon
+A02541,Patrick Toner
+A02542,Louis Gibson
+A02543,Ian Mann
+A02544,Meghan Goodchild
+A02545,Shahira Khair
+A02546,Amber Leahey
+A02547,Kaitlin Newson
+A02548,Lee Wilson
+A02549,Gordon G. Shepherd
+A02550,Marianna G. Shepherd
+A02551,Robert Schaefer
+A02552,Lying Qian
+A02553,Kun Wu
+A02554,Ram Singh
+A02555,Tarun Kumar Pant
+A02556,S. Sripathi
+A02557,Diptiranjan Rout
+A02558,Danny E. Scipion
+A02559,Jone Peter Reistad
+A02560,Anders Ohma
+A02561,M. R. Patrick
+A02562,B. K. Humberset
+A02563,Qiang Zhang
+A02564,Yong C.-M. Liu
+A02565,Zhiwei Wang
+A02566,Jianyong Lu
+A02567,Yewen Wu
+A02568,Xiangcai Chen
+A02569,Hua Zhang
+A02570,Haiyan Guan
+A02571,A. A. Samsonov
+A02572,Graziella Branduardi-Raymont
+A02573,T. Edwards
+A02574,Balan Nanan
+A02575,Si-Han Zhao
+A02576,Ya-Ting Xiong
+A02577,Hui-Ting Feng
+A02578,E. Iorfida
+A02579,E. Doornbos
+A02580,W. D. Fu
+A02581,H. S. Fu
+A02582,W. Z. Zhang
+A02583,J. B. Cao
+A02584,E. K. Day
+A02585,S. Milan
+A02586,E. Chané
+A02587,Gary Zank
+A02588,Bhagyashree Waghule
+A02589,Jennifer L. Gannon
+A02590,B. Nilam
+A02591,S. Tulasi Ram
+A02592,B. Remya
+A02593,Deeksha Rai
+A02594,A. P. Dimri
+A02595,Anil Raghav
+A02596,D. Chakrabarty
+A02597,Abhishek Kumar
+A02598,Shivam Parashar
+A02599,Vipin K. Yadav
+A02600,E. Krämer
+A02601,M. Hamrin
+A02602,H. Gunell
+A02603,Audrey Schillings
+A02604,Sophie J. Maguire
+A02605,E. M. Henley
+A02606,Yasir Soobiah
+A02607,J. C. Coxon
+A02608,Matti Ala-Lahti
+A02609,Austin Brenner
+A02610,Gábor Tóth
+A02611,Daniel Welling
+A02612,Timothy Keebler
+A02613,Rebecca Ghidoni
+A02614,Spogli Luca
+A02615,Dorrian Gareth
+A02616,Mevius Maaijke
+A02617,Flisek Pawel
+A02618,Beser Katarzyna
+A02619,Forte Biagio
+A02620,Grzesiak Marcin
+A02621,Kotulak Kacper
+A02622,Boyde Ben
+A02623,Pozoga Mariusz
+A02624,Matyjasiak Barbara
+A02625,Przepiorka-Skup Dorota
+A02626,Wood Alan
+A02627,Themens David
+A02628,Zucca Pietro
+A02629,Šteinbergs Jānis
+A02630,Kinsler Paul
+A02631,Lu Tianchu
+A02632,Cesaroni Claudio
+A02633,Rothkaehl Hanna
+A02634,Krankowski Andrzej
+A02635,Alfonsi Lucilla
+A02636,Maestri Tiziano
+A02637,Hyangpyo Kim
+A02638,Tina Mirzaamin
+A02639,Yvan J. Orsolini
+A02640,Patrick J. Espy
+A02641,Christian T. Rhodes
+A02642,X. J. Liu
+A02643,Hong-Qiao Hu
+A02644,K. Zhao
+A02645,Robert B. Kerr
+A02646,Jonathan J. Makela
+A02647,Sudha Kapali
+A02648,Mike A. Migliozzi
+A02649,Juanita Riccobono
+A02650,V. Ponomarenko Pavlo
+A02651,Blessing Iserhienrhien
+A02652,Ermanno Amata
+A02653,J.-P. Villain
+A02654,Danila Ambrosino
+A02655,B. A. Carter
+A02656,John C. Devlin
+A02657,Andrew J. McDonald
+A02658,Carley Martin
+A02659,Karl Laundal
+A02660,Jens Christian Hessen
+A02661,Spencer Mark Hatch
+A02662,Frederick W. Menk
+A02663,Stephan Buchert
+A02664,Shin'ya Nakano
+A02665,Sachin Alexander Reddy
+A02666,Aoi Nakamizo
+A02667,Shigeru Fujita
+A02668,Tamás Bozóki
+A02669,J. Sakai
+A02670,Timothy E. Theurer
+A02671,Michael Lockwood
+A02672,Bei-Chen Zhang
+A02673,Rui-Yuan Liu
+A02674,G. Scoular
+A02675,S. M. Imber
+A02676,E. D. P. Cousins
+A02677,C. Blais
+A02678,Masakazu Watanabe
+A02679,Xi Yan
+A02680,Alexandre V. Koustov
+A02681,J. Elliott
+A02682,Liam M. Kilcommons
+A02683,A. Willer
+A02684,Liying Qian
+A02685,Alan G. Burns
+A02686,Kevin Pham
+A02687,Frederick Wilder
+A02688,Pavel N. Mager
+A02689,D. Yu. Klimushkin
+A02690,E. S. Miller
+A02691,Mary Lou West
+A02692,L. Trenchi
+A02693,Jeffery Spaleta
+A02694,S. N. M. Azizul Hoque
+A02695,Anik Alvi
+A02696,Md. Readul Mahmud
+A02697,Sajib Sakhawat
+A02698,Mafijul Islam Bhuiyan
+A02699,R. A. Makarevitch
+A02700,Jean-Michel Bosqued
+A02701,Harri Laakso
+A02702,Andrew Fazakerley
+A02703,A. Nakao
+A02704,M. R. Collier
+A02705,A. Yamazaki
+A02706,H. Rème
+A02707,Gary A. Abel
+A02708,I. J. Coleman
+A02709,M. Fujimoto
+A02710,Varavut Limpasuvan
+A02711,R. J. Barnes
+A02712,Nicholas M. Pedatella
+A02713,Ningchao Wang
+A02714,David E. Siskind
+A02715,Willem E. Van Caspel
+A02716,L. Qian
+A02717,K. Kuyeng
+A02718,J. M. Mclnerney
+A02719,Niklas Grimmich
+A02720,S. Gasparini
+A02721,S. J. Walker
+A02722,M. Madelaire
+A02723,J. M. Bosqued
+A02724,Yulia Bogdanova
+A02725,Ruiyuan Liu
+A02726,H. Yang
+A02727,S. B. Malinga
+A02728,P. Dyson
+A02729,Donald B. Muldrew
+A02730,Y. Kitanoya
+A02731,T. Abe
+A02732,James Whittington
+A02733,Sebastien De Larquier
+A02734,Edhem Custovic
+A02735,Thomas A. Kane
+A02736,E. M. Grono
+A02737,K. N. Yakymenko
+A02738,Z. Abooali Zadeh
+A02739,M. Zettergren
+A02740,T. Sundberg
+A02741,G. E. Kadochnikov
+A02742,J. Wiid
+A02743,T. Aoki
+A02744,Victor Pinto
+A02745,Adriana Settino
+A02746,Kyoung-Joo Hwang
+A02747,Zoltán Vörös
+A02748,Cyril Simon Wedlund
+A02749,Tomoaki Tomoaki
+A02750,Brandon Burkholder
+A02751,Antea J. Coster
+A02752,Robert Schwab
+A02753,Chaosong Huang
+A02754,Xiang Deng
+A02755,Ailan Lan
+A02756,Ji Wu
+A02757,Jiaojiao Zhang
+A02758,Wei Wang
+A02759,Hongbin Qiu
+A02760,Dieter A. André
+A02761,J. B. Pfeifer
+A02762,M. Maguire
+A02763,R. Osterried
+A02764,M. McKibben
+A02765,J. Mu
+A02766,A. Ortlepp
+A02767,S. R. Dueck
+A02768,J.-F. Cecile
+A02769,J.-P. St- Maurice
+A02770,K. Morita
+A02771,W. B. Lyatsky
+A02772,Gordon James
+A02773,David Kendall
+A02774,Réjean Michaud
+A02775,John Samson
+A02776,Kile Baker
+A02777,John MacDougall
+A02778,H. Fujiwara
+A02779,Y.-K. Tung
+A02780,Diego Sanchez
+A02781,Nathaniel Frissell
+A02782,William Engelke
+A02783,John Michael Ruohoniemi
+A02784,T. W. David
+A02785,Chizurumoke M. Michael
+A02786,A. T. Talabi
+A02787,A. E. Ajetunmobi
+A02788,T. D. Awoyinka
+A02789,S. O. Kareem
+A02790,Juliano Moro
+A02791,Alessandro J. De Abreu
+A02792,Christiano G. M. Brum
+A02793,José H. Fernandez
+A02794,José V. Bageston
+A02795,Oleg Berngardt
+A02796,Ivan Lavygin
+A02797,Joseph Olwendo
+A02798,Pierre Cilliers
+A02799,U. Ramirez
+A02800,Harneet Sangha
+A02801,Hsien-Ming Li
+A02802,Jih-Hong Shue
+A02803,Michael Ruohoniemi
+A02804,R. K. Choudhary
+A02805,Smitha V. Thampi
+A02806,Ryan McGranaghan
+A02807,Anil Bhardwaj
+A02808,J. F. Helmboldt
+A02809,A. L. Lan
+A02810,J. Y. Yan
+A02811,L. Wu
+A02812,Jiao-Jiao Zhang
+A02813,H. B. Qiu
+A02814,Jonathan Ng
+A02815,Roger Roglans
+A02816,Chrystal Moser
+A02817,Francesca Di Mare
+A02818,Connor A. Feltman
+A02819,Craig Kletzing
+A02820,Rhyan Sawyer
+A02821,Toru Takahashi
+A02822,Tim K. Yeoman
+A02823,Minjie Fan
+A02824,Caleb Miller
+A02825,Debashis Paul
+A02826,Thomas C. M. Lee
+A02827,Mike Lockwood
+A02828,Tucker Evans
+A02829,Quan Qi Shi
+A02830,Alexander W. Degeling
+A02831,Motoharu Nowada
+A02832,An Min Tian
+A02833,Timo Pitkänen
+A02834,Alicreance Hiyadutuje
+A02835,C. A. Topliff
+A02836,A. Ø. Hovland
+A02837,Ercha Aa
+A02838,Hyosub Kil
+A02839,William Rideout
+A02840,Robert Kerr
+A02841,I. J. Kelley
+A02842,H. K. Sangha
+A02843,S. J. Wharton
+A02844,J. Malone-Leigh
+A02845,Xueyi Wang
+A02846,Sritam Hajra
+A02847,Nirvikar Dashora
+A02848,J. Solomon Ivan
+A02849,Dong-Hee Kim
+A02850,Jeong-Han Kim
+A02851,Maksim A. Chelpanov
+A02852,Guo-Jun Li
+A02853,A. R. Smith
+A02854,Dogacan S. Ozturk
+A02855,P. Delamere
+A02856,H. Kim
+A02857,V. Sai Gowtam
+A02858,Charles Owolabi
+A02859,Maria Chloi Katrougkalou
+A02860,Anita Kullen
+A02861,Lei Cai
+A02862,Lorenz Roth
+A02863,Huiting Feng
+A02864,Huixuan Qiu
+A02865,Yating Xiong
+A02866,Huixin Liu
+A02867,Bianlong Zhao
+A02868,Xiangyu Wang
+A02869,Hang Li
+A02870,Shuji Sun
+A02871,Zhong-Xin Deng
+A02872,C. O.'Brien
+A02873,Dibyendu Sur
+A02874,Geetashree Kakoti
+A02875,Mala S. Bagiya
+A02876,N. Brindley
+A02877,G. P. Geethakumari
+A02878,I. I. Virtanen
+A02879,M. K. Mooney
+A02880,G. Kennedy
+A02881,M. Pedersen
+A02882,M. Myllymaa
+A02883,Brian Anderson
+A02884,B. L. Burkholder
+A02885,D. E. Da Silva
+A02886,Y.-M. Huang
+A02887,J. Dorelli
+A02888,N. Bessho
+A02889,S. Merkin
+A02890,Heqiucen Xu
+A02891,Ichiro Tomizawa
+A02892,Dalia Buresova
+A02893,Kiyokazu Koga
+A02894,Liudmila I. Gromova
+A02895,S. V. Gromov
+A02896,L. M. Malysheva
+A02897,Yen-Jung Joanne Wu
+A02898,Giuseppe Consolini
+A02899,Virgilio Quattrociocchi
+A02900,Tommaso Alberti
+A02901,Paola De Michelis
+A02902,Jiangzhao Ai
+A02903,Yongping Li
+A02904,Xianguo Zhang
+A02905,Chao Xiao
+A02906,Guangming Chen
+A02907,Xiaoliang Zheng
+A02908,Zhiliang Zhang
+A02909,Pietro Ubertini
+A02910,Simone Benella
+A02911,Jeong-Heon Kim
+A02912,Sujin Kim
+A02913,Taeyong Yang
+A02914,Sung-Hong Park
+A02915,Eun-Kyung Lim
+A02916,Jongil Jung
+A02917,Hosik Kam
+A02918,Jaewook Lee
+A02919,Hwanhee Lee
+A02920,Ji-Hyun Yoo
+A02921,Haein Lee
+A02922,Ryun-Young Kwon
+A02923,Jungjoon Seough
+A02924,Uk-Won Nam
+A02925,Woo Kyoung Lee
+A02926,Jongdae Sohn
+A02927,Jaeyoung Kwak
+A02928,Hannah Kwak
+A02929,Rok-Soon Kim
+A02930,Yeon-Han Kim
+A02931,Kyung-Suk Cho
+A02932,Jaejin Lee
+A02933,Hoang Ngoc Huy Nguyen
+A02934,Rahul Rathi
+A02935,Fiona Ball
+A02936,Srimoyee Samaddar
+A02937,Nora H. Kleinknecht
+A02938,Nora H. Stray
+A02939,Rosmarie J. De Wit
+A02940,P. G. Richards
+A02941,M. E. Hagan
+A02942,K. Häusler
+A02943,S. Bruinsma
+A02944,J. Klein
+A02945,T. Nakamura
+A02946,M. K. Ejiri
+A02947,T. D. Kawahara
+A02948,P. P. Joshi
+A02949,D. J. Fisher
+A02950,Alan Burns
+A02951,R. Sekar
+A02952,B. Veenadhari
+A02953,B. S. Lanchester
+A02954,S.-I. Kim
+A02955,K.-H. Kim
+A02956,H.-J. Kwon
+A02957,H. Jin
+A02958,T. S. Horbury
+A02959,Q. H. Zhang
+A02960,Tsige Y. Atilaw
+A02961,Zama T. Katamzi-Joseph
+A02962,H. Ghadjari
+A02963,Mariusz Pożoga
+A02964,James H. Lane
+A02965,Steve E. Milan
+A02966,Sanni Hoilijoki
+A02967,Sebastian Von Alfthan
+A02968,L. M. Bjoland
+A02969,X. Chen
+A02970,Å. Skjæveland
+A02971,M. R. Wessel
+A02972,Stein E. Haaland
+A02973,Takuji Nakamura
+A02974,Debrup Hui
+A02975,Archana Bhattacharyya
+A02976,M. Voiculescu
+A02977,T. Nygrén
+A02978,A. T. Aikio
+A02979,Sk Samin Kader
+A02980,K. Niranjan
+A02981,Temitope Ojebisi
+A02982,Malkia Kelelue
+A02983,Solomon Degefa
+A02984,Kibrop Webber
+A02985,Sumanjit Chakraborty
+A02986,A. B. Workayehu
+A02987,Maxim V. Klimenko
+A02988,Irina E. Zakharenkova
+A02989,Vladimir V. Klimenko
+A02990,Renata Yu. Lukianova
+A02991,Iurii V. Cherniak
+A02992,D. Xiang
+A02993,R. V. Reddy
+A02994,Sandeep Kumar
+A02995,C. Rathod
+A02996,B. Srinivasan
+A02997,H. M. John
+A02998,B. Forte
+A02999,I. Astin
+A03000,T. Allbrook
+A03001,A. Arnold
+A03002,B. C. Vani
+A03003,Hiroatsu Sato
+A03004,A. A. Sinevich
+A03005,A. A. Chernyshov
+A03006,D. V. Chugunin
+A03007,Alexey V. Oinats
+A03008,M. M. Mogilevsky
+A03009,B.-B. Tang
+A03010,Longchang Sun
+A03011,Jiyao Xu
+A03012,Tomokazu Oigawa
+A03013,Yunosuke Nagafusa
+A03014,Hiroyuki Shinagawa
+A03015,Haruto Koike
+A03016,Prakash Poudel
+A03017,E. Botek
+A03018,S. A. Thaller
+A03019,Stan W. H. Cowley
+A03020,Qingyu Zhu
+A03021,Vojto Rušin
+A03022,Marcin Grzesiak
+A03023,Barbara Matyjasiak
+A03024,Dorota Przepiórka
+A03025,Katarzyna Beser
+A03026,Lukasz Tomasik
+A03027,Hanna Rothkaehl
+A03028,Helena Ciechowska
+A03029,Clayton Cantrall
+A03030,Paul Tenfjord
+A03031,Kristian Snekvik
+A03032,Luke A. Jenner
+A03033,Gareth D. Dorrian
+A03034,Vladimir V. Safargaleev
+A03035,Alexander E. Kozlovsky
+A03036,Valery M. Mitrofanov
+A03037,Emil A. Prikryl
+A03038,Pavel Šťastný
+A03039,Maroš Turňa
+A03040,Martina Zeleňáková
+A03041,Charlotte M. Van Hazendonk
+A03042,Kristina Collins
+A03043,John Gibbons
+A03044,Aidan Montare
+A03045,David Kazdan
+A03046,Darren Kalmbach
+A03047,David Swartz
+A03048,Robert Benedict
+A03049,Veronica Romanek
+A03050,Rachel Boedicker
+A03051,William Liles
+A03052,David G. McGaw
+A03053,James Farmer
+A03054,Gary Mikitin
+A03055,Joseph Hobart
+A03056,George Kavanagh
+A03057,M. De Lauretis
+A03058,M. Regi
+A03059,P. Francia
+A03060,G. Pallocchia
+A03061,Erxiao Liu
+A03062,Xuyang Teng
+A03063,Lei Qiao
+A03064,D. J. Price
+A03065,J. M. Chadney
+A03066,N. F. Blagoveshchenskaya
+A03067,T. D. Borisova
+A03068,A. S. Kalishin
+A03069,R. M. Shore
+A03070,L. Orr
+A03071,Karlheinz J. Trattner
+A03072,R. P. Sawyer
+A03073,Lingchen Sun
+A03074,Ying
+A03075,Xiaochao Song
+A03076,C. Norgren
+A03077,I. Hunstad
+A03078,N. Linty
+A03079,O. Teizo
+A03080,F. Dovis
+A03081,J. Ward
+A03082,Nataly Blagoveshchenskaya
+A03083,Tatiana Borisova
+A03084,Alexey Kalishin
+A03085,Ivan Egorov
+A03086,Ingemar Haggstrom
+A03087,Fasil Tesema
+A03088,Xing Kong
+A03089,Shengsheng Shi
+A03090,Fengjv Chen
+A03091,Xing-Yu Li
+A03092,Yong-Fu Wang
+A03093,Zi-Kang Xie
+A03094,Zhi-Yang Liu
+A03095,Hua-Yu Zhao
+A03096,Yi-Xin Sun
+A03097,Tshimangadzo Merline Matamba
+A03098,Shuo Wang
+A03099,Qiang Hu
+A03100,Hiroshi Hasegawa
+A03101,Ensol Kim
+A03102,Terence W. Bullett
+A03103,Ning Zhang
+A03104,Wenbo Li
+A03105,P. A. Inchin
+A03106,M. Bramberger
+A03107,C. Heale
+A03108,Xinlong Liu
+A03109,Donghe Zhang
+A03110,P.-L. Blelly
+A03111,A. Maute
+A03112,J. Norberg
+A03113,Yong Ren
+A03114,Minghui Zhu
+A03115,Lei Dai
+A03116,Walter Gonzalez
+A03117,Xiukuan Zhao
+A03118,Jianfeng Dai
+A03119,Yuyan Yang
+A03120,Bowei Liu
+A03121,Philippe Escoubet
+A03122,Binbin Tang
+A03123,Diana C. Loucks
+A03124,Jacob P. Willis
+A03125,Nicholas D. Deschenes
+A03126,Tonghui Wang
+A03127,Xu Wang
+A03128,Kailai Wang
+A03129,Jinjuan Liu
+A03130,C.-H. Lin
+A03131,D. S. Evans
+A03132,X.-Y. Zhou
+A03133,B. T. Tsurutani
+A03134,W. D. Gonzalez
+A03135,J. K. Arballo
+A03136,C.-I. Meng
+A03137,C. Anderson
+A03138,H.-C. I. Yiu
+A03139,A. Aruliah
+A03140,E. Griffin
+A03141,T. Davies
+A03142,P. L. Dyson
+A03143,Arthur D. Richmond
+A03144,Umberto Villante
+A03145,P. Ballatore
+A03146,N. Vilmer
+A03147,M. Pick
+A03148,L. Xu
+A03149,J. S. Xu
+A03150,R. A. Drayton
+A03151,L. Huo
+A03152,H. A. Elliott
+A03153,J. L. Horwitz
+A03154,S. P. Slinker
+A03155,J. A. Fedder
+A03156,X. Vallières
+A03157,R. André
+A03158,Siqing Liu
+A03159,C. L. Ellington
+A03160,Takashi Tanaka
+A03161,Victoria Wilder
+A03162,J. T. Gosling
+A03163,R. M. Skoug
+A03164,E. D. Pettigrew
+A03165,G. V. Haines
+A03166,E. P. Cousins
+A03167,A. Boudouridis
+A03168,Zerefsan Kaymaz
+A03169,Lutz Rastätter
+A03170,Anasuya L. Aruliah
+A03171,Alvaro J. Ribeiro
+A03172,Raymond A. Greenwald
+A03173,Kevin A. Sterne
+A03174,A. P. Van Eyken
+A03175,W. Denig
+A03176,M. A. Hapgood
+A03177,M. N. Wild
+A03178,R. Stamper
+A03179,M. Taylor
+A03180,F. Pitout
+A03181,R. Behlke
+A03182,T. Hansen
+A03183,S. K. Morley
+A03184,D. Alcaydé
+A03185,E. D. Tereshchenko
+A03186,N. Yu. Romanova
+A03187,E. Borälv
+A03188,C. Perry
+A03189,P. J. Lacroix
+A03190,Y. Obuchi
+A03191,B. J. Watkins
+A03192,E. R. Sánchez
+A03193,A. M. Ronksley
+A03194,Quan-Qi Shi
+A03195,N. Jeni Victor
+A03196,C. Panneerselvam
+A03197,C. P. Anil Kumar
+A03198,H. Khan
+A03199,E. Kolesnikova
+A03200,M. J. Brittnacher
+A03201,D. J. McComas
+A03202,L. Newitt
+A03203,D. J. Southwood
+A03204,B. Hubert
+A03205,S. V. Badman
+A03206,J. D. Nichols
+A03207,J.-C. Zhang
+A03208,D. L. DeZeeuw
+A03209,H. J. Kim
+A03210,Junga Hwang
+A03211,C. N. Lee
+A03212,Benoît Hubert
+A03213,Jun Yang
+A03214,An-Min Tian
+A03215,A. D. Lahiff
+A03216,J. Shi
+A03217,Iannis Dandouras
+A03218,H. Nilsson
+A03219,K. U. Kaila
+A03220,P. Norqvist
+A03221,P. Stauning
+A03222,H. J. Laurens
+A03223,A. W. Wernik
+A03224,Sui-Yan Fu
+A03225,Zu-Yin Pu
+A03226,Bagrat Mailyan
+A03227,H. Alleyne
+A03228,N. Cornilleau-Wehrlin
+A03229,A. Fazerkerley
+A03230,H. Boholm
+A03231,B. Jackal
+A03232,J. D. Kelly
+A03233,I. Krauklis
+A03234,M. Maksimovic
+A03235,P. M. E. Décréau
+A03236,J. J. Schott
+A03237,F. Sedgemore-Schulthess
+A03238,V. Safargaleev
+A03239,A. Serebryanskaya
+A03240,E. Pchelkina
+A03241,A. Vasilyev
+A03242,Fang He
+A03243,Amarjargal Bat-Erdene
+A03244,P. Krcelic
+A03245,Xuguang Cai
+A03246,Richard W. Eastes
+A03247,J. Correira
+A03248,William E. McClintock
+A03249,Quan Gan
+A03250,Saurav Aryal
+A03251,F. I. Laskar
+A03252,D. K. Karan
+A03253,Junjie Chen
+A03254,Giulia Lovati
+A03255,Francesco Berrilli
+A03256,B. Mmame
+A03257,J. P. S. Rash
+A03258,Nickolay Ivchenko
+A03259,I. Virtanen
+A03260,M. L. Mekuriaw
+A03261,Beichen Zhang
+A03262,Wentao Huang
+A03263,Chao Ban
+A03264,Joshua Dreyer
+A03265,Pål G. Ellingsen
+A03266,Adriana M. Gulisano
+A03267,Ray F. Hidalgo Ramirez
+A03268,Alexandre A. Rodel
+A03269,John P. McCormack
+A03270,Sam Tuttle
+A03271,Robert Fear
+A03272,Komal Kumari
+A03273,Tianyu Cao
+A03274,Yifan Lu
+A03275,A. Eltrass
+A03276,Alireza Mahmoudian
+A03277,Christer Van Der Meeren
+A03278,R. A. Fallows
+A03279,W. A. Coles
+A03280,D. McKay-Bukowski
+A03281,M. Postila
+A03282,Th. Ulich
+A03283,C.-F. Enell
+A03284,T. Iinatti
+A03285,M. Lehtinen
+A03286,M. Orispää
+A03287,L. Roininen
+A03288,M. Brentjens
+A03289,N. Ebbendorf
+A03290,M. Gerbers
+A03291,T. Grit
+A03292,P. Gruppen
+A03293,H. Meulman
+A03294,M. J. Norden
+A03295,J.-P. De Reijer
+A03296,A. Schoenmakers
+A03297,K. Stuurwold
+A03298,R. Kuula
+A03299,Ellen Cousins
+A03300,Thomas R. P. Heine
+A03301,X.-C. Chen
+A03302,T. Peek
+A03303,E. A. Tremsina
+A03304,Åsmund Steen Skjæveland
+A03305,Xinzhao Chu
+A03306,Zhibin Yu
+A03307,Z. A. Harrison
+A03308,J. L. Currie
+A03309,Attila Komjathy
+A03310,Esayas B. Shume
+A03311,Hans-Henrik Benzon
+A03312,Mark D. Butala
+A03313,Per Høeg
+A03314,M. Maimaiti
+A03315,A. V. Frank-Kamenetsky
+A03316,S. Manu
+A03317,A. Kiene
+A03318,Changyong He
+A03319,Yi Shen
+A03320,D. L. Green
+A03321,Geoff Reeves
+A03322,Lucille Turc
+A03323,Clare Watt
+A03324,Wojciech Hajdas
+A03325,Ondrej Santolik
+A03326,Aurelie Marchaudon
+A03327,Benoit Hubert
+A03328,Jasmine Sandhu
+A03329,Hayley Allison
+A03330,A. Chulliat
+A03331,Shailendra Saini
+A03332,Rupesh M. Das
+A03333,Shenggao Yang
+A03334,Yaguang Zhu
+A03335,Xu Yang
+A03336,Chao Tian
+A03337,Fulu Yue
+A03338,Peikang Xu
+A03339,Jianming Jiang
+A03340,Emília Correia
+A03341,Claudio Machado Paulo
+A03342,Lady Angulo
+A03343,José Augusto Gomes Vieira
+A03344,K. Venkatesh
+A03345,R. De Jesus
+A03346,V. G. Pillat
+A03347,P. R. Fagundes
+A03348,M. Gende
+A03349,Robert Bruntz
+A03350,Takumi Tsukijihara
+A03351,Koki Iwao
+A03352,Milan Rybanský
+A03353,Dennis Michael Herschbach
+A03354,M. Nagata
+A03355,H. Y. Fu
+A03356,Y. Q. Jin
+A03357,S. J. Briczinski
+A03358,Zhi-Peng Ren
+A03359,A. Kozlovsky
+A03360,C. Vineeth
+A03361,A. Ajesh
+A03362,L. C. Gardner
+A03363,L. Scherliess
+A03364,V. Eccles
+A03365,S. Basu
+A03366,C. Valladeres
+A03367,Binzheng Zhang
+A03368,Thom R. Edwards
+A03369,Q. Guo
+A03370,L. F. Chernogor
+A03371,K. P. Garmash
+A03372,V. T. Rozumenko
+A03373,P. K. Rajesh
+A03374,C. Y. Lin
+A03375,C. H. Chen
+A03376,J. Y. Liu
+A03377,S. P. Chen
+A03378,W. H. Yeh
+A03379,J. Berchem
+A03380,B. Kozelov
+A03381,A. Demekhov
+A03382,C.-T. Hsu
+A03383,C.-P. Lien
+A03384,Guiping Liu
+A03385,Ruth S. Lieberman
+A03386,Jens Oberheide
+A03387,Diego Janches
+A03388,Dexin Ren
+A03389,Fuqing Huang
+A03390,Xiaoli Luan
+A03391,Yu Liu
+A03392,M. L. Moses
+A03393,L. J. Kordella
+A03394,D. Drob
+A03395,V. Sivakumar
+A03396,Damian J. Murphy
+A03397,Rui Wang
+A03398,Arnlaug H. Skjæveland
+A03399,Daria S. Kotova
+A03400,David A. Ortland
+A03401,Bing Han
+A03402,Yisheng Zhang
+A03403,Huifang Lian
+A03404,Ping Wang
+A03405,Guojun Li
+A03406,Xiang-Cai Chen
+A03407,L. L. Shan
+A03408,Y. B. Yao
+A03409,C. Z. Zhai
+A03410,X. X. Chen
+A03411,Hong-Bo Zhang
+A03412,Z.-Y. Liu
+A03413,Kevin J. Genestreti
+A03414,Patricia H. Reiff
+A03415,Trevor W. Leonard
+A03416,Samuel T. Bingham
+A03417,Jason R. Shuster
+A03418,Christopher G. Mouikis
+A03419,Anthony J. Rogers
+A03420,James M. Webster
+A03421,Narges Ahmadi
+A03422,Bin-Bin Tang
+A03423,Vladimir V. Kalegaev
+A03424,Natalia A. Vlasova
+A03425,Ilya S. Nazarkov
+A03426,Sophia A. Melkova
+A03427,Fan Yin
+A03428,Xin Wan
+A03429,Christina Plainaki
+A03430,Marco Antonucci
+A03431,Alessandro Bemporad
+A03432,Bruna Bertucci
+A03433,Marco Castronuovo
+A03434,Marco Giardino
+A03435,Roberto Iuppa
+A03436,Monica Laurenza
+A03437,Federica Marcucci
+A03438,Mauro Messerotti
+A03439,Livio Narici
+A03440,Barbara Negri
+A03441,Francesco Nozzoli
+A03442,Enrico Cavallini
+A03443,Gianluca Polenta
+A03444,Alessandro Ippolito
+A03445,R. E. Clayton
+A03446,J. Weiss
+A03447,Umberto Sciacca
+A03448,D. Elton
+A03449,John Devlin
+A03450,A. Console
+A03451,B. Bienvenu
+A03452,A. McDonald
+A03453,H. Nguyen
+A03454,Shradha Mohanty
+A03455,Gulab Singh
+A03456,S. E. Smirnov
+A03457,V. A. Martinez-Bedenko
+A03458,В. А. Пилипенко
+A03459,B. V. Kozelov
+A03460,E. E. Titova
+A03461,Sh. R. Bogoutdinov
+A03462,A. E. Levitin
+A03463,L. A. Dremukhina
+A03464,N. R. Zelinskii
+A03465,T. I. Sergienko
+A03466,A. L. Kotikov
+A03467,A. V. Safargaleev
+A03468,M. Bravo
+A03469,N. V. Romanova
+A03470,Ya. A. Sakharov
+A03471,Pavlo Ponomarenko
+A03472,Taishi Tsuya
+A03473,Сергей Лунюшкин
+A03474,Sergey Lunyushkin
+A03475,Yury Penskikh
+A03476,Vladimir Kurkin
+A03477,Dmitriy Kushnarev
+A03478,Konstantin Grkovich
+A03479,Roman Fedorov
+A03480,Andrey Orlov
+A03481,Vitaliy Harchenko
+A03482,Vyacheslav Kapustin
+A03483,Hidehiko Suzuki
+A03484,Yasuhiro Murayama
+A03485,Seiji Kawamura
+A03486,Marc H. Jean
+A03487,Alexandr Frank-Kamenetsky
+A03488,Sergey Smirnov
+A03489,A. Odzimek
+A03490,S. Michnowski
+A03491,M. Kubicki
+A03492,Jun Wang
+A03493,Yu (Jade) Morton
+A03494,Wu Zhu
+A03495,Hyung-Sup Jung
+A03496,Jing-Yuan Chen
+A03497,Yutian Chen
+A03498,Xiaoyun Cheng
+A03499,Xunzhe Yin
+A03500,Weijie Jiang
+A03501,Bo Li
+A03502,Jiandi Feng
+A03503,Xuequn Wu
+A03504,Zhen Zhang
+A03505,T. Ishida
+A03506,Ilya Edemskiy
+A03507,Jan Lastovicka
+A03508,Ivan Nepomnyashchikh
+A03509,Renata Lukianova
+A03510,Stelios Tourgaidis
+A03511,Dimitrios Baloukidis
+A03512,Panagiotis Pirnaris
+A03513,Konstantinos Papadakis
+A03514,I. V. Despirak
+A03515,A. A. Lubchich
+A03516,Л. И. Громова
+A03517,Simona Nitti
+A03518,Steve Milan
+A03519,Victoriya Forsythe
+A03520,Simona Longo
+A03521,David Biondi
+A03522,Enrico Simeoli
+A03523,Andrea Satta
+A03524,Alessandro Cirioni
+A03525,Angelo De Simone
+A03526,Angelo Olivieri
+A03527,Alessandro Baù
+A03528,Alberto Salvati
+A03529,R. T. Parris
+A03530,X.-Y. Wang
+A03531,Neil Cobbett
+A03532,Paul Breen
+A03533,Tim Barnes
+A03534,Volker Strecke
+A03535,Guojun Wang
+A03536,Runzhi Zhang
+A03537,Ljiljana R. Cander
+A03538,Mervyn Freeman
+A03539,Juha-Pekka Luntama
+A03540,G. A. Zherebtsov
+A03541,Ping Yin
+A03542,Paul Spencer
+A03543,Patrick Newell
+A03544,Pierguido Sarti
+A03545,Alessandro Capra
+A03546,M. Stepanova
+A03547,E. E. Antonova
+A03548,J. Kangas
+A03549,D. Chua
+A03550,A. Ranta
+A03551,S. Mäkinen
+A03552,Y. Chen
+A03553,P. A. Cassak
+A03554,G. Poh
+A03555,Sarah E. McDonald
+A03556,A. Aksnes
+A03557,M. Dyrland
+A03558,S. E. Pryse
+A03559,E. L. Whittick
+A03560,A. D. Aylward
+A03561,H. R. Middleton
+A03562,D. S. Brown
+A03563,J. A. Secan
+A03564,Y. Andalsvik
+A03565,J. D. Gorin
+A03566,J.-P. St. -Maurice
+A03567,Jean-Claude Gérard
+A03568,Stanley W. H. Cowley
+A03569,Frances Fenrich
+A03570,W. Hazeyama
+A03571,Diego F. Sanchez
+A03572,William D. Engelke
+A03573,Z.-X. Deng
+A03574,J.-J. Liu
+A03575,Lianhuan Hu
+A03576,Guofeng Dai
+A03577,Wenjie Sun
+A03578,Haiyong Xie
+A03579,Yi Li
+A03580,Bo Xiong
+A03581,Yu Li
+A03582,Jin Wang
+A03583,Zhi-Feng Xiu
+A03584,Jia-Chen Zhao
+A03585,Yan-Ju Sun
+A03586,Pablo Reyes
+A03587,Russell Cosgrove
+A03588,Ryan Poffenbarger
+A03589,Rafael Mesquita
+A03590,Toralf Renkwitz
+A03591,Kenro Nozaki
+A03592,Kiyoshi Igarashi
+A03593,Joseph Baker
+A03594,Roberto Bruno
+A03595,Vincenzo Capparelli
+A03596,Vincenzo Carbone
+A03597,Alice Cristaldi
+A03598,Alfredo Del Corpo
+A03599,Dario Del Moro
+A03600,Ilaria Ermolli
+A03601,Silvano Fineschi
+A03602,Fabio Giannattasio
+A03603,Fabrizio Giorgi
+A03604,Luca Giovannelli
+A03605,Salvatore Luigi Guglielmino
+A03606,Fabio Lepreti
+A03607,Matteo Martucci
+A03608,Matteo Mergè
+A03609,Ermanno Pietropaolo
+A03610,Paolo Romano
+A03611,Roberta Sparvoli
+A03612,Marco Stangalini
+A03613,Antonio Vecchio
+A03614,Massimo Vellante
+A03615,Francesca Zuccarello
+A03616,Balázs Heilig
+A03617,Jan Reda
+A03618,János Lichtenberger
+A03619,A. T. Karpachev
+A03620,N. Beloff
+A03621,T. D. Carozzi
+A03622,P. F. Denisenko
+A03623,T. J. T. Karhunen
+A03624,K. Throp
+A03625,N. F. Arnold
+A03626,C. Blockx
+A03627,J.-C. Gérard
+A03628,Elsayed R. Talaat
+A03629,Ye Gao
+A03630,Konstantin G. Ratovsky
+A03631,Lois K. Sarno-Smith
+A03632,Timothy Yeoman
+A03633,Michael Rietveld
+A03634,Amore' Nel
+A03635,Michael W. Liemohn
+A03636,I. Kolmasova
+A03637,C. Moser-Gauthier
+A03638,I. H. Cairns
+A03639,Dehong Huang
+A03640,F. Christiansen
+A03641,S. Watari
+A03642,Sawako Maeda
+A03643,Asgeir Brekke
+A03644,M. A. Abdu
+A03645,Cosme A. O. B. Figueiredo
+A03646,Shuang Xu
+A03647,Michael J. Molzen
+A03648,Thomas J. Pisano
+A03649,Grzegorz Nykiel
+A03650,Somaiyeh Sabri
+A03651,Stefaan Poedts
+A03652,Xin Wang
+A03653,Yanhong Chen
+A03654,Yajun Zhu
+A03655,Bingxian Luo
+A03656,Ming Li
+A03657,Hua Shen
+A03658,Tianjiao Yuan
+A03659,Y. I. Feldstein
+A03660,B. A. Belov
+A03661,M. J. Ruohoniemi
+A03662,D. R. Weimer
+A03663,Fengju Chen
+A03664,Alexandre Vasilyevich Koustov
+A03665,Ethan Miller
+A03666,T. Turunen
+A03667,J. Jussila
+A03668,A. Roldugin
+A03669,B. M. Shevtsov
+A03670,E. X. Liu
+A03671,Z. S. Wu
+A03672,K. A. Kutelev
+A03673,A. P. Potekhin
+A03674,B. A. Hubert
+A03675,Y. Murata
+A03676,H. Hayashi
+A03677,A. Saito
+A03678,A. Tawara
+A03679,V. L. Barth
+A03680,M. L. Parkinson
+A03681,S. H. Mthembu
+A03682,L. Magnus
+A03683,G. Ya. Khachikjan
+A03684,C. Bryant
+A03685,K. T. Murata
+A03686,J. P. Marini
+A03687,G. Facskó
+A03688,I. Honkonen
+A03689,T. V. Laitinen
+A03690,E. I. Tanskanen
+A03691,Hyomin Kim
+A03692,Philip A. Fernandes
+A03693,Alexander G. Yahnin
+A03694,D. A. Neudegg
+A03695,B. Nikutowski
+A03696,J. Büchner
+A03697,E. Georgescu
+A03698,H. Takizawa
+A03699,Andrew Walsh
+A03700,B. Isham
+A03701,O. Vega-Cancel
+A03702,Dmitri Yu. Klimushkin
+A03703,Nina A. Zolotukhina
+A03704,Olga V. Mager
+A03705,Mpho Tshisaphungo
+A03706,Emilia Kilpua
+A03707,Vuokko Semenoja
+A03708,Veera Lipsanen
+A03709,Mirja Ojuva
+A03710,T. Dudok De Wit
+A03711,C. Uberoi
+A03712,Takashi Okuzawa
+A03713,E. Lundell
+A03714,H. Kucharek
+A03715,Henri Reme
+A03716,J. P. Skura
+A03717,D. J. Livneh
+A03718,I. Seker
+A03719,F. T. Djuth
+A03720,J. D. Mathews
+A03721,P. Daum
+A03722,T. Penz
+A03723,P. W. Daly
+A03724,K.-H. Fornaçon
+A03725,C. M. Carr
+A03726,D. S. Han
+A03727,T. Araki
+A03728,N. Ravindran Varrier
+A03729,S. Shalimov
+A03730,I. Haggstrøm
+A03731,D. R. Smith
+A03732,T. Tan
+A03733,J. J. Simpson
+A03734,D. J. Emmons
+A03735,G. Farinas Perez
+A03736,E. V. Dao
+A03737,Rei Sugimura
+A03738,Igor Poddelsky
+A03739,Herbert O. Funsten
+A03740,C.-W. Jun
+A03741,Nicholas W. Watkins
+A03742,A. V. Frank-Kamenetskii
+A03743,A. A. Kruglov
+A03744,G. B. Burns
+A03745,M. Kubitski
+A03746,P. J. Wilkinson
+A03747,V. Krasnoselskikh
+A03748,S. Yamashita
+A03749,L.-S. He
+A03750,H. Ye
+A03751,E. A. Lucek
+A03752,E. R. Dougal
+A03753,T. W. Moore
+A03754,G. S. Cunningham
+A03755,S. S. Elliott
+A03756,A. W. Breneman
+A03757,J. M. Pettit
+A03758,J. Sample
+A03759,A. T. Johnson
+A03760,A. Pulkkinen
+A03761,R. Norman
+A03762,Yi-Hsin Liu
+A03763,Andrei Vorobev
+A03764,Lidiya Y. Ahmed
+A03765,J. L. Posch
+A03766,A. V. Vorobev
+A03767,D. Mourenas
+A03768,P. S. Moya
+A03769,L. Capannolo
+A03770,D. Klumpar
+A03771,Viacheslav A. Pilipenko
+A03772,Shin-ichi Ohtani
+A03773,Haibing Ruan
+A03774,Yosuke Yamazaki
+A03775,R. O. Kaka
+A03776,O. O. Akinola
+A03777,Jinfeng Li
+A03778,Jiahao Zhong
+A03779,A. V. Eyelade
+A03780,Lily Yang
+A03781,Sanjay Kumar
+A03782,Giulia F. Mazza
+A03783,Jeffrey J. Love
+A03784,Carol A. Finn
+A03785,K. Mitani
+A03786,M. M. H. Kalliokoski
+A03787,M. R. Carver
+A03788,A. Hoover
+A03789,E. J. Blanchfield
+A03790,G. N. Iles
+A03791,Yiming Wang
+A03792,Zhipeng Wang
+A03793,Honglin Tang
+A03794,Peter Chi
+A03795,Eija Tanskanen
+A03796,"Department of Earth, Planetary, and Space Sciences, University of California Los Angeles, Los Angeles, CA, USA"
+A03797,David Fischer
+A03798,Ali Varsani
+A03799,D. Schmid
+A03800,T. K. M. Nakamura
+A03801,H. K. Leinweber
+A03802,Ken R. Bromund
+A03803,W. Paterson
+A03804,L. A. Avanov
+A03805,K. Genestreti
+A03806,M. Chutter
+A03807,P.-A. Lindqvist
+A03808,G. T. Marklund
+A03809,Yuri V. Khotyaintsev
+A03810,B. H. Mauk
+A03811,E. L. Kepko
+A03812,V. Coffey
+A03813,F. Beyene
+A03814,Xiaofei Shi
+A03815,Joachim Birn
+A03816,Takuya Miyashita
+A03817,Hiroyo Ohya
+A03818,Hiroyuki Nakata
+A03819,Toshiaki Takano
+A03820,Paul A. Bedrosian
+A03821,Christopher C. Balch
+A03822,M. C. Broughton
+A03823,M. Parrot
+A03824,G. B. Hospodarsky
+A03825,Lun C. Tan
+A03826,X. Shao
+A03827,A. S. Sharma
+A03828,Shing F. Fung
+A03829,D. J. Braun
+A03830,C.-L. Huang
+A03831,Shri G. Kanekal
+A03832,Ravil Rakhmatulin
+A03833,E. Dmitriev
+A03834,E. Ermakova
+A03835,Sarah N. Bentley
+A03836,J. R. Stout
+A03837,T. E. Bloch
+A03838,Primoz Kajdic
+A03839,Jan Soucek
+A03840,Xingbin Tian
+A03841,Longxing Ma
+A03842,Jinbin Cao
+A03843,Shreedevi Pr
+A03844,Vania K. Jordanova
+A03845,Zuxiang Xue
+A03846,Zhigang Yuan
+A03847,Xiongdong Yu
+A03848,Dan Deng
+A03849,Zheng Huang
+A03850,M. Hajoš
+A03851,F. Němec
+A03852,O. Santolík
+A03853,B. Bezděková
+A03854,A. Mezentsev
+A03855,A. P. Nickolaenko
+A03856,A. V. Shvets
+A03857,Yu. P. Galuk
+A03858,A. Yu. Schekotov
+A03859,M. Hayakawa
+A03860,R. Romero
+A03861,J. Izutsu
+A03862,I. G. Kudintseva
+A03863,M. Qin
+A03864,X.-C. Shen
+A03865,M. Hanzelka
+A03866,Gabriella Sátori
+A03867,Earle Williams
+A03868,Anirban Guha
+A03869,Y. Liu
+A03870,Peter Steinbach
+A03871,A. Leal
+A03872,M. Herein
+A03873,Mike Atkinson
+A03874,Elizabeth DiGangi
+A03875,A. Koloskov
+A03876,Andrzej Kulak
+A03877,Jeff Lapierre
+A03878,Janusz Mlynarczyk
+A03879,Anne Neska
+A03880,Alexander Potapov
+A03881,R. Said
+A03882,Yu. Yampolski
+A03883,Xin-Yan Ouyang
+A03884,Mu-Ping Yang
+A03885,Ya-Lu Wang
+A03886,Ying-Yan Wu
+A03887,Xue-Min Zhang
+A03888,S. J. Noh
+A03889,B. Grison
+A03890,J. Himmelsbach
+A03891,T. Esman
+A03892,D. B. Graham
+A03893,Scot R. Elkington
+A03894,Theodore E. Sarris
+A03895,Ольга Козырева
+A03896,Dmitriy Klimushkin
+A03897,Pavel Mager
+A03898,Laura E. Simms
+A03899,X. Zhou
+A03900,L. Chen
+A03901,A. Johnson
+A03902,D. M. Klumpar
+A03903,Alla V. Suvorova
+A03904,Alexei V. Dmitriev
+A03905,V. A. Parkhomov
+A03906,Battuulai Tsegmed
+A03907,Ting-Yan Xiang
+A03908,Zi-Jian Feng
+A03909,Xin-Yu Ai
+A03910,J. Yu
+A03911,Z. G. Yuan
+A03912,Mika K. G. Holmberg
+A03913,Fabrice Cipriani
+A03914,Jean-Andre Sauvaud
+A03915,Denis Payan
+A03916,Jean-Charles Mateo-Velez
+A03917,Angelica Sicard
+A03918,P. E. Tereshchenko
+A03919,В. В. Сафаргалеев
+A03920,Vladimir Parhomov
+A03921,Viktor Eselevich
+A03922,Maxim Eselevich
+A03923,Alla Suvorova
+A03924,Sergey Khomutov
+A03925,Raita Tero
+A03926,Georgiy Popov
+A03927,Aleksey Mochalov
+A03928,Sergey Pilgaev
+A03929,"University of New Brunswick, Fredericton, New Brunswick, E3B5A3, Canada"
+A03930,"State Institution National Antarctic Scientific Center, Ministry of Education and Science of Ukraine, Kyiv, 01601, Ukraine"
+A03931,"Institute of Radio Astronomy of the National Academy of Sciences of Ukraine, Kharkiv, 61002, Ukraine"
+A03932,M. T. Robertson
+A03933,C. S. Deehr
+A03934,Frank Toffoletto
+A03935,J.-S. Park
+A03936,K. Hyun
+A03937,E.-J. Choi
+A03938,K.-C. Kim
+A03939,D.-K. Shin
+A03940,Aaron T. Hendry
+A03941,Ho Jin
+A03942,F. Darrouzet
+A03943,Louis Ozeke
+A03944,Sydney Dufresne
+A03945,Steven Morley
+A03946,Seth Claudepierre
+A03947,Daniel Baker
+A03948,Alex Degeling
+A03949,J. L. Roeder
+A03950,Z. T. Katamzi
+A03951,N. D. Smith
+A03952,P. Spalla
+A03953,D.Yu. Klimushkin
+A03954,T. R. Robinson
+A03955,R. S. Dhillon
+A03956,S. C. Gane
+A03957,Z.-Y. Pu
+A03958,S.-Y. Fu
+A03959,Kristoff Paulson
+A03960,Carol Weaver
+A03961,Robyn Millan
+A03962,Leslie Woodger
+A03963,Alexa Halford
+A03964,Richard Horne
+A03965,Aaron Hendry
+A03966,K. Y. Dufresne
+A03967,S. Oimatsu
+A03968,D. Sormakov
+A03969,A. Boyd
+A03970,C. M. Komar
+A03971,Chenjing Tian
+A03972,Yuqing Chen
+A03973,Jin Zhang
+A03974,Xiaoyan Yu
+A03975,Tianjun Dai
+A03976,L. J. Warden
+A03977,Irina S. Zhelavskaya
+A03978,B. Heilig
+A03979,X. -J. Zhang
+A03980,Darcy Cordell
+A03981,Martyn J. Unsworth
+A03982,Benjamin Lee
+A03983,Cedar Hanneson
+A03984,B. P. Kwan
+A03985,Kohki Nakamura
+A03986,Robert MacDowall
+A03987,Fan Gong
+A03988,Ari S. Gottesman
+A03989,Yuri Y. Shprits
+A03990,Dmitriy Subbotin
+A03991,Adam Kellerman
+A03992,Ksenia Orlova
+A03993,Kyung-Chan Kim
+A03994,A. J. Boyd
+A03995,Ioannis A. Daglis
+A03996,Martin Mlynczak
+A03997,Satoshi Nakahira
+A03998,Yanbo Zhu
+A03999,Kun Fang
+A04000,Zhiqiang Dan
+A04001,Hongxia Wang
+A04002,O. D. Constantinescu
+A04003,U. Motschmann
+A04004,S. Brogl
+A04005,H. K. Rassoul
+A04006,M. Thomsen
+A04007,Georgios Balasis
+A04008,Constantinos Papadimitriou
+A04009,K. Tsinganos
+A04010,Hans Pécseli
+A04011,Jan Trulsen
+A04012,Charles Farrugia
+A04013,M. Ohnsted
+A04014,M. Clilverd
+A04015,Roger Duthie
+A04016,Rachael Hardman
+A04017,J. S. Pickett
+A04018,D. E. Larson
+A04019,Jin-Bin Cao
+A04020,Chunxiao Yan
+A04021,Tielong Zhang
+A04022,Dongmei Yang
+A04023,Alexey Moiseyev
+A04024,Z. Q. Wang
+A04025,A. Leonoviche
+A04026,N. Zolotukhina
+A04027,Vladimir Mishin
+A04028,M. Sandanger
+A04029,F. Søraas
+A04030,H. Matsui
+A04031,P. A. Puhl-Quinn
+A04032,Anthony A. Chan
+A04033,Q. Schiller
+A04034,Tomotsugu Yamakawa
+A04035,Hannah G. Parry
+A04036,Colin Clark
+A04037,Ryan Cui
+A04038,Darcy R. Cordell
+A04039,Ryan MacMullin
+A04040,S. J. Schwartz
+A04041,Jerry W. Manweiler
+A04042,Zhijin Zhou
+A04043,Zongxian Wu
+A04044,Christian Kwisanga
+A04045,V. A. Martines-Bedenko
+A04046,Takuma Nakamura
+A04047,Barbara J. Giles
+A04048,Per-Arne Lindqvist
+A04049,Barry Mauk
+A04050,Anatoli Petrukovich
+A04051,Julia Stawarz
+A04052,Ian Cohen
+A04053,Laurence Kepko
+A04054,James A. Slavin
+A04055,L. B. Wilson
+A04056,D. Caprioli
+A04057,L. L. Lazutin
+A04058,Владимир Пархомов
+A04059,Natalia Borodkova
+A04060,Aleksandr Pashinin
+A04061,Vitaliy Chilikin
+A04062,Aleksey Dmitriev
+A04063,Tatyana Vedernikova
+A04064,Parkhomov Vladimir Alexandrovich
+A04065,Eselevich Victor Grigorieivich
+A04066,Eselevich Maksim Victorovich
+A04067,Tsegmed Battuulai
+A04068,G. Murakami
+A04069,I. Yoshikawa
+A04070,K. H. Yearby
+A04071,J. Shillington
+A04072,M. Gordon
+A04073,N. L. Borodkova
+A04074,N. V. Yagova
+A04075,L. N. Baransky
+A04076,M. J. Owens
+A04077,W. B. Peter
+A04078,M. W. Chevalier
+A04079,U. S. Inan
+A04080,K.-C. Choi
+A04081,J. H. Lee
+A04082,K. C. Kim
+A04083,K. S. Park
+A04084,Seokhoon Oh
+A04085,Sohyeon Park
+A04086,N. Longden
+A04087,Ching-Chang Cheng
+A04088,S. Marsal
+A04089,J. M. Torta
+A04090,A. Segarra
+A04091,L. L. Zhao
+A04092,Q. G. Zong
+A04093,V. M. Mishin
+A04094,Vladimir V. Mishin
+A04095,S. B. Lunyushkin
+A04096,J. Y. Wang
+A04097,A. V. Moiseev
+A04098,Julia Klibanova
+A04099,Marina Kurikalova
+A04100,Balazs Heilig
+A04101,J. P. McCollough
+A04102,Eltham Hill School Year 12 Physics Students
+A04103,Frances A. Staples
+A04104,B. S. Murphy
+A04105,Yu. Yu. Klibanova
+A04106,M. A. Kurikalova
+A04107,F. J. Pavón-Carrasco
+A04108,S. P. Blake
+A04109,Eva Kelemen
+A04110,K. H. Pham
+A04111,Oksana Mandrikova
+A04112,Anastasia Rodomanskay
+A04113,V. E. Pronin
+A04114,D. L. Murr
+A04115,V. G. Vorobjev
+A04116,V. E. Chinkin
+A04117,A. A. Soloviev
+A04118,Yaroslav A. Sakharov
+A04119,Roman Marchuk
+A04120,Tamas Bozoki
+A04121,Yakun Liu
+A04122,Adônis Ferreira Raiol Leal
+A04123,Alexander V. Koloskov
+A04124,Alexander S. Potapov
+A04125,Ryan K. Said
+A04126,Yuri M. Yampolski
+A04127,Young-Sook Lee
+A04128,Ying Xiong
+A04129,"School of Earth and Space Science, Peking University, Beijing 100871, China"
+A04130,Lun Xie
+A04131,"Department of Earth and Space Sciences, Southern University of Science and Technology, Shenzhen 518055, China"
+A04132,"Department of Space Physics, School of Electronic Information, Wuhan University, Wuhan 430072, China"
+A04133,Ivan Vassilyev
+A04134,Zhassulan Mendakulov
+A04135,Beibit Zhumabayev
+A04136,Igor Kozin
+A04137,Oleg Beloslyudtsev
+A04138,Samal Dossaibekova
+A04139,B. A. Dovbnya
+A04140,V. V. Safargaleyev
+A04141,A. Y. Pashinin
+A04142,C.-C. Cheng
+A04143,J. Paral
+A04144,B. T. Kress
+A04145,V. Constantinescu
+A04146,E. Sorbalo
+A04147,A. M. Tian
+A04148,X. C. Shen
+A04149,B. B. Tang
+A04150,Maryam Kazerooni
+A04151,Farzad Kamalabadi
+A04152,Hao Zhu
+A04153,Thomas J. Overbye
+A04154,GengXiong Chen
+A04155,AiMin Du
+A04156,G. B. D. Silva
+A04157,L. R. Alves
+A04158,K. V. Espinosa
+A04159,L. A. Da Silva
+A04160,J. E. R. Costa
+A04161,M. B. Pádua
+A04162,S. A. Sanchez
+A04163,Tracy Moffat-Griffin
+A04164,Russell S. Grew
+A04165,D. J. Menietti
+A04166,J. Du
+A04167,X. Y. Zhang
+A04168,Andy A. Kale
+A04169,Farideh F. Honary
+A04170,N. S. S. Capman
+A04171,N. G. Campuzano
+A04172,P. Bělik
+A04173,R. C. Allen
+A04174,Raffaello Foldes
+A04175,Anastasios Anastasiadis
+A04176,P. Manavalan
+A04177,D. Headrick
+A04178,S. Palmers
+A04179,B. Harbarenko
+A04180,J. Cai
+A04181,J. Fourie
+A04182,O. Bauer
+A04183,Khairul Adib Yusof
+A04184,Mardina Abdullah
+A04185,Nurul Shazana Abdul Hamid
+A04186,Suaidi Ahadi
+A04187,Essam Ghamry
+A04188,M. A. Evdokimova
+A04189,S. V. Apatenkov
+A04190,M. V. Stepanova
+A04191,D. L. Lorentzen
+A04192,Александр Потапов
+A04193,Boris Dovbnya
+A04194,Tatyana Polyushkina
+A04195,"Department of Physics, Faculty of Science, Universiti Putra Malaysia, Malaysia"
+A04196,"Space Science Center, Institute of Climate Change, Universiti Kebangsaan Malaysia, Malaysia"
+A04197,"Department of Geophysics, Indonesian Agency for Meteorology, Climatology and Geophysics, Jakarta, Indonesia"
+A04198,"International Center for Space Weather Science and Education, Kyushu University, Fukuoka 819-0395, Japan"
+A04199,Xinming Chen
+A04200,Ivan Zimovets
+A04201,Ivan Sharykin
+A04202,Cooper Downs
+A04203,Marco Velli
+A04204,Olga Panasenco
+A04205,C. Katsavrias
+A04206,Roman A. Marchuk
+A04207,Н. В. Романова
+A04208,N. A. Aseev
+A04209,A. Y. Drozdov
+A04210,E. Sinem Ince
+A04211,Spiros D. Pagiatakis
+A04212,L. M. André
+A04213,J. L. Wadsworth
+A04214,R. Huser
+A04215,Michael A. Fedderke
+A04216,Peter W. Graham
+A04217,Derek F. Jackson Kimball
+A04218,Saarik Kalia
+A04219,K. Andréeová
+A04220,William Ward
+A04221,N. Koushik
+A04222,K. Kishore Kumar
+A04223,Geetha Ramkumar
+A04224,K. V. Subrahmanyam
+A04225,G. Kishore Kumar
+A04226,Wayne K. Hocking
+A04227,Maosheng He
+A04228,Christopher Е. Meek
+A04229,Wayne К. Hocking
+A04230,Christopher М. Hall
+A04231,William Е. Ward
+A04232,Sam Kristoffersen
+A04233,Samuel K. Kristoffersen
+A04234,J. A. Langille
+A04235,William Edmund Ward
+A04236,Tarique Adnan Siddiqui
+A04237,Zbysek Mosna
+A04238,Michal Kozubek
+A04239,David Themens
+A04240,Samuel Kristoffersen
+A04241,Jing Li
+A04242,Tao Li
+A04243,Yihuan Tang
+A04244,Zhaopeng Wu
+A04245,Chris Meek
+A04246,Young-Min Cho
+A04247,X. Xu
+A04248,T. Aso
+A04249,Masaki Tsutsumi
+A04250,Kaoru Sato
+A04251,Yoshihiro Tomikawa
+A04252,Masashi Kohma
+A04253,Ryosuke Yasui
+A04254,Dai Koshin
+A04255,Haruka Okui
+A04256,Shingo Watanabe
+A04257,Kazuyuki Miyazaki
+A04258,Damian Murphy
+A04259,Yufang Tian
+A04260,Manfred Ern
+A04261,Gerd Baumgarten
+A04262,Richard Collins
+A04263,Hiroyuki Hashiguchi
+A04264,Franz-Josef Lübken
+A04265,Marco Milla
+A04266,T. Chshyolkova
+A04267,Ch. Jacobi
+A04268,Victoria L. Pinnegar
+A04269,Y.-M. Cho
+A04270,Eric Steinbring
+A04271,K. Chenna Reddy
+A04272,B. Premkumar
+A04273,G. Yellaiah
+A04274,Xiaoyong Xu
+A04275,Glen Takahara
+A04276,D. Kondrashov
+A04277,Yu Yokoyama
+A04278,Sungeun Lee
+A04279,Naoki Sunagawa
+A04280,Kazumasa Ishizaka
+A04281,Alexander Frank-Kamenetsky
+A04282,Vickal V. Kumar
+A04283,Michael B. Terkildsen
+A04284,Haimeng Li
+A04285,Shiyong Huang
+A04286,Zhenzhen Wang
+A04287,Zheng Qiao
+A04288,Lee J. Rickard
+A04289,Gopi Seemala
+A04290,Sneha Gokani
+A04291,Tongxing Fu
+A04292,Zhixu Wu
+A04293,Peng Hu
+A04294,Xin Zhang
+A04295,T. Ghosal
+A04296,Jordan Cho
+A04297,David Barona

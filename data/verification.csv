@@ -1,9 +1,146 @@
 paper_id,instrument_id,status,evidence_quote,checked_date,notes
-P001,I001,verified_true,Uses REGO all-sky imager data.,2026-06-04,Example verified paper
-P002,I002,verified_true,Uses NORSTAR riometer observations.,2026-06-04,Example verified paper
-P003,I003,verified_false,Only mentions THEMIS in background.,2026-06-04,Example known false positive
-P004,I004,verified_true,Uses SuperDARN Canada convection maps.,2026-06-04,Example verified paper
-P005,I006,unsure,Mentions a conjunction but the data source is unclear.,2026-06-04,Example unsure paper
-P006,I001,verified_true,Uses REGO observations in the event analysis.,2026-06-04,Example verified paper
-P006,I003,verified_true,Uses THEMIS ground imager observations.,2026-06-04,Example multi-instrument paper
-P007,I004,verified_false,Cites a SuperDARN data paper but does not use the data.,2026-06-04,Example known false positive
+P00001,I00001,verified_true,,2026-06-08T16:10:43,review_decision=Correct instrument/component | corrected_instrument=AuroraMAX
+P00002,I00001,verified_true,,2026-06-08T16:11:28,review_decision=Correct instrument/component | corrected_instrument=AuroraMAX
+P00003,I00001,verified_true,,2026-06-08T16:11:08,review_decision=Correct instrument/component | corrected_instrument=AuroraMAX
+P00004,I00007,verified_true,,2026-06-08T16:07:43,review_decision=Correct instrument/component | corrected_instrument=AGO
+P00014,I00002,verified_false,,2026-06-09T10:46:22,review_decision=Incorrect instrument/component | corrected_instrument=REGO
+P00024,I00006,verified_true,,2026-06-09T10:40:23,review_decision=Correct instrument/component | corrected_instrument=Rainbow
+P00024,I00004,verified_true,,2026-06-09T11:08:04,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P00024,I00007,verified_true,,2026-06-08T15:59:59,review_decision=Correct instrument/component | corrected_instrument=AGO
+P00035,I00012,verified_true,,2026-06-09T10:32:39,review_decision=Correct instrument/component | corrected_instrument=GO STORM MSP
+P00038,I00009,verified_true,,2026-06-09T11:20:30,review_decision=Correct instrument/component | corrected_instrument=TREx
+P00040,I00002,verified_true,,2026-06-09T10:41:10,review_decision=Correct instrument/component | corrected_instrument=REGO
+P00040,I00013,verified_true,,2026-06-09T11:04:07,review_decision=Correct instrument/component | corrected_instrument=SEC/OTHER
+P00044,I00002,verified_true,,2026-06-09T10:40:50,review_decision=Correct instrument/component | corrected_instrument=REGO
+P00061,I00004,verified_true,,2026-06-09T11:07:39,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P00074,I00019,verified_true,,2026-06-08T15:53:03,review_decision=Correct instrument/component | corrected_instrument=ABOVE
+P00077,I00014,verified_true,,2026-06-09T11:06:58,review_decision=Correct instrument/component | corrected_instrument=Single Beam Riometer
+P00078,I00014,verified_true,,2026-06-09T11:07:13,review_decision=Correct instrument/component | corrected_instrument=Single Beam Riometer
+P00079,I00019,verified_true,,2026-06-08T15:57:15,review_decision=Correct instrument/component | corrected_instrument=ABOVE
+P00081,I00017,verified_false,,2026-06-09T10:36:28,review_decision=Incorrect instrument/component | corrected_instrument=GO_RIO
+P00082,I00014,unsure,,2026-06-09T11:05:32,review_decision=Unsure | corrected_instrument=Single Beam Riometer
+P00083,I00020,verified_true,,2026-06-09T11:16:16,review_decision=Correct instrument/component | corrected_instrument=SWAN HSR
+P00085,I00002,verified_false,,2026-06-09T10:50:07,review_decision=Incorrect instrument/component | corrected_instrument=REGO
+P00087,I00021,verified_false,,2026-06-09T10:16:48,review_decision=Incorrect instrument/component | corrected_instrument=CHAIN
+P00098,I00018,verified_true,,2026-06-08T16:23:40,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00100,I00014,verified_true,,2026-06-09T11:07:19,review_decision=Correct instrument/component | corrected_instrument=Single Beam Riometer
+P00100,I00017,verified_true,,2026-06-09T10:38:47,review_decision=Correct instrument/component | corrected_instrument=GO_RIO
+P00105,I00004,verified_true,,2026-06-09T11:09:08,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P00153,I00018,verified_true,,2026-06-08T16:24:38,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00179,I00005,verified_true,,2026-06-09T11:19:42,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00184,I00005,verified_true,,2026-06-09T11:16:26,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00206,I00012,verified_true,,2026-06-09T10:32:24,review_decision=Correct instrument/component | corrected_instrument=GO STORM MSP
+P00212,I00010,verified_true,,2026-06-09T10:31:57,review_decision=Correct instrument/component | corrected_instrument=FESO
+P00212,I00007,verified_true,,2026-06-08T16:08:02,review_decision=Correct instrument/component | corrected_instrument=AGO
+P00213,I00005,verified_false,,2026-06-09T11:18:01,review_decision=Incorrect instrument/component | corrected_instrument=THEMIS ASI
+P00218,I00007,verified_true,,2026-06-08T16:08:56,review_decision=Correct instrument/component | corrected_instrument=AGO
+P00249,I00005,verified_true,,2026-06-09T11:19:18,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00251,I00017,verified_true,,2026-06-09T10:37:23,review_decision=Correct instrument/component | corrected_instrument=GO_RIO
+P00266,I00005,verified_true,,2026-06-09T11:18:16,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00297,I00022,verified_true,,2026-06-08T16:12:10,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P00312,I00022,verified_true,,2026-06-09T10:00:31,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P00317,I00022,verified_true,,2026-06-08T16:12:01,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P00324,I00005,verified_true,,2026-06-09T11:19:57,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00335,I00005,verified_true,,2026-06-09T11:19:28,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00354,I00005,verified_true,,2026-06-09T11:16:44,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00368,I00005,verified_true,,2026-06-09T11:18:49,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00406,I00004,verified_true,,2026-06-09T11:09:56,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P00426,I00005,verified_true,,2026-06-09T11:18:30,review_decision=Correct instrument/component | corrected_instrument=THEMIS ASI
+P00431,I00015,verified_true,,2026-06-09T11:20:39,review_decision=Correct instrument/component | corrected_instrument=TREx RGB
+P00508,I00007,verified_true,,2026-06-08T15:59:37,review_decision=Correct instrument/component | corrected_instrument=AGO
+P00510,I00004,verified_true,,2026-06-09T11:10:55,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P00512,I00016,verified_true,,2026-06-09T11:20:46,review_decision=Correct instrument/component | corrected_instrument=TREx Spectrograph
+P00515,I00018,verified_true,,2026-06-08T16:23:19,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00523,I00018,verified_true,,2026-06-09T10:04:39,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00526,I00018,verified_true,,2026-06-08T16:25:55,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00531,I00018,verified_true,,2026-06-08T16:25:44,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00532,I00018,verified_true,,2026-06-08T16:25:31,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00538,I00018,verified_true,,2026-06-08T16:23:52,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00546,I00018,verified_true,,2026-06-08T16:25:19,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00560,I00003,verified_true,,2026-06-09T11:16:01,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P00562,I00018,verified_true,,2026-06-09T10:05:06,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00568,I00009,verified_true,,2026-06-09T11:20:16,review_decision=Correct instrument/component | corrected_instrument=TREx
+P00569,I00009,verified_true,,2026-06-09T11:20:06,review_decision=Correct instrument/component | corrected_instrument=TREx
+P00571,I00013,verified_true,,2026-06-09T11:03:56,review_decision=Correct instrument/component | corrected_instrument=SEC/OTHER
+P00588,I00018,verified_true,,2026-06-08T16:26:14,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00592,I00018,verified_true,,2026-06-08T16:24:27,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00599,I00018,verified_true,,2026-06-09T10:05:22,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00615,I00018,verified_true,,2026-06-09T10:03:58,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00618,I00018,verified_true,,2026-06-08T16:24:12,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
+P00649,I00018,unsure,,2026-06-09T10:03:27,review_decision=Unsure | corrected_instrument=CANOPUS
+P00660,I00010,verified_false,,2026-06-09T10:31:32,review_decision=Incorrect instrument/component | corrected_instrument=FESO
+P00662,I00023,verified_true,,2026-06-09T10:40:07,review_decision=Correct instrument/component | corrected_instrument=NASCAM
+P00664,I00006,verified_true,,2026-06-09T10:40:35,review_decision=Correct instrument/component | corrected_instrument=Rainbow
+P00664,I00007,verified_true,,2026-06-08T16:00:32,review_decision=Correct instrument/component | corrected_instrument=AGO
+P00665,I00007,verified_true,,2026-06-08T16:10:26,review_decision=Correct instrument/component | corrected_instrument=AGO
+P00666,I00007,verified_false,,2026-06-08T16:04:39,review_decision=Incorrect instrument/component | corrected_instrument=AGO
+P00676,I00022,verified_true,,2026-06-09T10:00:20,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P00692,I00008,verified_false,,2026-06-09T11:00:50,review_decision=Incorrect instrument/component | corrected_instrument=RISR-C
+P00698,I00008,verified_true,,2026-06-09T10:58:04,review_decision=Correct instrument/component | corrected_instrument=RISR-C
+P00705,I00008,verified_true,,2026-06-09T11:03:47,review_decision=Correct instrument/component | corrected_instrument=RISR-C
+P00713,I00008,verified_false,,2026-06-09T11:03:27,review_decision=Incorrect instrument/component | corrected_instrument=RISR-C
+P00744,I00025,verified_true,,2026-06-09T10:39:26,review_decision=Correct instrument/component | corrected_instrument=ICEBEAR
+P00748,I00025,verified_true,,2026-06-09T10:39:12,review_decision=Correct instrument/component | corrected_instrument=ICEBEAR
+P00794,I00003,verified_true,,2026-06-09T11:13:32,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P00824,I00021,verified_true,,2026-06-09T10:09:29,review_decision=Correct instrument/component | corrected_instrument=CHAIN
+P00842,I00021,verified_true,,2026-06-09T10:19:06,review_decision=Correct instrument/component | corrected_instrument=CHAIN
+P00849,I00021,verified_true,,2026-06-09T10:09:17,review_decision=Correct instrument/component | corrected_instrument=CHAIN
+P00863,I00026,verified_true,,2026-06-08T15:58:25,review_decision=Correct instrument/component | corrected_instrument=ACHAIM
+P00915,I00024,verified_true,,2026-06-09T10:25:54,review_decision=Correct instrument/component | corrected_instrument=ECHAIM
+P00951,I00024,verified_true,,2026-06-09T10:20:42,review_decision=Correct instrument/component | corrected_instrument=ECHAIM
+P00982,I00022,verified_true,,2026-06-09T09:59:05,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P00994,I00021,verified_true,,2026-06-09T10:17:57,review_decision=Correct instrument/component | corrected_instrument=CHAIN
+P00995,I00022,verified_true,,2026-06-08T16:22:40,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P00996,I00021,verified_true,,2026-06-09T10:18:18,review_decision=Correct instrument/component | corrected_instrument=CHAIN
+P00998,I00024,verified_true,,2026-06-09T10:25:37,review_decision=Correct instrument/component | corrected_instrument=ECHAIM
+P01022,I00024,verified_false,,2026-06-09T10:25:23,review_decision=Incorrect instrument/component | corrected_instrument=ECHAIM
+P01034,I00021,verified_true,,2026-06-09T10:09:07,review_decision=Correct instrument/component | corrected_instrument=CHAIN
+P01071,I00003,verified_true,,2026-06-09T11:14:57,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P01107,I00003,verified_true,,2026-06-09T11:12:53,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P01110,I00003,verified_true,,2026-06-09T11:14:24,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P01112,I00003,verified_true,,2026-06-09T11:14:46,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P01152,I00003,verified_true,,2026-06-09T11:12:16,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P01214,I00004,verified_true,,2026-06-09T11:11:23,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01216,I00022,verified_true,,2026-06-08T16:14:21,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01251,I00004,verified_true,,2026-06-09T11:08:47,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01257,I00003,verified_true,,2026-06-09T11:13:51,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
+P01276,I00004,verified_true,,2026-06-09T11:08:10,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01378,I00004,verified_true,,2026-06-09T11:10:31,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01444,I00011,verified_true,,2026-06-09T10:06:23,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P01450,I00004,verified_true,,2026-06-09T11:10:45,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01452,I00004,verified_true,,2026-06-09T11:10:06,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01563,I00004,verified_true,,2026-06-09T11:10:18,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01571,I00004,verified_true,,2026-06-09T11:11:12,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01680,I00007,verified_true,,2026-06-08T16:07:16,review_decision=Correct instrument/component | corrected_instrument=AGO
+P01770,I00004,verified_true,,2026-06-09T11:11:03,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01795,I00004,verified_true,,2026-06-09T11:07:55,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01830,I00004,verified_true,,2026-06-09T11:11:30,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
+P01942,I00019,verified_true,,2026-06-08T15:57:53,review_decision=Correct instrument/component | corrected_instrument=ABOVE
+P01943,I00019,verified_true,,2026-06-08T15:58:09,review_decision=Correct instrument/component | corrected_instrument=ABOVE
+P01945,I00022,verified_true,,2026-06-08T16:22:20,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01947,I00022,verified_true,,2026-06-08T16:11:53,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01949,I00022,verified_true,,2026-06-08T16:13:41,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01952,I00022,verified_true,,2026-06-08T16:20:22,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01953,I00011,verified_true,,2026-06-09T10:08:32,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P01955,I00022,verified_true,,2026-06-09T10:00:54,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01956,I00022,verified_true,,2026-06-08T16:22:12,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01957,I00022,verified_true,,2026-06-08T16:16:33,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01958,I00022,verified_true,,2026-06-08T16:13:52,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01960,I00022,verified_true,,2026-06-08T16:14:04,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01963,I00022,verified_false,,2026-06-08T16:21:58,review_decision=Incorrect instrument/component | corrected_instrument=AUTUMNX
+P01966,I00022,verified_false,,2026-06-08T16:20:10,review_decision=Incorrect instrument/component | corrected_instrument=AUTUMNX
+P01970,I00022,verified_true,,2026-06-08T16:16:10,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01977,I00022,verified_true,,2026-06-08T16:22:54,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P01978,I00022,verified_true,,2026-06-08T16:20:49,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P02023,I00011,verified_true,,2026-06-09T10:06:36,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P02077,I00011,verified_true,,2026-06-09T10:08:18,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P02105,I00011,verified_true,,2026-06-09T10:08:04,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P02109,I00011,verified_true,,2026-06-09T10:06:05,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P02115,I00011,verified_true,,2026-06-09T10:08:54,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P02175,I00011,verified_true,,2026-06-09T10:07:18,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P02208,I00011,verified_true,,2026-06-09T10:07:36,review_decision=Correct instrument/component | corrected_instrument=CARISMA
+P02231,I00027,verified_true,,2026-06-09T10:19:23,review_decision=Correct instrument/component | corrected_instrument=DNT
+P02234,I00027,verified_true,,2026-06-09T10:20:13,review_decision=Correct instrument/component | corrected_instrument=DNT
+P02235,I00027,verified_true,,2026-06-09T10:20:22,review_decision=Correct instrument/component | corrected_instrument=DNT
+P02264,I00017,verified_true,,2026-06-09T10:38:39,review_decision=Correct instrument/component | corrected_instrument=GO_RIO
+P02268,I00025,verified_true,,2026-06-09T10:39:52,review_decision=Correct instrument/component | corrected_instrument=ICEBEAR

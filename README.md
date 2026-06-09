@@ -29,7 +29,7 @@ Read-only hosted mode keeps filtering, graphs, data quality checks, exports, and
 
 ## CSV structure
 
-Put your CSV database in the `data/` folder:
+The dashboard loads the normalized CSV database in the `data/` folder:
 
 - `papers.csv`
 - `authors.csv`
@@ -40,7 +40,15 @@ Put your CSV database in the `data/` folder:
 - `sources.csv`
 - `paper_sources.csv`
 
-The included CSV files are small examples/templates. Replace them with your real database.
+The included CSV files are generated from the GO-Canada DOI post-processing workflow.
+To rebuild them after updating the source exports, run:
+
+```bash
+python3 scripts/build_dashboard_data_from_exports.py \
+  --import-csv ../output/dashboard_import_ready_standardized.csv \
+  --review-csv data/review/paper_instrument_verification_status.csv \
+  --data-dir data
+```
 
 The DOI review database is loaded from:
 
