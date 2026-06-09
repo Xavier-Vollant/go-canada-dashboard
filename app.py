@@ -22,6 +22,7 @@ import networkx as nx
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import requests
 import streamlit as st
 
 
@@ -50,6 +51,41 @@ def read_only_mode_enabled() -> bool:
         return is_enabled_flag(st.secrets.get("GO_CANADA_READ_ONLY", ""))
     except Exception:
         return False
+
+
+def get_config_value(name: str, default: str = "") -> str:
+    """Read config from environment variables or Streamlit secrets."""
+    value = os.environ.get(name)
+    if value is not None:
+        return str(value).strip()
+    try:
+        return str(st.secrets.get(name, default)).strip()
+    except Exception:
+        return default
+
+
+def admin_password_configured() -> bool:
+    """Return whether an admin password has been configured."""
+    return bool(get_config_value("GO_CANADA_ADMIN_PASSWORD"))
+
+
+def admin_is_authenticated() -> bool:
+    """Return whether the current Streamlit session passed admin auth."""
+    return bool(st.session_state.get("admin_authenticated"))
+
+
+def supabase_config() -> tuple[str, str] | None:
+    """Return Supabase REST config if online persistence is configured."""
+    url = get_config_value("SUPABASE_URL").rstrip("/")
+    key = get_config_value("SUPABASE_SERVICE_ROLE_KEY") or get_config_value("SUPABASE_ANON_KEY")
+    if not url or not key:
+        return None
+    return url, key
+
+
+def database_backend_label() -> str:
+    """Return a user-facing database backend label."""
+    return "Supabase" if supabase_config() else "CSV files"
 
 
 READ_ONLY_MODE = read_only_mode_enabled()
@@ -86,6 +122,19 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
 }
 
 CSV_PATHS = {name: DATA_DIR / f"{name}.csv" for name in REQUIRED_COLUMNS}
+SUPABASE_PAGE_SIZE = 1000
+SUPABASE_INSERT_CHUNK_SIZE = 500
+
+TABLE_DELETE_FILTER_COLUMN = {
+    "papers": "paper_id",
+    "authors": "author_id",
+    "paper_authors": "paper_id",
+    "instruments": "instrument_id",
+    "paper_instruments": "paper_id",
+    "verification": "paper_id",
+    "sources": "source_id",
+    "paper_sources": "paper_id",
+}
 
 REVIEW_SUMMARY_COLUMNS = [
     "DOI",
@@ -355,6 +404,148 @@ def sorted_options(values: Iterable[Any]) -> list[str]:
 # Data loading and database view construction
 # -----------------------------------------------------------------------------
 
+def supabase_headers(key: str) -> dict[str, str]:
+    """Build Supabase REST headers."""
+    return {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+    }
+
+
+def dataframe_for_storage(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    """Normalize a dataframe before writing to CSV or Supabase."""
+    out = df.copy()
+    for col in columns:
+        if col not in out.columns:
+            out[col] = ""
+    out = out[columns]
+    for col in columns:
+        out[col] = out[col].apply(clean_text)
+    return out
+
+
+def fetch_supabase_table(
+    table_name: str,
+    columns: list[str],
+    url: str,
+    key: str,
+) -> pd.DataFrame:
+    """Fetch one Supabase table through the REST API."""
+    rows: list[dict[str, Any]] = []
+    start = 0
+    headers = supabase_headers(key)
+    while True:
+        end = start + SUPABASE_PAGE_SIZE - 1
+        response = requests.get(
+            f"{url}/rest/v1/{table_name}",
+            params={"select": "*"},
+            headers={**headers, "Range": f"{start}-{end}"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        page_rows = response.json()
+        rows.extend(page_rows)
+        if len(page_rows) < SUPABASE_PAGE_SIZE:
+            break
+        start += SUPABASE_PAGE_SIZE
+
+    df = pd.DataFrame(rows)
+    for col in columns:
+        if col not in df.columns:
+            df[col] = ""
+    return df[columns]
+
+
+@st.cache_data(show_spinner="Loading Supabase database...")
+def load_supabase_database(url: str, key: str) -> dict[str, pd.DataFrame]:
+    """Load all normalized tables from Supabase."""
+    return {
+        name: fetch_supabase_table(name, columns, url, key)
+        for name, columns in REQUIRED_COLUMNS.items()
+    }
+
+
+def clear_database_caches() -> None:
+    """Clear all cached database reads."""
+    read_csv_safe.clear()
+    load_csv_database.clear()
+    load_database.clear()
+    load_supabase_database.clear()
+
+
+def delete_supabase_table(table_name: str, url: str, key: str) -> None:
+    """Delete all rows from one Supabase table."""
+    headers = supabase_headers(key)
+    delete_column = TABLE_DELETE_FILTER_COLUMN[table_name]
+    delete_response = requests.delete(
+        f"{url}/rest/v1/{table_name}",
+        params={delete_column: "not.is.null"},
+        headers=headers,
+        timeout=30,
+    )
+    delete_response.raise_for_status()
+
+
+def insert_supabase_table(
+    table_name: str,
+    df: pd.DataFrame,
+    columns: list[str],
+    url: str,
+    key: str,
+) -> None:
+    """Insert all rows for one Supabase table."""
+    headers = supabase_headers(key)
+    out = dataframe_for_storage(df, columns)
+    records = out.to_dict("records")
+    for start in range(0, len(records), SUPABASE_INSERT_CHUNK_SIZE):
+        chunk = records[start : start + SUPABASE_INSERT_CHUNK_SIZE]
+        if not chunk:
+            continue
+        insert_response = requests.post(
+            f"{url}/rest/v1/{table_name}",
+            json=chunk,
+            headers=headers,
+            timeout=60,
+        )
+        insert_response.raise_for_status()
+
+
+def replace_supabase_database(tables: dict[str, pd.DataFrame]) -> None:
+    """Replace all Supabase normalized tables with current app tables."""
+    config = supabase_config()
+    if not config:
+        raise RuntimeError("Supabase is not configured.")
+    url, key = config
+
+    delete_order = [
+        "paper_sources",
+        "verification",
+        "paper_instruments",
+        "paper_authors",
+        "papers",
+        "sources",
+        "instruments",
+        "authors",
+    ]
+    insert_order = [
+        "papers",
+        "authors",
+        "instruments",
+        "sources",
+        "paper_authors",
+        "paper_instruments",
+        "verification",
+        "paper_sources",
+    ]
+    for name in delete_order:
+        delete_supabase_table(name, url, key)
+    for name in insert_order:
+        insert_supabase_table(name, tables[name], REQUIRED_COLUMNS[name], url, key)
+    clear_database_caches()
+
+
 @st.cache_data(show_spinner=False)
 def read_csv_safe(path: Path, required_columns: list[str]) -> pd.DataFrame:
     """Read a CSV file. If it is missing, return an empty table with the expected columns."""
@@ -378,22 +569,29 @@ def write_csv_table(name: str, df: pd.DataFrame) -> None:
 
     DATA_DIR.mkdir(exist_ok=True)
     required_columns = REQUIRED_COLUMNS[name]
-    out = df.copy()
-    for col in required_columns:
-        if col not in out.columns:
-            out[col] = ""
-    out = out[required_columns]
+    out = dataframe_for_storage(df, required_columns)
     out.to_csv(CSV_PATHS[name], index=False)
 
 
 @st.cache_data(show_spinner="Loading CSV database...")
-def load_database(data_dir: str = "data") -> dict[str, pd.DataFrame]:
+def load_csv_database(data_dir: str = "data") -> dict[str, pd.DataFrame]:
     """Load all normalized CSV files."""
     base_dir = Path(data_dir)
     tables = {}
     for name, required_columns in REQUIRED_COLUMNS.items():
         tables[name] = read_csv_safe(base_dir / f"{name}.csv", required_columns)
     return tables
+
+
+@st.cache_data(show_spinner="Loading database...")
+def load_database(data_dir: str = "data") -> dict[str, pd.DataFrame]:
+    """Load all normalized tables from Supabase when configured, otherwise CSV."""
+    config = supabase_config()
+    if config:
+        url, key = config
+        return load_supabase_database(url, key)
+
+    return load_csv_database(data_dir)
 
 
 @st.cache_data(show_spinner="Loading review database...")
@@ -772,11 +970,14 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
 
 
 def save_database_tables(tables: dict[str, pd.DataFrame]) -> None:
-    """Persist all normalized tables and clear Streamlit's CSV cache."""
+    """Persist all normalized tables to Supabase or local CSV files."""
+    if supabase_config():
+        replace_supabase_database(tables)
+        return
+
     for name in REQUIRED_COLUMNS:
         write_csv_table(name, tables[name])
-    read_csv_safe.clear()
-    load_database.clear()
+    clear_database_caches()
 
 
 def normalize_import_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -2557,13 +2758,20 @@ def render_review_database_page(review_tables: dict[str, pd.DataFrame]) -> None:
         )
 
 
-def render_add_import_papers_page(tables: dict[str, pd.DataFrame]) -> None:
+def render_add_import_papers_page(
+    tables: dict[str, pd.DataFrame],
+    *,
+    admin_mode: bool = False,
+) -> None:
     st.header("Add / Import Papers")
-    if READ_ONLY_MODE:
+    if READ_ONLY_MODE and not supabase_config():
         st.info(
             "Adding and importing papers is disabled in the hosted read-only version. "
-            "Use the local app to edit CSV data, then redeploy the updated repository."
+            "Configure Supabase to save online edits permanently."
         )
+        return
+    if READ_ONLY_MODE and not admin_mode:
+        st.info("Use the password-protected Admin Editor to make online changes.")
         return
 
     if "last_import_results" in st.session_state:
@@ -2698,6 +2906,228 @@ def render_add_import_papers_page(tables: dict[str, pd.DataFrame]) -> None:
                     st.error(f"Paper was not added: {message}")
 
 
+def render_admin_login() -> bool:
+    """Render admin login and return whether this session is authenticated."""
+    if not admin_password_configured():
+        st.warning(
+            "Admin editing is disabled because GO_CANADA_ADMIN_PASSWORD is not configured."
+        )
+        return False
+
+    if admin_is_authenticated():
+        c1, c2 = st.columns([3, 1])
+        c1.success("Admin access unlocked for this session.")
+        if c2.button("Log out"):
+            st.session_state["admin_authenticated"] = False
+            st.rerun()
+        return True
+
+    with st.form("admin_login_form"):
+        password = st.text_input("Admin password", type="password")
+        submitted = st.form_submit_button("Unlock editor", type="primary")
+        if submitted:
+            expected_password = get_config_value("GO_CANADA_ADMIN_PASSWORD")
+            if password == expected_password:
+                st.session_state["admin_authenticated"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
+    return False
+
+
+def paper_label(row: pd.Series) -> str:
+    """Build a compact label for selecting papers."""
+    title = clean_text(row.get("title"))
+    doi = clean_text(row.get("DOI"))
+    year = clean_text(row.get("year"))
+    left = f"{year} | " if year else ""
+    right = f" | {doi}" if doi else ""
+    return f"{left}{title[:110]}{right}"
+
+
+def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
+    """Render a simple editor for paper-instrument verification rows."""
+    st.subheader("Change Verification Status")
+    if paper_view.empty:
+        st.info("No papers are loaded.")
+        return
+
+    search_text = st.text_input("Find paper by title, DOI, or author", key="admin_verify_search")
+    candidates = paper_view.copy()
+    if search_text.strip():
+        query = search_text.lower().strip()
+        haystack = (
+            candidates["DOI"].fillna("").astype(str)
+            + " "
+            + candidates["title"].fillna("").astype(str)
+            + " "
+            + candidates["display_authors"].fillna("").astype(str)
+        ).str.lower()
+        candidates = candidates[haystack.str.contains(query, na=False)]
+
+    candidates = candidates.sort_values(["year", "title"], ascending=[False, True]).head(250)
+    if candidates.empty:
+        st.info("No papers match that search.")
+        return
+
+    paper_options = candidates["paper_id"].tolist()
+    label_by_id = {
+        row["paper_id"]: paper_label(row)
+        for _, row in candidates.iterrows()
+    }
+    selected_paper_id = st.selectbox(
+        "Paper",
+        paper_options,
+        format_func=lambda paper_id: label_by_id.get(paper_id, paper_id),
+        key="admin_verify_paper",
+    )
+
+    selected_paper = paper_view[paper_view["paper_id"] == selected_paper_id].iloc[0]
+    st.write(f"**Title:** {clean_text(selected_paper['title'])}")
+    st.write(f"**DOI:** {clean_text(selected_paper['DOI']) or 'Missing'}")
+    st.write(f"**Current paper status:** {clean_text(selected_paper['verification_status'])}")
+
+    paper_instruments = tables["paper_instruments"]
+    instruments = tables["instruments"]
+    assignments = paper_instruments[
+        paper_instruments["paper_id"].fillna("").astype(str) == selected_paper_id
+    ].merge(instruments, on="instrument_id", how="left")
+    if assignments.empty:
+        st.info("This paper has no instrument assignments.")
+        return
+
+    instrument_options = assignments["instrument_id"].astype(str).tolist()
+    instrument_labels = dict(
+        zip(
+            assignments["instrument_id"].astype(str),
+            assignments["instrument_name"].fillna("").astype(str),
+        )
+    )
+    selected_instrument_id = st.selectbox(
+        "Instrument assignment",
+        instrument_options,
+        format_func=lambda instrument_id: instrument_labels.get(instrument_id, instrument_id),
+        key="admin_verify_instrument",
+    )
+
+    existing = tables["verification"].copy()
+    existing = existing[
+        (existing["paper_id"].fillna("").astype(str) == selected_paper_id)
+        & (existing["instrument_id"].fillna("").astype(str) == selected_instrument_id)
+    ]
+    existing_row = existing.iloc[0] if not existing.empty else pd.Series(dtype="object")
+    current_status = normalize_status(existing_row.get("status", "unchecked"))
+    status_options = ["unchecked", "verified_true", "verified_false", "unsure"]
+    default_status_index = status_options.index(current_status) if current_status in status_options else 0
+
+    with st.form("admin_verification_form"):
+        new_status = st.selectbox(
+            "Verification status",
+            status_options,
+            index=default_status_index,
+        )
+        evidence_quote = st.text_area(
+            "Evidence quote",
+            value=clean_text(existing_row.get("evidence_quote")),
+        )
+        notes = st.text_area("Notes", value=clean_text(existing_row.get("notes")))
+        checked_date = st.text_input(
+            "Checked date/time",
+            value=clean_text(existing_row.get("checked_date")) or datetime.now().isoformat(timespec="seconds"),
+        )
+        submitted = st.form_submit_button("Save verification status", type="primary")
+
+    if submitted:
+        working_tables = {name: table.copy() for name, table in tables.items()}
+        verification = working_tables["verification"].copy()
+        keep_mask = ~(
+            (verification["paper_id"].fillna("").astype(str) == selected_paper_id)
+            & (verification["instrument_id"].fillna("").astype(str) == selected_instrument_id)
+        )
+        verification = verification[keep_mask].reset_index(drop=True)
+        if new_status != "unchecked":
+            verification = append_row(
+                verification,
+                {
+                    "paper_id": selected_paper_id,
+                    "instrument_id": selected_instrument_id,
+                    "status": new_status,
+                    "evidence_quote": evidence_quote,
+                    "checked_date": checked_date,
+                    "notes": notes,
+                },
+                REQUIRED_COLUMNS["verification"],
+            )
+        working_tables["verification"] = verification
+        save_database_tables(working_tables)
+        st.success("Verification status saved.")
+        st.rerun()
+
+
+def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
+    """Render backend setup and sync controls."""
+    st.subheader("Online Database")
+    st.write(f"Current backend: **{database_backend_label()}**")
+
+    if not supabase_config():
+        st.info(
+            "Supabase is not configured yet. The editor can still work locally, "
+            "but hosted online changes need Supabase secrets."
+        )
+        st.code(
+            "\n".join(
+                [
+                    'GO_CANADA_ADMIN_PASSWORD = "choose-a-password"',
+                    'SUPABASE_URL = "https://your-project.supabase.co"',
+                    'SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"',
+                ]
+            ),
+            language="toml",
+        )
+        return
+
+    st.success("Supabase is configured. Admin saves will update the online database.")
+    st.warning(
+        "The sync button replaces the Supabase tables with the CSV database currently in this repository."
+    )
+    if st.button("Seed / replace Supabase from repository CSVs", type="primary"):
+        csv_tables = load_csv_database(str(DATA_DIR))
+        replace_supabase_database(csv_tables)
+        st.success("Supabase was replaced with the repository CSV database.")
+        st.rerun()
+
+    st.download_button(
+        label="Download current papers table",
+        data=tables["papers"].to_csv(index=False).encode("utf-8"),
+        file_name="papers.csv",
+        mime="text/csv",
+    )
+
+
+def render_admin_editor_page(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
+    """Render password-protected database editing tools."""
+    st.header("Admin Editor")
+    if not render_admin_login():
+        return
+
+    if READ_ONLY_MODE and not supabase_config():
+        st.warning(
+            "Hosted read-only mode is enabled and Supabase is not configured, "
+            "so changes cannot be saved permanently online yet."
+        )
+
+    st.caption(f"Database backend: {database_backend_label()}")
+    add_tab, verify_tab, sync_tab = st.tabs(
+        ["Add / Import Papers", "Verification Status", "Online Database"]
+    )
+    with add_tab:
+        render_add_import_papers_page(tables, admin_mode=True)
+    with verify_tab:
+        render_verification_editor(tables, paper_view)
+    with sync_tab:
+        render_database_sync_page(tables)
+
+
 def render_export_page(
     filtered_df: pd.DataFrame,
     filters: dict[str, Any],
@@ -2755,7 +3185,7 @@ def main() -> None:
     if READ_ONLY_MODE:
         st.info(
             "Hosted read-only mode is enabled. Filtering, graphs, data quality checks, "
-            "and exports work normally; CSV imports, manual additions, and preset saving are disabled."
+            "and exports work normally. Password-protected online editing works when Supabase is configured."
         )
 
     tables = load_database(str(DATA_DIR))
@@ -2782,6 +3212,8 @@ def main() -> None:
         page_options = ["Review Database"]
     elif not READ_ONLY_MODE:
         page_options.insert(4, "Add / Import Papers")
+    if admin_password_configured():
+        page_options.append("Admin Editor")
     page = st.sidebar.radio("Page", page_options)
 
     if page == "Review Database":
@@ -2789,6 +3221,11 @@ def main() -> None:
         st.sidebar.caption(f"Review papers: {len(review_summary):,}")
         st.sidebar.caption(f"Review assignments: {len(review_detail):,}")
         render_review_database_page(review_tables)
+        return
+    if page == "Admin Editor":
+        st.sidebar.divider()
+        st.sidebar.caption(f"Database backend: {database_backend_label()}")
+        render_admin_editor_page(tables, paper_view)
         return
 
     render_saved_view_controls()

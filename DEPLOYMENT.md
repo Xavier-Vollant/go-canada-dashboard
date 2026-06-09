@@ -2,7 +2,7 @@
 
 This project is prepared for Streamlit Community Cloud.
 
-The hosted version should normally run in read-only mode. Users can filter, view graphs, inspect data quality, and export CSVs, but they cannot permanently import or manually add papers from the hosted app. To update the online database, edit the CSV files locally, commit them to GitHub, and redeploy.
+The public dashboard can run in read-only mode while password-protected admins edit the database online. Permanent online editing uses Supabase as the database backend. If Supabase is not configured, the app falls back to the CSV files committed in `data/`.
 
 ## Files Required For Deployment
 
@@ -30,18 +30,28 @@ Do not commit a real `.streamlit/secrets.toml` file. Use Streamlit Community Clo
 
 ## Streamlit Cloud Secret
 
-In Streamlit Community Cloud, add this secret:
+For a public read-only dashboard, add this secret:
 
 ```toml
 GO_CANADA_READ_ONLY = "true"
 ```
 
-This disables features that try to write permanent CSV changes:
+This hides public CSV editing features:
 
 - adding/importing papers
 - saving new preset JSON files
 
 Filtering, graphs, data quality checks, manual session exclusions, and CSV exports still work.
+
+For password-protected online editing, also add:
+
+```toml
+GO_CANADA_ADMIN_PASSWORD = "choose-a-password"
+SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+```
+
+The service role key must stay in Streamlit secrets only. Do not commit it to GitHub.
 
 ## Step-by-Step: What You Need To Do
 
@@ -129,13 +139,40 @@ GO_CANADA_READ_ONLY = "true"
 
 Then save the settings.
 
-### 7. Deploy
+### 7. Optional: enable online editing with Supabase
+
+1. Create a Supabase project.
+2. Open Supabase SQL Editor.
+3. Run the SQL in:
+
+```text
+docs/supabase_schema.sql
+```
+
+4. In Streamlit Cloud secrets, add:
+
+```toml
+GO_CANADA_READ_ONLY = "true"
+GO_CANADA_ADMIN_PASSWORD = "choose-a-password"
+SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+```
+
+5. Deploy or reboot the app.
+6. Open the app and choose **Admin Editor** in the sidebar.
+7. Enter the admin password.
+8. Open **Online Database**.
+9. Click **Seed / replace Supabase from repository CSVs** once.
+
+After that, the dashboard loads from Supabase and admin edits save directly online.
+
+### 8. Deploy
 
 Click `Deploy`.
 
 Streamlit will install dependencies from `requirements.txt`, run `app.py`, and give you a public link.
 
-### 8. Test the hosted app
+### 9. Test the hosted app
 
 Open the Streamlit link and check:
 
@@ -144,12 +181,21 @@ Open the Streamlit link and check:
 3. Graphs work.
 4. Data Quality page works.
 5. Exports download CSVs.
-6. The `Add / Import Papers` page is hidden.
+6. The public `Add / Import Papers` page is hidden when read-only mode is on.
 7. Preset saving is disabled.
+8. If Supabase is configured, the **Admin Editor** page appears and requires the password.
 
-### 9. Update the online data later
+### 10. Update the online data later
 
-To update the hosted dashboard:
+With Supabase configured:
+
+1. Open the hosted Streamlit app.
+2. Choose **Admin Editor**.
+3. Enter the admin password.
+4. Add papers, import a CSV, or change verification status.
+5. The app saves directly to Supabase.
+
+Without Supabase:
 
 1. Run the app locally.
 2. Use `Add / Import Papers`, or edit the CSV files in `data/`.
@@ -177,14 +223,13 @@ Then use the Add / Import Papers page locally. After editing:
 3. Push to GitHub.
 4. Streamlit Cloud will redeploy from the updated repository.
 
-## If You Want Online Editing Later
+## Admin Editing Features
 
-The current hosted setup is intentionally read-only because Streamlit Cloud file writes are not a good permanent database. If multiple people need to edit online, the next upgrade should be a persistent backend such as:
+After unlocking **Admin Editor**, admins can:
 
-- SQLite on a controlled server
-- PostgreSQL
-- Supabase
-- Google Sheets
-- Airtable
-
-That would let imports and manual edits persist safely online.
+- add one paper manually
+- download a CSV import template
+- upload a paper CSV
+- change a paper-instrument verification status
+- add evidence quotes and notes
+- seed or replace Supabase from the repository CSV database

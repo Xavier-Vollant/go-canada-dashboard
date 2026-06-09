@@ -25,7 +25,18 @@ For a hosted public version, set this Streamlit Cloud secret:
 GO_CANADA_READ_ONLY = "true"
 ```
 
-Read-only hosted mode keeps filtering, graphs, data quality checks, exports, and session-only exclusions enabled, but disables features that try to permanently write CSV changes online.
+Read-only hosted mode keeps filtering, graphs, data quality checks, exports, and session-only exclusions enabled. If Supabase is configured, password-protected admins can still edit the online database from the hosted app.
+
+For password-protected online editing, add these Streamlit Cloud secrets:
+
+```toml
+GO_CANADA_READ_ONLY = "true"
+GO_CANADA_ADMIN_PASSWORD = "choose-a-password"
+SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+```
+
+Create the Supabase tables with [`docs/supabase_schema.sql`](docs/supabase_schema.sql), then use the app's **Admin Editor** page to seed Supabase from the repository CSVs.
 
 ## CSV structure
 
@@ -70,4 +81,5 @@ These files power the **Review Database** page in the Streamlit app.
 - Optional `filter_summary.csv` export.
 - Saved views stored as JSON files in `presets/`.
 - Bulk CSV import and manual paper entry for local editing.
-- Optional hosted read-only mode for online deployment.
+- Password-protected online editing through Supabase.
+- Optional hosted read-only mode for public deployment.
