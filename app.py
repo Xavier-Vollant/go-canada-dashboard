@@ -3270,11 +3270,8 @@ def main() -> None:
 
     tables = load_database(str(DATA_DIR))
     paper_view = build_paper_view(tables)
-    review_tables = load_review_database(str(REVIEW_DIR))
-    review_summary = review_tables["summary"]
-    review_detail = review_tables["detail"]
 
-    if paper_view.empty and review_summary.empty and review_detail.empty:
+    if paper_view.empty:
         st.error(
             "No papers loaded. Add CSV files to the data/ folder, starting with data/papers.csv."
         )
@@ -3282,26 +3279,17 @@ def main() -> None:
 
     page_options = [
         "Dashboard",
-        "Review Database",
         "Filter + Paper List",
         "Graphs",
         "Data Quality",
         "Export",
     ]
-    if paper_view.empty:
-        page_options = ["Review Database"]
-    elif not READ_ONLY_MODE:
+    if not READ_ONLY_MODE:
         page_options.insert(4, "Add / Import Papers")
     if admin_password_configured():
         page_options.append("Admin Editor")
     page = st.sidebar.radio("Page", page_options)
 
-    if page == "Review Database":
-        st.sidebar.divider()
-        st.sidebar.caption(f"Review papers: {len(review_summary):,}")
-        st.sidebar.caption(f"Review assignments: {len(review_detail):,}")
-        render_review_database_page(review_tables)
-        return
     if page == "Admin Editor":
         st.sidebar.divider()
         st.sidebar.caption(f"Database backend: {database_backend_label()}")

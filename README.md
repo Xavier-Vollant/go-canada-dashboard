@@ -61,19 +61,18 @@ python3 scripts/build_dashboard_data_from_exports.py \
   --data-dir data
 ```
 
-The DOI review database is loaded from:
+The static DOI review exports are kept in:
 
 - `data/review/paper_verification_summary.csv`
 - `data/review/paper_instrument_verification_status.csv`
 
-These files power the **Review Database** page in the Streamlit app.
+These are historical exports from the review workflow. The live dashboard and admin editor use the normalized database tables instead.
 
 ## Main features
 
 - Advanced filtering by instrument, author, year range, publisher, journal, paper type, verification status, GO-Canada status, and source.
 - Toggle to remove known false positives.
 - Dynamic paper list.
-- DOI-based review database for verified, partially verified, and unverified papers.
 - Live statistics for the current filtered subset.
 - Estimated false-positive rate and estimated clean count.
 - Plotly graphs based on current filters.
