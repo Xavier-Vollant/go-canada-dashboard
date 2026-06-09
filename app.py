@@ -31,6 +31,7 @@ import streamlit as st
 
 APP_TITLE = "GO-Canada Publication Analytics Dashboard"
 DATA_DIR = Path("data")
+REVIEW_DIR = DATA_DIR / "review"
 PRESET_DIR = Path("presets")
 
 
@@ -85,6 +86,43 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
 }
 
 CSV_PATHS = {name: DATA_DIR / f"{name}.csv" for name in REQUIRED_COLUMNS}
+
+REVIEW_SUMMARY_COLUMNS = [
+    "DOI",
+    "title",
+    "year",
+    "journal",
+    "publisher",
+    "paper_type",
+    "authors",
+    "instruments",
+    "paper_review_status",
+    "reviewed_instruments",
+    "total_instruments",
+]
+
+REVIEW_DETAIL_COLUMNS = [
+    "DOI",
+    "title",
+    "year",
+    "journal",
+    "publisher",
+    "paper_type",
+    "authors",
+    "instrument",
+    "all_instruments_on_paper",
+    "instrument_status",
+    "review_status",
+    "review_decision",
+    "corrected_instrument",
+    "evidence_quote",
+    "review_notes",
+    "reviewed_at",
+    "paper_url",
+]
+
+REVIEW_PAPER_STATUS_ORDER = ["verified", "partially_verified", "unverified"]
+REVIEW_ASSIGNMENT_STATUS_ORDER = ["verified", "unverified"]
 
 FILTER_WIDGET_KEYS = [
     "selected_instruments",
@@ -356,6 +394,38 @@ def load_database(data_dir: str = "data") -> dict[str, pd.DataFrame]:
     for name, required_columns in REQUIRED_COLUMNS.items():
         tables[name] = read_csv_safe(base_dir / f"{name}.csv", required_columns)
     return tables
+
+
+@st.cache_data(show_spinner="Loading review database...")
+def load_review_database(data_dir: str = "data/review") -> dict[str, pd.DataFrame]:
+    """Load DOI-based paper review exports."""
+    base_dir = Path(data_dir)
+    return {
+        "summary": read_csv_safe(
+            base_dir / "paper_verification_summary.csv",
+            REVIEW_SUMMARY_COLUMNS,
+        ),
+        "detail": read_csv_safe(
+            base_dir / "paper_instrument_verification_status.csv",
+            REVIEW_DETAIL_COLUMNS,
+        ),
+    }
+
+
+def split_review_list(value: Any) -> list[str]:
+    """Split review export list fields."""
+    text = clean_text(value)
+    if not text:
+        return []
+    return [part.strip() for part in text.split(";") if part.strip()]
+
+
+def review_contains_any(value: Any, selected: list[str]) -> bool:
+    """Return True when a semicolon-separated field contains one selected item."""
+    if not selected:
+        return True
+    values = set(split_review_list(value))
+    return any(item in values for item in selected)
 
 
 def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -2257,6 +2327,228 @@ def render_data_quality_page(filtered_df: pd.DataFrame) -> None:
         )
 
 
+def review_year_bounds(summary_df: pd.DataFrame, detail_df: pd.DataFrame) -> tuple[int, int] | None:
+    """Return usable year bounds for the review database."""
+    years = pd.concat(
+        [
+            pd.to_numeric(summary_df.get("year", pd.Series(dtype="object")), errors="coerce"),
+            pd.to_numeric(detail_df.get("year", pd.Series(dtype="object")), errors="coerce"),
+        ],
+        ignore_index=True,
+    ).dropna()
+    if years.empty:
+        return None
+    return int(years.min()), int(years.max())
+
+
+def apply_review_filters(
+    summary_df: pd.DataFrame,
+    detail_df: pd.DataFrame,
+    *,
+    text_query: str,
+    paper_statuses: list[str],
+    instruments: list[str],
+    year_range: tuple[int, int] | None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply shared review database filters to paper and assignment exports."""
+    summary = summary_df.copy()
+    detail = detail_df.copy()
+
+    if text_query:
+        query = text_query.lower().strip()
+        summary_text = (
+            summary["DOI"].fillna("").astype(str)
+            + " "
+            + summary["title"].fillna("").astype(str)
+            + " "
+            + summary["authors"].fillna("").astype(str)
+        ).str.lower()
+        detail_text = (
+            detail["DOI"].fillna("").astype(str)
+            + " "
+            + detail["title"].fillna("").astype(str)
+            + " "
+            + detail["authors"].fillna("").astype(str)
+        ).str.lower()
+        summary = summary[summary_text.str.contains(query, na=False)]
+        detail = detail[detail_text.str.contains(query, na=False)]
+
+    if paper_statuses:
+        summary = summary[summary["paper_review_status"].isin(paper_statuses)]
+        status_dois = set(summary["DOI"].fillna("").astype(str))
+        detail = detail[detail["DOI"].fillna("").astype(str).isin(status_dois)]
+
+    if instruments:
+        summary = summary[summary["instruments"].apply(lambda value: review_contains_any(value, instruments))]
+        detail = detail[detail["instrument"].isin(instruments)]
+
+    if year_range:
+        year_start, year_end = year_range
+        summary_year = pd.to_numeric(summary["year"], errors="coerce")
+        detail_year = pd.to_numeric(detail["year"], errors="coerce")
+        summary = summary[summary_year.between(year_start, year_end, inclusive="both")]
+        detail = detail[detail_year.between(year_start, year_end, inclusive="both")]
+
+    return summary.reset_index(drop=True), detail.reset_index(drop=True)
+
+
+def render_review_database_page(review_tables: dict[str, pd.DataFrame]) -> None:
+    st.header("Review Database")
+    summary_df = review_tables["summary"]
+    detail_df = review_tables["detail"]
+
+    if summary_df.empty and detail_df.empty:
+        st.info("No review database CSVs were found in data/review.")
+        return
+
+    all_instruments = sorted_options(
+        list(detail_df.get("instrument", pd.Series(dtype="object")))
+        + [
+            item
+            for value in summary_df.get("instruments", pd.Series(dtype="object"))
+            for item in split_review_list(value)
+        ]
+    )
+    paper_status_options = [
+        status
+        for status in REVIEW_PAPER_STATUS_ORDER
+        if status in set(summary_df.get("paper_review_status", pd.Series(dtype="object")))
+    ]
+    if not paper_status_options:
+        paper_status_options = sorted_options(summary_df.get("paper_review_status", []))
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Papers", f"{len(summary_df):,}")
+    c2.metric("Verified papers", f"{int((summary_df['paper_review_status'] == 'verified').sum()):,}")
+    c3.metric(
+        "Partially verified",
+        f"{int((summary_df['paper_review_status'] == 'partially_verified').sum()):,}",
+    )
+    c4.metric("Unverified papers", f"{int((summary_df['paper_review_status'] == 'unverified').sum()):,}")
+
+    c5, c6, c7, c8 = st.columns(4)
+    c5.metric("Paper-instrument rows", f"{len(detail_df):,}")
+    c6.metric("Verified assignments", f"{int((detail_df['review_status'] == 'verified').sum()):,}")
+    c7.metric("Unverified assignments", f"{int((detail_df['review_status'] == 'unverified').sum()):,}")
+    c8.metric("Instruments", f"{len(all_instruments):,}")
+
+    with st.expander("Review database filters", expanded=True):
+        f1, f2 = st.columns(2)
+        with f1:
+            text_query = st.text_input("Search DOI, title, or author", key="review_text_query")
+            selected_statuses = st.multiselect(
+                "Paper review status",
+                paper_status_options,
+                key="review_paper_statuses",
+            )
+        with f2:
+            selected_instruments = st.multiselect(
+                "Instrument",
+                all_instruments,
+                key="review_instruments",
+            )
+            bounds = review_year_bounds(summary_df, detail_df)
+            if bounds and bounds[0] != bounds[1]:
+                default_range = st.session_state.get("review_year_range", bounds)
+                if not isinstance(default_range, (list, tuple)) or len(default_range) != 2:
+                    default_range = bounds
+                year_range = st.slider(
+                    "Year range",
+                    min_value=bounds[0],
+                    max_value=bounds[1],
+                    value=(max(bounds[0], int(default_range[0])), min(bounds[1], int(default_range[1]))),
+                    key="review_year_range",
+                )
+            else:
+                year_range = bounds
+
+    filtered_summary, filtered_detail = apply_review_filters(
+        summary_df,
+        detail_df,
+        text_query=text_query,
+        paper_statuses=selected_statuses,
+        instruments=selected_instruments,
+        year_range=year_range,
+    )
+
+    st.caption(
+        f"Showing {len(filtered_summary):,} papers and "
+        f"{len(filtered_detail):,} paper-instrument assignments."
+    )
+
+    summary_tab, detail_tab = st.tabs(["Paper DOI list", "Paper-instrument list"])
+    with summary_tab:
+        summary_columns = [
+            "DOI",
+            "title",
+            "year",
+            "journal",
+            "publisher",
+            "paper_type",
+            "authors",
+            "instruments",
+            "paper_review_status",
+            "reviewed_instruments",
+            "total_instruments",
+        ]
+        st.dataframe(
+            filtered_summary[summary_columns],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.download_button(
+            label="Download paper_verification_summary.csv",
+            data=filtered_summary.to_csv(index=False).encode("utf-8"),
+            file_name="paper_verification_summary.csv",
+            mime="text/csv",
+        )
+
+    with detail_tab:
+        assignment_status_options = [
+            status
+            for status in REVIEW_ASSIGNMENT_STATUS_ORDER
+            if status in set(filtered_detail.get("review_status", pd.Series(dtype="object")))
+        ]
+        if not assignment_status_options:
+            assignment_status_options = sorted_options(filtered_detail.get("review_status", []))
+        selected_assignment_statuses = st.multiselect(
+            "Assignment review status",
+            assignment_status_options,
+            key="review_assignment_statuses",
+        )
+        detail_display = filtered_detail.copy()
+        if selected_assignment_statuses:
+            detail_display = detail_display[
+                detail_display["review_status"].isin(selected_assignment_statuses)
+            ]
+
+        detail_columns = [
+            "DOI",
+            "title",
+            "year",
+            "instrument",
+            "all_instruments_on_paper",
+            "instrument_status",
+            "review_status",
+            "review_decision",
+            "corrected_instrument",
+            "reviewed_at",
+            "paper_url",
+        ]
+        st.dataframe(
+            detail_display[detail_columns],
+            use_container_width=True,
+            hide_index=True,
+            column_config={"paper_url": st.column_config.LinkColumn("paper_url")},
+        )
+        st.download_button(
+            label="Download paper_instrument_verification_status.csv",
+            data=detail_display.to_csv(index=False).encode("utf-8"),
+            file_name="paper_instrument_verification_status.csv",
+            mime="text/csv",
+        )
+
+
 def render_add_import_papers_page(tables: dict[str, pd.DataFrame]) -> None:
     st.header("Add / Import Papers")
     if READ_ONLY_MODE:
@@ -2460,12 +2752,36 @@ def main() -> None:
 
     tables = load_database(str(DATA_DIR))
     paper_view = build_paper_view(tables)
+    review_tables = load_review_database(str(REVIEW_DIR))
+    review_summary = review_tables["summary"]
+    review_detail = review_tables["detail"]
 
-    if paper_view.empty:
+    if paper_view.empty and review_summary.empty and review_detail.empty:
         st.error(
             "No papers loaded. Add CSV files to the data/ folder, starting with data/papers.csv."
         )
         st.stop()
+
+    page_options = [
+        "Dashboard",
+        "Review Database",
+        "Filter + Paper List",
+        "Graphs",
+        "Data Quality",
+        "Export",
+    ]
+    if paper_view.empty:
+        page_options = ["Review Database"]
+    elif not READ_ONLY_MODE:
+        page_options.insert(4, "Add / Import Papers")
+    page = st.sidebar.radio("Page", page_options)
+
+    if page == "Review Database":
+        st.sidebar.divider()
+        st.sidebar.caption(f"Review papers: {len(review_summary):,}")
+        st.sidebar.caption(f"Review assignments: {len(review_detail):,}")
+        render_review_database_page(review_tables)
+        return
 
     render_saved_view_controls()
     filters = render_filters(paper_view)
@@ -2481,11 +2797,6 @@ def main() -> None:
         apply_verification_filter=False,
     )
     filtered_df = apply_filters(paper_view, filters)
-
-    page_options = ["Dashboard", "Filter + Paper List", "Graphs", "Data Quality", "Export"]
-    if not READ_ONLY_MODE:
-        page_options.insert(4, "Add / Import Papers")
-    page = st.sidebar.radio("Page", page_options)
 
     st.sidebar.divider()
     st.sidebar.caption(f"Loaded papers: {len(paper_view):,}")

@@ -42,11 +42,19 @@ Put your CSV database in the `data/` folder:
 
 The included CSV files are small examples/templates. Replace them with your real database.
 
+The DOI review database is loaded from:
+
+- `data/review/paper_verification_summary.csv`
+- `data/review/paper_instrument_verification_status.csv`
+
+These files power the **Review Database** page in the Streamlit app.
+
 ## Main features
 
 - Advanced filtering by instrument, author, year range, publisher, journal, paper type, verification status, GO-Canada status, and source.
 - Toggle to remove known false positives.
 - Dynamic paper list.
+- DOI-based review database for verified, partially verified, and unverified papers.
 - Live statistics for the current filtered subset.
 - Estimated false-positive rate and estimated clean count.
 - Plotly graphs based on current filters.
