@@ -71,7 +71,7 @@ These are historical exports from the review workflow. The live dashboard and ad
 ## Main features
 
 - Advanced filtering by instrument, author, year range, publisher, journal, paper type, verification status, GO-Canada status, and source.
-- Combined filter groups for building custom paper lists from multiple different filter rules.
+- Combined stored paper lists for building custom results from multiple different filter runs.
 - Sidebar search across title, DOI, authors, instruments, journal, publisher, and paper type.
 - Toggle to remove known false positives.
 - Dynamic paper list.
@@ -81,7 +81,7 @@ These are historical exports from the review workflow. The live dashboard and ad
 - Plotly graphs based on current filters.
 - CSV export of the current filtered view.
 - Optional `filter_summary.csv` export.
-- Shared presets that admins can create, update, and delete for everyone, including combined filter groups.
+- Shared presets that admins can create, update, and delete for everyone, including combined stored lists.
 - Bulk CSV import and manual paper entry for local editing.
 - Password-protected online editing through Supabase, including paper metadata, verification status, and shared presets.
 - Optional hosted read-only mode for public deployment.

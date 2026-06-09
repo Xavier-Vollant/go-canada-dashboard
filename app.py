@@ -1405,6 +1405,7 @@ def current_filter_group(filters: dict[str, Any]) -> dict[str, Any]:
 
 def filter_group_summary(group: dict[str, Any]) -> str:
     """Build a compact user-facing summary for one filter group."""
+    stored_count = group.get("paper_count")
     parts = []
     labels = [
         ("paper_search_query", "Search"),
@@ -1434,49 +1435,60 @@ def filter_group_summary(group: dict[str, Any]) -> str:
     if isinstance(year_range, (list, tuple)) and len(year_range) == 2:
         parts.append(f"Years: {year_range[0]}-{year_range[1]}")
 
-    return " | ".join(parts) if parts else "All papers"
+    summary = " | ".join(parts) if parts else "All papers"
+    if stored_count is not None:
+        summary = f"{summary} ({stored_count} stored papers)"
+    return summary
 
 
-def render_combined_filter_controls(filters: dict[str, Any]) -> list[dict[str, Any]]:
-    """Render controls for combining multiple filter groups by union."""
+def render_combined_filter_controls(df: pd.DataFrame, filters: dict[str, Any]) -> list[dict[str, Any]]:
+    """Render controls for combining multiple stored paper lists by union."""
     groups = st.session_state.get("combined_filter_groups", [])
     if not isinstance(groups, list):
         groups = []
         st.session_state["combined_filter_groups"] = groups
 
     with st.sidebar.expander("Combined filter groups", expanded=bool(groups)):
-        st.caption("Add the current filters as a group. Results become Group 1 OR Group 2 OR Group 3.")
+        st.caption(
+            "Add the current filter result as a stored paper list. "
+            "Results become List 1 OR List 2 OR List 3."
+        )
         current_group_name = st.text_input(
-            "Group name",
+            "List name",
             key="combined_filter_group_name",
             placeholder="Example: REGO 2012-2014",
         )
-        if st.button("Add current filters as group"):
-            group = current_filter_group(filters)
+        current_group = current_filter_group(filters)
+        current_group_df = apply_positive_filter_set(df, current_group)
+        st.caption(f"Current filter would store {len(current_group_df):,} papers.")
+        if st.button("Add current filter result as list"):
+            group = current_group
             group["name"] = clean_text(current_group_name) or f"Group {len(groups) + 1}"
+            group["paper_ids"] = current_group_df["paper_id"].astype(str).tolist()
+            group["paper_count"] = len(group["paper_ids"])
             groups = groups + [group]
             st.session_state["combined_filter_groups"] = groups
             st.rerun()
 
         if groups:
-            st.info("Combined mode is active. Current filters affect results only after you add them as a group.")
-            st.write("Active groups:")
+            st.info("Combined mode is active. Current filters affect results only after you store them as a list.")
+            st.write("Stored lists:")
             remove_index = None
             for index, group in enumerate(groups):
                 label = clean_text(group.get("name")) or f"Group {index + 1}"
                 st.caption(f"{index + 1}. {label}: {filter_group_summary(group)}")
-                if st.button(f"Remove group {index + 1}", key=f"remove_filter_group_{index}"):
+                if st.button(f"Remove list {index + 1}", key=f"remove_filter_group_{index}"):
                     remove_index = index
             if remove_index is not None:
                 st.session_state["combined_filter_groups"] = [
                     group for index, group in enumerate(groups) if index != remove_index
                 ]
                 st.rerun()
-            if st.button("Clear all groups"):
+            if st.button("Clear all stored lists"):
                 st.session_state["combined_filter_groups"] = []
                 st.rerun()
         else:
-            st.caption("No combined groups yet. The app is using the current single filter.")
+            st.caption("No stored lists yet. The app is using the current single filter.")
 
     return st.session_state.get("combined_filter_groups", [])
 
@@ -1672,7 +1684,7 @@ def render_filters(df: pd.DataFrame) -> dict[str, Any]:
         "year_range": year_range,
         "remove_known_false_positives": remove_known_false_positives,
     }
-    filters["combined_filter_groups"] = render_combined_filter_controls(filters)
+    filters["combined_filter_groups"] = render_combined_filter_controls(df, filters)
     return filters
 
 
@@ -1888,14 +1900,19 @@ def apply_filters(
     """Apply current filters, supporting OR-combined filter groups."""
     groups = filters.get("combined_filter_groups") or []
     if groups:
-        group_frames = [
-            apply_positive_filter_set(
-                df,
-                group,
-                apply_verification_filter=apply_verification_filter,
-            )
-            for group in groups
-        ]
+        group_frames = []
+        for group in groups:
+            paper_ids = [clean_text(paper_id) for paper_id in group.get("paper_ids", []) if clean_text(paper_id)]
+            if "paper_ids" in group:
+                group_frames.append(df[df["paper_id"].astype(str).isin(paper_ids)])
+            else:
+                group_frames.append(
+                    apply_positive_filter_set(
+                        df,
+                        group,
+                        apply_verification_filter=apply_verification_filter,
+                    )
+                )
         group_frames = [frame for frame in group_frames if not frame.empty]
         if group_frames:
             out = (
