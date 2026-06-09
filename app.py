@@ -193,6 +193,7 @@ FILTER_WIDGET_KEYS = [
     "selected_verification_statuses",
     "selected_go_canada_statuses",
     "selected_sources",
+    "paper_search_query",
     "excluded_paper_ids",
     "excluded_instruments",
     "excluded_authors",
@@ -231,9 +232,11 @@ DEFAULT_VISIBLE_COLUMNS = [
     "journal",
     "publisher",
     "display_instruments",
+    "display_instrument_verification",
     "paper_type",
     "verification_status",
     "evidence_quote",
+    "paper_url",
     "display_sources",
     "notes",
 ]
@@ -251,9 +254,11 @@ COLUMN_LABELS = {
     "display_authors": "Authors",
     "first_author": "First author",
     "display_instruments": "Instruments",
+    "display_instrument_verification": "Instrument verification",
     "verification_status": "Verification status",
     "evidence_quote": "Evidence quote",
     "checked_date": "Checked date",
+    "paper_url": "Open paper",
     "display_sources": "Source / origin",
     "notes": "Notes",
 }
@@ -409,6 +414,40 @@ def contains_any(items: list[str], selected: list[str]) -> bool:
 def sorted_options(values: Iterable[Any]) -> list[str]:
     """Return clean sorted options for Streamlit widgets."""
     return sorted(unique_preserve_order(values), key=lambda x: x.lower())
+
+
+def doi_to_url(doi: Any) -> str:
+    """Build a DOI landing-page URL when a DOI exists."""
+    text = clean_text(doi)
+    if not text:
+        return ""
+    if text.lower().startswith(("http://", "https://")):
+        return text
+    return f"https://doi.org/{text}"
+
+
+def paper_search_mask(df: pd.DataFrame, query: str) -> pd.Series:
+    """Return rows matching a simple text search across paper metadata."""
+    if not query.strip():
+        return pd.Series(True, index=df.index)
+
+    query = query.lower().strip()
+    searchable = (
+        df["DOI"].fillna("").astype(str)
+        + " "
+        + df["title"].fillna("").astype(str)
+        + " "
+        + df["journal"].fillna("").astype(str)
+        + " "
+        + df["publisher"].fillna("").astype(str)
+        + " "
+        + df["paper_type"].fillna("").astype(str)
+        + " "
+        + df["display_authors"].fillna("").astype(str)
+        + " "
+        + df["display_instruments"].fillna("").astype(str)
+    ).str.lower()
+    return searchable.str.contains(query, na=False)
 
 
 # -----------------------------------------------------------------------------
@@ -765,6 +804,9 @@ def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
     # ---------------------- verification ----------------------
     verification = tables["verification"].copy()
+    instrument_verification_grouped = pd.DataFrame(
+        columns=["paper_id", "instrument_verification_pairs"]
+    )
     if not verification.empty:
         verification["normalized_status"] = verification["status"].apply(normalize_status)
         verification_grouped = (
@@ -790,6 +832,32 @@ def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
             ]
         )
 
+    if not paper_instruments.empty and not instruments.empty:
+        pi_status = paper_instruments.merge(instruments, on="instrument_id", how="left")
+        if not verification.empty:
+            pi_status = pi_status.merge(
+                verification[["paper_id", "instrument_id", "normalized_status"]],
+                on=["paper_id", "instrument_id"],
+                how="left",
+            )
+        else:
+            pi_status["normalized_status"] = ""
+        pi_status["normalized_status"] = pi_status["normalized_status"].fillna("").replace("", "unchecked")
+        rows = []
+        for paper_id, group in pi_status.groupby("paper_id"):
+            pairs = [
+                f"{clean_text(row.get('instrument_name'))}: {clean_text(row.get('normalized_status'))}"
+                for _, row in group.iterrows()
+                if clean_text(row.get("instrument_name"))
+            ]
+            rows.append(
+                {
+                    "paper_id": paper_id,
+                    "instrument_verification_pairs": unique_preserve_order(pairs),
+                }
+            )
+        instrument_verification_grouped = pd.DataFrame(rows)
+
     # ------------------------- sources -------------------------
     sources = tables["sources"]
     paper_sources = tables["paper_sources"]
@@ -810,6 +878,7 @@ def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     df = papers.merge(authors_grouped, on="paper_id", how="left")
     df = df.merge(instruments_grouped, on="paper_id", how="left")
     df = df.merge(verification_grouped, on="paper_id", how="left")
+    df = df.merge(instrument_verification_grouped, on="paper_id", how="left")
     df = df.merge(sources_grouped, on="paper_id", how="left")
 
     # Fill list columns.
@@ -818,6 +887,7 @@ def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
         "instruments",
         "instrument_statuses",
         "all_verification_statuses",
+        "instrument_verification_pairs",
         "sources",
         "source_types",
     ]:
@@ -844,10 +914,12 @@ def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     # Human-readable display columns.
     df["display_authors"] = df["authors"].apply(join_list)
     df["display_instruments"] = df["instruments"].apply(join_list)
+    df["display_instrument_verification"] = df["instrument_verification_pairs"].apply(join_list)
     df["display_sources"] = df["sources"].apply(join_list)
 
     # Use DOI as a clean text field.
     df["DOI"] = df["DOI"].fillna("").astype(str).str.strip()
+    df["paper_url"] = df["DOI"].apply(doi_to_url)
 
     return df
 
@@ -870,13 +942,15 @@ def generate_next_id(df: pd.DataFrame, id_col: str, prefix: str) -> str:
         return f"{prefix}001"
 
     max_number = 0
+    width = 3
     for value in df[id_col].dropna().astype(str):
         if not value.startswith(prefix):
             continue
         suffix = value[len(prefix):]
         if suffix.isdigit():
+            width = max(width, len(suffix))
             max_number = max(max_number, int(suffix))
-    return f"{prefix}{max_number + 1:03d}"
+    return f"{prefix}{max_number + 1:0{width}d}"
 
 
 def append_row(df: pd.DataFrame, row: dict[str, Any], columns: list[str]) -> pd.DataFrame:
@@ -944,7 +1018,14 @@ def get_or_create_source_id(
     name_key = clean_text(source_name).lower()
     matches = sources["source_name"].fillna("").astype(str).str.lower().str.strip() == name_key
     if bool(matches.any()):
-        return clean_text(sources.loc[matches, "source_id"].iloc[0])
+        source_id = clean_text(sources.loc[matches, "source_id"].iloc[0])
+        source_mask = sources["source_id"].fillna("").astype(str) == source_id
+        if clean_text(source_type):
+            sources.loc[source_mask, "source_type"] = clean_text(source_type)
+        if clean_text(notes):
+            sources.loc[source_mask, "notes"] = clean_text(notes)
+        tables["sources"] = sources
+        return source_id
 
     source_id = generate_next_id(sources, "source_id", "S")
     tables["sources"] = append_row(
@@ -991,7 +1072,7 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
         REQUIRED_COLUMNS["papers"],
     )
 
-    for order, author_name in enumerate(split_multi_value(record.get("authors")), start=1):
+    for order, author_name in enumerate(unique_preserve_order(split_multi_value(record.get("authors"))), start=1):
         author_id = get_or_create_author_id(tables, author_name)
         tables["paper_authors"] = append_row(
             tables["paper_authors"],
@@ -999,7 +1080,7 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
             REQUIRED_COLUMNS["paper_authors"],
         )
 
-    instrument_names = split_multi_value(record.get("instruments"))
+    instrument_names = unique_preserve_order(split_multi_value(record.get("instruments")))
     instrument_statuses = split_multi_value(record.get("instrument_status"))
     instrument_ids = []
     for index, instrument_name in enumerate(instrument_names):
@@ -1020,7 +1101,7 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
             REQUIRED_COLUMNS["paper_instruments"],
         )
 
-    source_names = split_multi_value(record.get("source_name") or record.get("source"))
+    source_names = unique_preserve_order(split_multi_value(record.get("source_name") or record.get("source")))
     source_types = split_multi_value(record.get("source_type"))
     for index, source_name in enumerate(source_names):
         source_type = source_types[index] if index < len(source_types) else clean_text(record.get("source_type"))
@@ -1217,6 +1298,11 @@ def render_filters(df: pd.DataFrame) -> dict[str, Any]:
         ]
 
     st.sidebar.header("Filters")
+    paper_search_query = st.sidebar.text_input(
+        "Search papers",
+        key="paper_search_query",
+        placeholder="Title, DOI, author, instrument...",
+    )
 
     selected_instruments = st.sidebar.multiselect(
         "Instrument", options["instruments"], key="selected_instruments"
@@ -1340,6 +1426,7 @@ def render_filters(df: pd.DataFrame) -> dict[str, Any]:
         "selected_verification_statuses": selected_verification_statuses,
         "selected_go_canada_statuses": selected_go_canada_statuses,
         "selected_sources": selected_sources,
+        "paper_search_query": paper_search_query,
         "excluded_paper_ids": excluded_paper_ids,
         "excluded_instruments": excluded_instruments,
         "excluded_authors": excluded_authors,
@@ -1422,6 +1509,10 @@ def apply_filters(
 ) -> pd.DataFrame:
     """Apply all sidebar filters to the one-row-per-paper view."""
     out = df.copy()
+
+    search_query = clean_text(filters.get("paper_search_query"))
+    if search_query:
+        out = out[paper_search_mask(out, search_query)]
 
     out = out[
         out["instruments"].apply(
@@ -2500,7 +2591,17 @@ def render_filter_table_page(
                 st.rerun()
 
     table_df = filtered_df[selected_columns].rename(columns=COLUMN_LABELS)
-    st.dataframe(table_df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        table_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            COLUMN_LABELS["paper_url"]: st.column_config.LinkColumn(
+                COLUMN_LABELS["paper_url"],
+                display_text="Open paper",
+            )
+        },
+    )
 
 
 def render_graphs_page(
@@ -3031,6 +3132,293 @@ def paper_label(row: pd.Series) -> str:
     return f"{left}{title[:110]}{right}"
 
 
+def find_paper_candidates(paper_view: pd.DataFrame, search_text: str, limit: int = 250) -> pd.DataFrame:
+    """Return candidate papers for admin selectors."""
+    candidates = paper_view.copy()
+    if search_text.strip():
+        candidates = candidates[paper_search_mask(candidates, search_text)]
+    return candidates.sort_values(["year", "title"], ascending=[False, True]).head(limit)
+
+
+def selected_paper_from_search(
+    paper_view: pd.DataFrame,
+    *,
+    search_key: str,
+    select_key: str,
+    label: str = "Paper",
+) -> str:
+    """Render a paper search + select control and return the selected paper ID."""
+    search_text = st.text_input("Find paper by title, DOI, author, or instrument", key=search_key)
+    candidates = find_paper_candidates(paper_view, search_text)
+    if candidates.empty:
+        st.info("No papers match that search.")
+        return ""
+
+    paper_options = candidates["paper_id"].tolist()
+    label_by_id = {
+        row["paper_id"]: paper_label(row)
+        for _, row in candidates.iterrows()
+    }
+    return st.selectbox(
+        label,
+        paper_options,
+        format_func=lambda paper_id: label_by_id.get(paper_id, paper_id),
+        key=select_key,
+    )
+
+
+def update_paper_metadata(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    record: dict[str, Any],
+) -> tuple[bool, str]:
+    """Update scalar paper metadata and normalized paper relationships."""
+    title = clean_text(record.get("title"))
+    doi = clean_text(record.get("DOI"))
+    if not title:
+        return False, "Missing title"
+
+    working = tables
+    papers = working["papers"].copy()
+    current_mask = papers["paper_id"].fillna("").astype(str) == paper_id
+    if not bool(current_mask.any()):
+        return False, "Paper not found"
+
+    other_papers = papers[~current_mask].copy()
+    duplicate_reason = existing_paper_match(other_papers, doi, title)
+    if duplicate_reason:
+        return False, duplicate_reason
+
+    papers.loc[current_mask, "DOI"] = doi
+    papers.loc[current_mask, "title"] = title
+    papers.loc[current_mask, "year"] = clean_text(record.get("year"))
+    papers.loc[current_mask, "journal"] = clean_text(record.get("journal"))
+    papers.loc[current_mask, "publisher"] = clean_text(record.get("publisher"))
+    papers.loc[current_mask, "paper_type"] = clean_text(record.get("paper_type"))
+    papers.loc[current_mask, "go_canada_status"] = clean_text(record.get("go_canada_status"))
+    papers.loc[current_mask, "is_known_false_positive"] = bool(record.get("is_known_false_positive"))
+    working["papers"] = papers
+
+    paper_authors = working["paper_authors"].copy()
+    paper_authors = paper_authors[
+        paper_authors["paper_id"].fillna("").astype(str) != paper_id
+    ].reset_index(drop=True)
+    for order, author_name in enumerate(unique_preserve_order(split_multi_value(record.get("authors"))), start=1):
+        author_id = get_or_create_author_id(working, author_name)
+        paper_authors = append_row(
+            paper_authors,
+            {"paper_id": paper_id, "author_id": author_id, "author_order": order},
+            REQUIRED_COLUMNS["paper_authors"],
+        )
+    working["paper_authors"] = paper_authors
+
+    paper_instruments = working["paper_instruments"].copy()
+    old_assignments = paper_instruments[
+        paper_instruments["paper_id"].fillna("").astype(str) == paper_id
+    ].copy()
+    old_instrument_ids = set(old_assignments["instrument_id"].fillna("").astype(str))
+    paper_instruments = paper_instruments[
+        paper_instruments["paper_id"].fillna("").astype(str) != paper_id
+    ].reset_index(drop=True)
+
+    instrument_names = unique_preserve_order(split_multi_value(record.get("instruments")))
+    instrument_statuses = split_multi_value(record.get("instrument_status"))
+    new_instrument_ids: list[str] = []
+    for index, instrument_name in enumerate(instrument_names):
+        instrument_id = get_or_create_instrument_id(working, instrument_name)
+        new_instrument_ids.append(instrument_id)
+        instrument_status = (
+            instrument_statuses[index]
+            if index < len(instrument_statuses)
+            else clean_text(record.get("instrument_status")) or "uses"
+        )
+        paper_instruments = append_row(
+            paper_instruments,
+            {
+                "paper_id": paper_id,
+                "instrument_id": instrument_id,
+                "instrument_status": instrument_status,
+            },
+            REQUIRED_COLUMNS["paper_instruments"],
+        )
+    working["paper_instruments"] = paper_instruments
+
+    removed_instrument_ids = old_instrument_ids - set(new_instrument_ids)
+    if removed_instrument_ids:
+        verification = working["verification"].copy()
+        keep_mask = ~(
+            (verification["paper_id"].fillna("").astype(str) == paper_id)
+            & (verification["instrument_id"].fillna("").astype(str).isin(removed_instrument_ids))
+        )
+        working["verification"] = verification[keep_mask].reset_index(drop=True)
+
+    paper_sources = working["paper_sources"].copy()
+    paper_sources = paper_sources[
+        paper_sources["paper_id"].fillna("").astype(str) != paper_id
+    ].reset_index(drop=True)
+    source_names = unique_preserve_order(split_multi_value(record.get("source_name") or record.get("source")))
+    source_types = split_multi_value(record.get("source_type"))
+    source_notes = split_multi_value(record.get("source_notes"))
+    for index, source_name in enumerate(source_names):
+        source_type = source_types[index] if index < len(source_types) else clean_text(record.get("source_type"))
+        notes = source_notes[index] if index < len(source_notes) else clean_text(record.get("source_notes"))
+        source_id = get_or_create_source_id(working, source_name, source_type, notes)
+        paper_sources = append_row(
+            paper_sources,
+            {"paper_id": paper_id, "source_id": source_id},
+            REQUIRED_COLUMNS["paper_sources"],
+        )
+    working["paper_sources"] = paper_sources
+
+    return True, paper_id
+
+
+def delete_paper_record(tables: dict[str, pd.DataFrame], paper_id: str) -> None:
+    """Delete one paper and all normalized relationship rows."""
+    tables["papers"] = tables["papers"][
+        tables["papers"]["paper_id"].fillna("").astype(str) != paper_id
+    ].reset_index(drop=True)
+    for table_name in [
+        "paper_authors",
+        "paper_instruments",
+        "verification",
+        "paper_sources",
+    ]:
+        tables[table_name] = tables[table_name][
+            tables[table_name]["paper_id"].fillna("").astype(str) != paper_id
+        ].reset_index(drop=True)
+
+
+def source_details_for_paper(tables: dict[str, pd.DataFrame], paper_id: str) -> tuple[str, str, str]:
+    """Return semicolon-separated source fields for a paper."""
+    paper_sources = tables["paper_sources"]
+    sources = tables["sources"]
+    if paper_sources.empty or sources.empty:
+        return "", "", ""
+    rows = paper_sources[
+        paper_sources["paper_id"].fillna("").astype(str) == paper_id
+    ].merge(sources, on="source_id", how="left")
+    return (
+        join_list(unique_preserve_order(rows.get("source_name", []))),
+        join_list(unique_preserve_order(rows.get("source_type", []))),
+        join_list(unique_preserve_order(rows.get("notes", []))),
+    )
+
+
+def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
+    """Render a full paper metadata editor."""
+    st.subheader("Edit Paper Metadata")
+    if paper_view.empty:
+        st.info("No papers are loaded.")
+        return
+
+    selected_paper_id = selected_paper_from_search(
+        paper_view,
+        search_key="admin_metadata_search",
+        select_key="admin_metadata_paper",
+    )
+    if not selected_paper_id:
+        return
+
+    selected_paper = paper_view[paper_view["paper_id"] == selected_paper_id].iloc[0]
+    source_names, source_types, source_notes = source_details_for_paper(tables, selected_paper_id)
+
+    with st.form("admin_metadata_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            title = st.text_input("Title", value=clean_text(selected_paper.get("title")))
+            doi = st.text_input("DOI", value=clean_text(selected_paper.get("DOI")))
+            year = st.text_input("Year", value=clean_text(selected_paper.get("year")))
+            journal = st.text_input("Journal", value=clean_text(selected_paper.get("journal")))
+            publisher = st.text_input("Publisher", value=clean_text(selected_paper.get("publisher")))
+        with c2:
+            paper_type = st.text_input("Paper type", value=clean_text(selected_paper.get("paper_type")))
+            go_canada_status = st.text_input(
+                "GO-Canada status",
+                value=clean_text(selected_paper.get("go_canada_status")),
+            )
+            is_known_false_positive = st.checkbox(
+                "Known false positive",
+                value=bool(selected_paper.get("is_known_false_positive")),
+            )
+            source_name = st.text_input("Source name(s)", value=source_names)
+            source_type = st.text_input("Source type(s)", value=source_types)
+
+        authors = st.text_area(
+            "Authors",
+            value=clean_text(selected_paper.get("display_authors")),
+            help="Separate multiple authors with semicolons.",
+        )
+        instruments = st.text_area(
+            "Instruments",
+            value=clean_text(selected_paper.get("display_instruments")),
+            help="Separate multiple instruments with semicolons.",
+        )
+        instrument_status = st.text_input(
+            "Instrument status",
+            value=join_list(selected_paper.get("instrument_statuses", [])),
+            help="Use one value or semicolon-separated values matching the instruments.",
+        )
+        source_notes_input = st.text_area("Source notes", value=source_notes)
+
+        save_submitted = st.form_submit_button("Save metadata", type="primary")
+
+    if save_submitted:
+        working_tables = {name: table.copy() for name, table in tables.items()}
+        ok, message = update_paper_metadata(
+            working_tables,
+            selected_paper_id,
+            {
+                "DOI": doi,
+                "title": title,
+                "year": year,
+                "journal": journal,
+                "publisher": publisher,
+                "paper_type": paper_type,
+                "go_canada_status": go_canada_status,
+                "is_known_false_positive": is_known_false_positive,
+                "authors": authors,
+                "instruments": instruments,
+                "instrument_status": instrument_status,
+                "source_name": source_name,
+                "source_type": source_type,
+                "source_notes": source_notes_input,
+            },
+        )
+        if ok:
+            try:
+                save_database_tables(working_tables)
+                st.success("Paper metadata saved.")
+                st.rerun()
+            except requests.HTTPError as exc:
+                response = exc.response
+                detail = response.text if response is not None else str(exc)
+                st.error(f"Supabase rejected the metadata update: {detail}")
+            except Exception as exc:
+                st.error(f"Could not save paper metadata: {exc}")
+        else:
+            st.error(f"Paper metadata was not saved: {message}")
+
+    with st.expander("Delete this paper", expanded=False):
+        confirm_delete = st.checkbox(
+            "I understand this removes the paper and its relationships from the live database.",
+            key="admin_delete_confirm",
+        )
+        if st.button("Delete selected paper", disabled=not confirm_delete):
+            working_tables = {name: table.copy() for name, table in tables.items()}
+            delete_paper_record(working_tables, selected_paper_id)
+            try:
+                save_database_tables(working_tables)
+                st.success("Paper deleted.")
+                st.rerun()
+            except requests.HTTPError as exc:
+                response = exc.response
+                detail = response.text if response is not None else str(exc)
+                st.error(f"Supabase rejected the delete: {detail}")
+            except Exception as exc:
+                st.error(f"Could not delete paper: {exc}")
+
+
 def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
     """Render a simple editor for paper-instrument verification rows."""
     st.subheader("Change Verification Status")
@@ -3038,35 +3426,13 @@ def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.D
         st.info("No papers are loaded.")
         return
 
-    search_text = st.text_input("Find paper by title, DOI, or author", key="admin_verify_search")
-    candidates = paper_view.copy()
-    if search_text.strip():
-        query = search_text.lower().strip()
-        haystack = (
-            candidates["DOI"].fillna("").astype(str)
-            + " "
-            + candidates["title"].fillna("").astype(str)
-            + " "
-            + candidates["display_authors"].fillna("").astype(str)
-        ).str.lower()
-        candidates = candidates[haystack.str.contains(query, na=False)]
-
-    candidates = candidates.sort_values(["year", "title"], ascending=[False, True]).head(250)
-    if candidates.empty:
-        st.info("No papers match that search.")
-        return
-
-    paper_options = candidates["paper_id"].tolist()
-    label_by_id = {
-        row["paper_id"]: paper_label(row)
-        for _, row in candidates.iterrows()
-    }
-    selected_paper_id = st.selectbox(
-        "Paper",
-        paper_options,
-        format_func=lambda paper_id: label_by_id.get(paper_id, paper_id),
-        key="admin_verify_paper",
+    selected_paper_id = selected_paper_from_search(
+        paper_view,
+        search_key="admin_verify_search",
+        select_key="admin_verify_paper",
     )
+    if not selected_paper_id:
+        return
 
     selected_paper = paper_view[paper_view["paper_id"] == selected_paper_id].iloc[0]
     st.write(f"**Title:** {clean_text(selected_paper['title'])}")
@@ -3197,11 +3563,13 @@ def render_admin_editor_page(tables: dict[str, pd.DataFrame], paper_view: pd.Dat
         )
 
     st.caption(f"Database backend: {database_backend_label()}")
-    add_tab, verify_tab, sync_tab = st.tabs(
-        ["Add / Import Papers", "Verification Status", "Online Database"]
+    add_tab, metadata_tab, verify_tab, sync_tab = st.tabs(
+        ["Add / Import Papers", "Paper Metadata", "Verification Status", "Online Database"]
     )
     with add_tab:
         render_add_import_papers_page(tables, admin_mode=True)
+    with metadata_tab:
+        render_paper_metadata_editor(tables, paper_view)
     with verify_tab:
         render_verification_editor(tables, paper_view)
     with sync_tab:

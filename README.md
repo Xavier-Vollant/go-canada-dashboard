@@ -71,8 +71,10 @@ These are historical exports from the review workflow. The live dashboard and ad
 ## Main features
 
 - Advanced filtering by instrument, author, year range, publisher, journal, paper type, verification status, GO-Canada status, and source.
+- Sidebar search across title, DOI, authors, instruments, journal, publisher, and paper type.
 - Toggle to remove known false positives.
 - Dynamic paper list.
+- Per-instrument verification status display for multi-instrument papers.
 - Live statistics for the current filtered subset.
 - Estimated false-positive rate and estimated clean count.
 - Plotly graphs based on current filters.
@@ -80,5 +82,5 @@ These are historical exports from the review workflow. The live dashboard and ad
 - Optional `filter_summary.csv` export.
 - Saved views stored as JSON files in `presets/`.
 - Bulk CSV import and manual paper entry for local editing.
-- Password-protected online editing through Supabase.
+- Password-protected online editing through Supabase, including paper metadata and verification status.
 - Optional hosted read-only mode for public deployment.
