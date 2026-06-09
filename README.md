@@ -80,7 +80,7 @@ These are historical exports from the review workflow. The live dashboard and ad
 - Plotly graphs based on current filters.
 - CSV export of the current filtered view.
 - Optional `filter_summary.csv` export.
-- Saved views stored as JSON files in `presets/`.
+- Shared presets that admins can create, update, and delete for everyone.
 - Bulk CSV import and manual paper entry for local editing.
-- Password-protected online editing through Supabase, including paper metadata and verification status.
+- Password-protected online editing through Supabase, including paper metadata, verification status, and shared presets.
 - Optional hosted read-only mode for public deployment.

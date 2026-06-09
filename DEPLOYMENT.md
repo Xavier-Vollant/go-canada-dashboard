@@ -149,6 +149,10 @@ Then save the settings.
 docs/supabase_schema.sql
 ```
 
+If your Supabase project already exists, run the current schema again. It uses
+`create table if not exists`, so it will add new tables such as `global_presets`
+without replacing existing paper data.
+
 4. In Streamlit Cloud secrets, add:
 
 ```toml
@@ -182,7 +186,7 @@ Open the Streamlit link and check:
 4. Data Quality page works.
 5. Exports download CSVs.
 6. The public `Add / Import Papers` page is hidden when read-only mode is on.
-7. Preset saving is disabled.
+7. Public users can load shared presets but cannot edit them.
 8. If Supabase is configured, the **Admin Editor** page appears and requires the password.
 
 ### 10. Update the online data later
@@ -193,7 +197,8 @@ With Supabase configured:
 2. Choose **Admin Editor**.
 3. Enter the admin password.
 4. Add papers, import a CSV, or change verification status.
-5. The app saves directly to Supabase.
+5. Create or update shared presets from the **Shared Presets** admin tab.
+6. The app saves directly to Supabase.
 
 Without Supabase:
 
@@ -232,4 +237,5 @@ After unlocking **Admin Editor**, admins can:
 - upload a paper CSV
 - change a paper-instrument verification status
 - add evidence quotes and notes
+- create, update, and delete shared presets visible to everyone
 - seed or replace Supabase from the repository CSV database

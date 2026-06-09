@@ -124,6 +124,7 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
 CSV_PATHS = {name: DATA_DIR / f"{name}.csv" for name in REQUIRED_COLUMNS}
 SUPABASE_PAGE_SIZE = 1000
 SUPABASE_INSERT_CHUNK_SIZE = 500
+GLOBAL_PRESET_COLUMNS = ["preset_name", "preset_json", "updated_at"]
 
 TABLE_DELETE_FILTER_COLUMN = {
     "papers": "paper_id",
@@ -523,6 +524,7 @@ def clear_database_caches() -> None:
     load_csv_database.clear()
     load_database.clear()
     load_supabase_database.clear()
+    load_shared_presets.clear()
 
 
 def delete_supabase_table(table_name: str, url: str, key: str) -> None:
@@ -669,6 +671,134 @@ def replace_supabase_database(tables: dict[str, pd.DataFrame]) -> None:
     for name in insert_order:
         insert_supabase_table(name, tables[name], REQUIRED_COLUMNS[name], url, key)
     clear_database_caches()
+
+
+def clean_preset_name(name: str) -> str:
+    """Return a safe shared preset name."""
+    return "".join(c for c in name.strip() if c.isalnum() or c in "-_ ").strip()
+
+
+def local_preset_path(name: str) -> Path:
+    """Return the JSON path for a local fallback preset."""
+    return PRESET_DIR / f"{clean_preset_name(name)}.json"
+
+
+def fetch_supabase_presets(url: str, key: str) -> dict[str, dict[str, Any]]:
+    """Fetch shared presets from Supabase."""
+    response = requests.get(
+        f"{url}/rest/v1/global_presets",
+        params={"select": "*", "order": "preset_name.asc"},
+        headers=supabase_headers(key),
+        timeout=30,
+    )
+    response.raise_for_status()
+    presets: dict[str, dict[str, Any]] = {}
+    for row in response.json():
+        name = clean_text(row.get("preset_name"))
+        if not name:
+            continue
+        try:
+            presets[name] = json.loads(clean_text(row.get("preset_json")))
+        except json.JSONDecodeError:
+            presets[name] = {}
+    return presets
+
+
+@st.cache_data(show_spinner=False)
+def load_shared_presets() -> dict[str, dict[str, Any]]:
+    """Load public shared presets from Supabase or local JSON files."""
+    config = supabase_config()
+    if config:
+        try:
+            url, key = config
+            return fetch_supabase_presets(url, key)
+        except requests.HTTPError:
+            return {}
+        except Exception:
+            return {}
+
+    presets: dict[str, dict[str, Any]] = {}
+    for path in sorted(PRESET_DIR.glob("*.json")):
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                presets[path.stem] = json.load(handle)
+        except Exception:
+            continue
+    return presets
+
+
+def save_shared_preset(name: str, preset: dict[str, Any]) -> None:
+    """Create or update one shared preset."""
+    safe_name = clean_preset_name(name)
+    if not safe_name:
+        raise ValueError("Preset name is required.")
+
+    config = supabase_config()
+    if config:
+        url, key = config
+        headers = {
+            **supabase_headers(key),
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        }
+        response = requests.post(
+            f"{url}/rest/v1/global_presets",
+            params={"on_conflict": "preset_name"},
+            json=[
+                {
+                    "preset_name": safe_name,
+                    "preset_json": json.dumps(preset),
+                    "updated_at": datetime.now().isoformat(timespec="seconds"),
+                }
+            ],
+            headers=headers,
+            timeout=30,
+        )
+        response.raise_for_status()
+        load_shared_presets.clear()
+        return
+
+    if READ_ONLY_MODE:
+        raise RuntimeError("Local preset saving is disabled in read-only mode without Supabase.")
+    PRESET_DIR.mkdir(exist_ok=True)
+    with open(local_preset_path(safe_name), "w", encoding="utf-8") as handle:
+        json.dump(preset, handle, indent=2)
+    load_shared_presets.clear()
+
+
+def delete_shared_preset(name: str) -> None:
+    """Delete one shared preset."""
+    safe_name = clean_preset_name(name)
+    if not safe_name:
+        return
+
+    config = supabase_config()
+    if config:
+        url, key = config
+        response = requests.delete(
+            f"{url}/rest/v1/global_presets",
+            params={"preset_name": f"eq.{safe_name}"},
+            headers=supabase_headers(key),
+            timeout=30,
+        )
+        response.raise_for_status()
+        load_shared_presets.clear()
+        return
+
+    if READ_ONLY_MODE:
+        raise RuntimeError("Local preset deletion is disabled in read-only mode without Supabase.")
+    path = local_preset_path(safe_name)
+    if path.exists():
+        path.unlink()
+    load_shared_presets.clear()
+
+
+def current_view_snapshot() -> dict[str, Any]:
+    """Capture current filter and view widget state for a preset."""
+    return {
+        key: st.session_state.get(key)
+        for key in FILTER_WIDGET_KEYS + VIEW_WIDGET_KEYS
+        if key in st.session_state
+    }
 
 
 @st.cache_data(show_spinner=False)
@@ -1236,40 +1366,23 @@ def year_bounds(df: pd.DataFrame) -> tuple[int, int]:
 
 
 def render_saved_view_controls() -> None:
-    """Load and save JSON filter presets in the sidebar."""
-    with st.sidebar.expander("Saved views / filter presets", expanded=False):
-        preset_files = sorted(PRESET_DIR.glob("*.json"))
-        preset_names = [p.stem for p in preset_files]
+    """Load shared filter presets in the sidebar."""
+    with st.sidebar.expander("Shared presets", expanded=False):
+        presets = load_shared_presets()
+        preset_names = sorted(presets, key=str.lower)
 
         if preset_names:
             selected_preset = st.selectbox("Load saved view", [""] + preset_names)
             if st.button("Load selected view", disabled=not selected_preset):
-                preset_path = PRESET_DIR / f"{selected_preset}.json"
-                with open(preset_path, "r", encoding="utf-8") as f:
-                    preset = json.load(f)
+                preset = presets.get(selected_preset, {})
                 for key, value in preset.items():
                     st.session_state[key] = value
                 st.rerun()
         else:
-            st.caption("No saved presets yet.")
+            st.caption("No shared presets yet.")
 
-        if READ_ONLY_MODE:
-            st.caption("Preset saving is disabled in the hosted read-only version.")
-            return
-
-        preset_name = st.text_input("New preset name")
-        if st.button("Save current view", disabled=not preset_name.strip()):
-            snapshot = {
-                key: st.session_state.get(key)
-                for key in FILTER_WIDGET_KEYS + VIEW_WIDGET_KEYS
-                if key in st.session_state
-            }
-            safe_name = "".join(c for c in preset_name.strip() if c.isalnum() or c in "-_ ").strip()
-            if safe_name:
-                preset_path = PRESET_DIR / f"{safe_name}.json"
-                with open(preset_path, "w", encoding="utf-8") as f:
-                    json.dump(snapshot, f, indent=2)
-                st.success(f"Saved preset: {safe_name}")
+        if admin_password_configured():
+            st.caption("Admins can create and change shared presets in Admin Editor.")
 
 
 def render_filters(df: pd.DataFrame) -> dict[str, Any]:
@@ -3550,6 +3663,96 @@ def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
     )
 
 
+def render_admin_presets_page() -> None:
+    """Render admin controls for shared dashboard presets."""
+    st.subheader("Shared Presets")
+    st.write(
+        "Shared presets are visible to everyone in the sidebar. "
+        "Set filters and graph options on the dashboard first, then save them here."
+    )
+
+    if supabase_config():
+        st.caption("Preset backend: Supabase")
+    else:
+        st.caption("Preset backend: local JSON files")
+        if READ_ONLY_MODE:
+            st.info("Local preset editing is disabled in read-only mode unless Supabase is configured.")
+
+    presets = load_shared_presets()
+    preset_names = sorted(presets, key=str.lower)
+    current_snapshot = current_view_snapshot()
+
+    with st.expander("Current dashboard/view state", expanded=False):
+        st.json(current_snapshot)
+
+    st.subheader("Create or overwrite from current view")
+    selected_existing = st.selectbox(
+        "Existing preset",
+        [""] + preset_names,
+        key="admin_existing_preset",
+    )
+    preset_name = st.text_input(
+        "Preset name",
+        value=selected_existing,
+        key="admin_preset_name",
+    )
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Save current view as shared preset", type="primary"):
+            try:
+                save_shared_preset(preset_name, current_snapshot)
+                st.success(f"Saved preset: {clean_preset_name(preset_name)}")
+                st.rerun()
+            except requests.HTTPError as exc:
+                response = exc.response
+                detail = response.text if response is not None else str(exc)
+                st.error(f"Supabase rejected the preset save: {detail}")
+            except Exception as exc:
+                st.error(f"Could not save preset: {exc}")
+    with c2:
+        if st.button("Delete selected preset", disabled=not selected_existing):
+            try:
+                delete_shared_preset(selected_existing)
+                st.success(f"Deleted preset: {selected_existing}")
+                st.rerun()
+            except requests.HTTPError as exc:
+                response = exc.response
+                detail = response.text if response is not None else str(exc)
+                st.error(f"Supabase rejected the preset delete: {detail}")
+            except Exception as exc:
+                st.error(f"Could not delete preset: {exc}")
+
+    st.subheader("Advanced JSON editor")
+    json_preset_name = st.selectbox(
+        "Preset to edit as JSON",
+        [""] + preset_names,
+        key="admin_json_preset",
+    )
+    json_default = json.dumps(presets.get(json_preset_name, current_snapshot), indent=2)
+    edited_json = st.text_area(
+        "Preset JSON",
+        value=json_default,
+        height=260,
+        key="admin_preset_json",
+    )
+    if st.button("Save JSON preset", disabled=not json_preset_name):
+        try:
+            parsed = json.loads(edited_json)
+            if not isinstance(parsed, dict):
+                raise ValueError("Preset JSON must be an object.")
+            save_shared_preset(json_preset_name, parsed)
+            st.success(f"Saved preset: {json_preset_name}")
+            st.rerun()
+        except json.JSONDecodeError as exc:
+            st.error(f"Invalid JSON: {exc}")
+        except requests.HTTPError as exc:
+            response = exc.response
+            detail = response.text if response is not None else str(exc)
+            st.error(f"Supabase rejected the preset save: {detail}")
+        except Exception as exc:
+            st.error(f"Could not save preset: {exc}")
+
+
 def render_admin_editor_page(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
     """Render password-protected database editing tools."""
     st.header("Admin Editor")
@@ -3563,8 +3766,14 @@ def render_admin_editor_page(tables: dict[str, pd.DataFrame], paper_view: pd.Dat
         )
 
     st.caption(f"Database backend: {database_backend_label()}")
-    add_tab, metadata_tab, verify_tab, sync_tab = st.tabs(
-        ["Add / Import Papers", "Paper Metadata", "Verification Status", "Online Database"]
+    add_tab, metadata_tab, verify_tab, presets_tab, sync_tab = st.tabs(
+        [
+            "Add / Import Papers",
+            "Paper Metadata",
+            "Verification Status",
+            "Shared Presets",
+            "Online Database",
+        ]
     )
     with add_tab:
         render_add_import_papers_page(tables, admin_mode=True)
@@ -3572,6 +3781,8 @@ def render_admin_editor_page(tables: dict[str, pd.DataFrame], paper_view: pd.Dat
         render_paper_metadata_editor(tables, paper_view)
     with verify_tab:
         render_verification_editor(tables, paper_view)
+    with presets_tab:
+        render_admin_presets_page()
     with sync_tab:
         render_database_sync_page(tables)
 

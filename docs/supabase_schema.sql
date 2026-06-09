@@ -56,3 +56,9 @@ create table if not exists paper_sources (
   source_id text references sources(source_id) on delete cascade,
   primary key (paper_id, source_id)
 );
+
+create table if not exists global_presets (
+  preset_name text primary key,
+  preset_json text not null,
+  updated_at text
+);
