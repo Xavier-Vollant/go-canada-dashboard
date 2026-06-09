@@ -299,7 +299,17 @@ MISSING_METADATA_FIELD_LABELS = {
 
 def clean_text(value: Any) -> str:
     """Return a clean string without turning NaN into the string 'nan'."""
-    if pd.isna(value):
+    if isinstance(value, (list, tuple, set)):
+        return "; ".join(clean_text(item) for item in value if clean_text(item))
+    if isinstance(value, dict):
+        return json.dumps(value)
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        if not value:
+            return ""
+    if value is None:
         return ""
     return str(value).strip()
 
@@ -1409,10 +1419,16 @@ def filter_group_summary(group: dict[str, Any]) -> str:
     ]
     for key, label in labels:
         value = group.get(key)
-        if isinstance(value, list) and value:
-            parts.append(f"{label}: {', '.join(map(str, value[:3]))}{'...' if len(value) > 3 else ''}")
-        elif clean_text(value):
-            parts.append(f"{label}: {clean_text(value)}")
+        if isinstance(value, (list, tuple, set)) and value:
+            value_list = [clean_text(item) for item in value if clean_text(item)]
+            if value_list:
+                parts.append(
+                    f"{label}: {', '.join(value_list[:3])}{'...' if len(value_list) > 3 else ''}"
+                )
+        else:
+            text_value = clean_text(value)
+            if text_value:
+                parts.append(f"{label}: {text_value}")
 
     year_range = group.get("year_range")
     if isinstance(year_range, (list, tuple)) and len(year_range) == 2:
