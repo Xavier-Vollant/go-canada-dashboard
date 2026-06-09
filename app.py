@@ -196,6 +196,7 @@ FILTER_WIDGET_KEYS = [
     "selected_sources",
     "paper_search_query",
     "combined_filter_groups",
+    "combined_filter_result_mode",
     "excluded_paper_ids",
     "excluded_instruments",
     "excluded_authors",
@@ -1468,10 +1469,19 @@ def render_combined_filter_controls(df: pd.DataFrame, filters: dict[str, Any]) -
             group["paper_count"] = len(group["paper_ids"])
             groups = groups + [group]
             st.session_state["combined_filter_groups"] = groups
+            st.session_state["combined_filter_result_mode"] = "Current filter preview"
             st.rerun()
 
         if groups:
-            st.info("Combined mode is active. Current filters affect results only after you store them as a list.")
+            result_mode = st.radio(
+                "Dashboard result mode",
+                ["Current filter preview", "Combined stored lists"],
+                key="combined_filter_result_mode",
+            )
+            if result_mode == "Current filter preview":
+                st.info("Use current filters to search the full database and store more lists.")
+            else:
+                st.info("Showing the union of all stored lists.")
             st.write("Stored lists:")
             remove_index = None
             for index, group in enumerate(groups):
@@ -1486,9 +1496,11 @@ def render_combined_filter_controls(df: pd.DataFrame, filters: dict[str, Any]) -
                 st.rerun()
             if st.button("Clear all stored lists"):
                 st.session_state["combined_filter_groups"] = []
+                st.session_state["combined_filter_result_mode"] = "Current filter preview"
                 st.rerun()
         else:
             st.caption("No stored lists yet. The app is using the current single filter.")
+            st.session_state["combined_filter_result_mode"] = "Current filter preview"
 
     return st.session_state.get("combined_filter_groups", [])
 
@@ -1685,6 +1697,10 @@ def render_filters(df: pd.DataFrame) -> dict[str, Any]:
         "remove_known_false_positives": remove_known_false_positives,
     }
     filters["combined_filter_groups"] = render_combined_filter_controls(df, filters)
+    filters["combined_filter_result_mode"] = st.session_state.get(
+        "combined_filter_result_mode",
+        "Current filter preview",
+    )
     return filters
 
 
@@ -1899,7 +1915,11 @@ def apply_filters(
 ) -> pd.DataFrame:
     """Apply current filters, supporting OR-combined filter groups."""
     groups = filters.get("combined_filter_groups") or []
-    if groups:
+    use_combined_lists = (
+        groups
+        and filters.get("combined_filter_result_mode") == "Combined stored lists"
+    )
+    if use_combined_lists:
         group_frames = []
         for group in groups:
             paper_ids = [clean_text(paper_id) for paper_id in group.get("paper_ids", []) if clean_text(paper_id)]

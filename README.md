@@ -71,7 +71,7 @@ These are historical exports from the review workflow. The live dashboard and ad
 ## Main features
 
 - Advanced filtering by instrument, author, year range, publisher, journal, paper type, verification status, GO-Canada status, and source.
-- Combined stored paper lists for building custom results from multiple different filter runs.
+- Combined stored paper lists for building custom results from multiple different filter runs, with a separate preview mode for finding the next list.
 - Sidebar search across title, DOI, authors, instruments, journal, publisher, and paper type.
 - Toggle to remove known false positives.
 - Dynamic paper list.
