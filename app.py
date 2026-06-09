@@ -136,6 +136,17 @@ TABLE_DELETE_FILTER_COLUMN = {
     "paper_sources": "paper_id",
 }
 
+TABLE_PRIMARY_KEY_COLUMNS = {
+    "papers": ["paper_id"],
+    "authors": ["author_id"],
+    "paper_authors": ["paper_id", "author_id", "author_order"],
+    "instruments": ["instrument_id"],
+    "paper_instruments": ["paper_id", "instrument_id"],
+    "verification": ["paper_id", "instrument_id"],
+    "sources": ["source_id"],
+    "paper_sources": ["paper_id", "source_id"],
+}
+
 REVIEW_SUMMARY_COLUMNS = [
     "DOI",
     "title",
@@ -498,6 +509,9 @@ def insert_supabase_table(
     """Insert all rows for one Supabase table."""
     headers = supabase_headers(key)
     out = dataframe_for_storage(df, columns)
+    primary_key_columns = TABLE_PRIMARY_KEY_COLUMNS.get(table_name, [])
+    if primary_key_columns:
+        out = out.drop_duplicates(subset=primary_key_columns, keep="last")
     records = out.to_dict("records")
     for start in range(0, len(records), SUPABASE_INSERT_CHUNK_SIZE):
         chunk = records[start : start + SUPABASE_INSERT_CHUNK_SIZE]
@@ -510,6 +524,78 @@ def insert_supabase_table(
             timeout=60,
         )
         insert_response.raise_for_status()
+
+
+def delete_supabase_verification_row(paper_id: str, instrument_id: str, url: str, key: str) -> None:
+    """Delete one paper-instrument verification row from Supabase."""
+    delete_response = requests.delete(
+        f"{url}/rest/v1/verification",
+        params={
+            "paper_id": f"eq.{paper_id}",
+            "instrument_id": f"eq.{instrument_id}",
+        },
+        headers=supabase_headers(key),
+        timeout=30,
+    )
+    delete_response.raise_for_status()
+
+
+def upsert_supabase_verification_row(row: dict[str, Any], url: str, key: str) -> None:
+    """Insert or update one paper-instrument verification row in Supabase."""
+    headers = {
+        **supabase_headers(key),
+        "Prefer": "resolution=merge-duplicates,return=minimal",
+    }
+    upsert_response = requests.post(
+        f"{url}/rest/v1/verification",
+        params={"on_conflict": "paper_id,instrument_id"},
+        json=[{column: clean_text(row.get(column)) for column in REQUIRED_COLUMNS["verification"]}],
+        headers=headers,
+        timeout=30,
+    )
+    upsert_response.raise_for_status()
+
+
+def save_verification_row(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    instrument_id: str,
+    status: str,
+    evidence_quote: str,
+    checked_date: str,
+    notes: str,
+) -> None:
+    """Save one paper-instrument verification row to Supabase or CSV storage."""
+    row = {
+        "paper_id": paper_id,
+        "instrument_id": instrument_id,
+        "status": status,
+        "evidence_quote": evidence_quote,
+        "checked_date": checked_date,
+        "notes": notes,
+    }
+
+    config = supabase_config()
+    if config:
+        url, key = config
+        if status == "unchecked":
+            delete_supabase_verification_row(paper_id, instrument_id, url, key)
+        else:
+            upsert_supabase_verification_row(row, url, key)
+        clear_database_caches()
+        return
+
+    working_tables = {name: table.copy() for name, table in tables.items()}
+    verification = working_tables["verification"].copy()
+    keep_mask = ~(
+        (verification["paper_id"].fillna("").astype(str) == paper_id)
+        & (verification["instrument_id"].fillna("").astype(str) == instrument_id)
+    )
+    verification = verification[keep_mask].reset_index(drop=True)
+    if status != "unchecked":
+        verification = append_row(verification, row, REQUIRED_COLUMNS["verification"])
+    working_tables["verification"] = verification
+    save_database_tables(working_tables)
 
 
 def replace_supabase_database(tables: dict[str, pd.DataFrame]) -> None:
@@ -3038,30 +3124,24 @@ def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.D
         submitted = st.form_submit_button("Save verification status", type="primary")
 
     if submitted:
-        working_tables = {name: table.copy() for name, table in tables.items()}
-        verification = working_tables["verification"].copy()
-        keep_mask = ~(
-            (verification["paper_id"].fillna("").astype(str) == selected_paper_id)
-            & (verification["instrument_id"].fillna("").astype(str) == selected_instrument_id)
-        )
-        verification = verification[keep_mask].reset_index(drop=True)
-        if new_status != "unchecked":
-            verification = append_row(
-                verification,
-                {
-                    "paper_id": selected_paper_id,
-                    "instrument_id": selected_instrument_id,
-                    "status": new_status,
-                    "evidence_quote": evidence_quote,
-                    "checked_date": checked_date,
-                    "notes": notes,
-                },
-                REQUIRED_COLUMNS["verification"],
+        try:
+            save_verification_row(
+                tables,
+                selected_paper_id,
+                selected_instrument_id,
+                new_status,
+                evidence_quote,
+                checked_date,
+                notes,
             )
-        working_tables["verification"] = verification
-        save_database_tables(working_tables)
-        st.success("Verification status saved.")
-        st.rerun()
+            st.success("Verification status saved.")
+            st.rerun()
+        except requests.HTTPError as exc:
+            response = exc.response
+            detail = response.text if response is not None else str(exc)
+            st.error(f"Supabase rejected the verification update: {detail}")
+        except Exception as exc:
+            st.error(f"Could not save verification status: {exc}")
 
 
 def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
