@@ -195,6 +195,7 @@ FILTER_WIDGET_KEYS = [
     "selected_go_canada_statuses",
     "selected_sources",
     "paper_search_query",
+    "combined_filter_groups",
     "excluded_paper_ids",
     "excluded_instruments",
     "excluded_authors",
@@ -1365,6 +1366,105 @@ def year_bounds(df: pd.DataFrame) -> tuple[int, int]:
     return int(years.min()), int(years.max())
 
 
+def normalize_year_range_value(value: Any, default: tuple[int, int]) -> tuple[int, int]:
+    """Normalize a stored year range value."""
+    if isinstance(value, (list, tuple)) and len(value) == 2:
+        return int(value[0]), int(value[1])
+    return default
+
+
+def current_filter_group(filters: dict[str, Any]) -> dict[str, Any]:
+    """Capture the positive current filters as one reusable group."""
+    group_keys = [
+        "paper_search_query",
+        "selected_instruments",
+        "selected_authors",
+        "selected_publishers",
+        "selected_journals",
+        "selected_paper_types",
+        "selected_verification_statuses",
+        "selected_go_canada_statuses",
+        "selected_sources",
+        "year_range",
+    ]
+    return {
+        key: filters.get(key, [] if key.startswith("selected_") else "")
+        for key in group_keys
+    }
+
+
+def filter_group_summary(group: dict[str, Any]) -> str:
+    """Build a compact user-facing summary for one filter group."""
+    parts = []
+    labels = [
+        ("paper_search_query", "Search"),
+        ("selected_instruments", "Instrument"),
+        ("selected_authors", "Author"),
+        ("selected_publishers", "Publisher"),
+        ("selected_journals", "Journal"),
+        ("selected_paper_types", "Type"),
+        ("selected_verification_statuses", "Verification"),
+        ("selected_go_canada_statuses", "GO status"),
+        ("selected_sources", "Source"),
+    ]
+    for key, label in labels:
+        value = group.get(key)
+        if isinstance(value, list) and value:
+            parts.append(f"{label}: {', '.join(map(str, value[:3]))}{'...' if len(value) > 3 else ''}")
+        elif clean_text(value):
+            parts.append(f"{label}: {clean_text(value)}")
+
+    year_range = group.get("year_range")
+    if isinstance(year_range, (list, tuple)) and len(year_range) == 2:
+        parts.append(f"Years: {year_range[0]}-{year_range[1]}")
+
+    return " | ".join(parts) if parts else "All papers"
+
+
+def render_combined_filter_controls(filters: dict[str, Any]) -> list[dict[str, Any]]:
+    """Render controls for combining multiple filter groups by union."""
+    groups = st.session_state.get("combined_filter_groups", [])
+    if not isinstance(groups, list):
+        groups = []
+        st.session_state["combined_filter_groups"] = groups
+
+    with st.sidebar.expander("Combined filter groups", expanded=bool(groups)):
+        st.caption("Add the current filters as a group. Results become Group 1 OR Group 2 OR Group 3.")
+        current_group_name = st.text_input(
+            "Group name",
+            key="combined_filter_group_name",
+            placeholder="Example: REGO 2012-2014",
+        )
+        if st.button("Add current filters as group"):
+            group = current_filter_group(filters)
+            group["name"] = clean_text(current_group_name) or f"Group {len(groups) + 1}"
+            groups = groups + [group]
+            st.session_state["combined_filter_groups"] = groups
+            st.rerun()
+
+        if groups:
+            st.info("Combined mode is active. Current filters affect results only after you add them as a group.")
+            st.write("Active groups:")
+            remove_index = None
+            for index, group in enumerate(groups):
+                label = clean_text(group.get("name")) or f"Group {index + 1}"
+                st.caption(f"{index + 1}. {label}: {filter_group_summary(group)}")
+                if st.button(f"Remove group {index + 1}", key=f"remove_filter_group_{index}"):
+                    remove_index = index
+            if remove_index is not None:
+                st.session_state["combined_filter_groups"] = [
+                    group for index, group in enumerate(groups) if index != remove_index
+                ]
+                st.rerun()
+            if st.button("Clear all groups"):
+                st.session_state["combined_filter_groups"] = []
+                st.rerun()
+        else:
+            st.caption("No combined groups yet. The app is using the current single filter.")
+
+    return st.session_state.get("combined_filter_groups", [])
+
+
 def render_saved_view_controls() -> None:
     """Load shared filter presets in the sidebar."""
     with st.sidebar.expander("Shared presets", expanded=False):
@@ -1530,7 +1630,7 @@ def render_filters(df: pd.DataFrame) -> dict[str, Any]:
         key="remove_known_false_positives",
     )
 
-    return {
+    filters = {
         "selected_instruments": selected_instruments,
         "selected_authors": selected_authors,
         "selected_publishers": selected_publishers,
@@ -1556,6 +1656,8 @@ def render_filters(df: pd.DataFrame) -> dict[str, Any]:
         "year_range": year_range,
         "remove_known_false_positives": remove_known_false_positives,
     }
+    filters["combined_filter_groups"] = render_combined_filter_controls(filters)
+    return filters
 
 
 def false_positive_mask(df: pd.DataFrame) -> pd.Series:
@@ -1613,14 +1715,13 @@ def estimate_false_positive_sample_rate(
     return 0.0, 0, 0, "No checked sample"
 
 
-def apply_filters(
+def apply_positive_filter_set(
     df: pd.DataFrame,
     filters: dict[str, Any],
     *,
-    remove_known_false_positives: bool | None = None,
     apply_verification_filter: bool = True,
 ) -> pd.DataFrame:
-    """Apply all sidebar filters to the one-row-per-paper view."""
+    """Apply one positive filter set to the paper view."""
     out = df.copy()
 
     search_query = clean_text(filters.get("paper_search_query"))
@@ -1629,14 +1730,17 @@ def apply_filters(
 
     out = out[
         out["instruments"].apply(
-            lambda values: contains_any(values, filters["selected_instruments"])
+            lambda values: contains_any(values, filters.get("selected_instruments", []))
         )
     ]
     out = out[
-        out["authors"].apply(lambda values: contains_any(values, filters["selected_authors"]))
+        out["authors"].apply(lambda values: contains_any(values, filters.get("selected_authors", [])))
     ]
 
-    year_start, year_end = filters["year_range"]
+    year_start, year_end = normalize_year_range_value(
+        filters.get("year_range"),
+        year_bounds(df),
+    )
     numeric_year = pd.to_numeric(out["year"], errors="coerce")
     known_years = numeric_year.dropna()
     is_full_year_range = (
@@ -1648,21 +1752,31 @@ def apply_filters(
         year_mask = year_mask | numeric_year.isna()
     out = out[year_mask]
 
-    if filters["selected_publishers"]:
-        out = out[out["publisher"].isin(filters["selected_publishers"])]
-    if filters["selected_journals"]:
-        out = out[out["journal"].isin(filters["selected_journals"])]
-    if filters["selected_paper_types"]:
-        out = out[out["paper_type"].isin(filters["selected_paper_types"])]
-    if apply_verification_filter and filters["selected_verification_statuses"]:
-        out = out[out["verification_status"].isin(filters["selected_verification_statuses"])]
-    if filters["selected_go_canada_statuses"]:
-        out = out[out["go_canada_status"].isin(filters["selected_go_canada_statuses"])]
-    if filters["selected_sources"]:
+    if filters.get("selected_publishers"):
+        out = out[out["publisher"].isin(filters.get("selected_publishers", []))]
+    if filters.get("selected_journals"):
+        out = out[out["journal"].isin(filters.get("selected_journals", []))]
+    if filters.get("selected_paper_types"):
+        out = out[out["paper_type"].isin(filters.get("selected_paper_types", []))]
+    if apply_verification_filter and filters.get("selected_verification_statuses"):
+        out = out[out["verification_status"].isin(filters.get("selected_verification_statuses", []))]
+    if filters.get("selected_go_canada_statuses"):
+        out = out[out["go_canada_status"].isin(filters.get("selected_go_canada_statuses", []))]
+    if filters.get("selected_sources"):
         out = out[
-            out["sources"].apply(lambda values: contains_any(values, filters["selected_sources"]))
+            out["sources"].apply(lambda values: contains_any(values, filters.get("selected_sources", [])))
         ]
 
+    return out
+
+
+def apply_global_filter_cleanup(
+    out: pd.DataFrame,
+    filters: dict[str, Any],
+    *,
+    remove_known_false_positives: bool | None = None,
+) -> pd.DataFrame:
+    """Apply exclusions, metadata completeness, and false-positive cleanup."""
     if filters.get("excluded_paper_ids"):
         out = out[~out["paper_id"].isin(filters["excluded_paper_ids"])]
     if filters.get("excluded_instruments"):
@@ -1746,6 +1860,47 @@ def apply_filters(
         out = out[~false_positive_mask(out)]
 
     return out.reset_index(drop=True)
+
+
+def apply_filters(
+    df: pd.DataFrame,
+    filters: dict[str, Any],
+    *,
+    remove_known_false_positives: bool | None = None,
+    apply_verification_filter: bool = True,
+) -> pd.DataFrame:
+    """Apply current filters, supporting OR-combined filter groups."""
+    groups = filters.get("combined_filter_groups") or []
+    if groups:
+        group_frames = [
+            apply_positive_filter_set(
+                df,
+                group,
+                apply_verification_filter=apply_verification_filter,
+            )
+            for group in groups
+        ]
+        group_frames = [frame for frame in group_frames if not frame.empty]
+        if group_frames:
+            out = (
+                pd.concat(group_frames, ignore_index=True)
+                .drop_duplicates("paper_id", keep="first")
+                .reset_index(drop=True)
+            )
+        else:
+            out = df.iloc[0:0].copy()
+    else:
+        out = apply_positive_filter_set(
+            df,
+            filters,
+            apply_verification_filter=apply_verification_filter,
+        )
+
+    return apply_global_filter_cleanup(
+        out,
+        filters,
+        remove_known_false_positives=remove_known_false_positives,
+    )
 
 
 # -----------------------------------------------------------------------------
