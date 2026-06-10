@@ -1,87 +1,34 @@
-# GO-Canada Publication Analytics Dashboard MVP
+# GO-Canada Publication Dashboard
 
-This is a Streamlit dashboard for filtering and analyzing an existing GO-Canada publication database.
-It does not search the web.
+A Streamlit dashboard for exploring the GO-Canada publication database.
 
-## Install
+The dashboard lets users search, filter, graph, and export papers by instrument,
+year, author, DOI, journal, publisher, verification status, and other metadata.
+It also includes shared presets for common instrument/year paper lists.
+
+## Use The Dashboard
+
+Open the deployed Streamlit app and use the sidebar filters to narrow the paper
+database. The main pages provide:
+
+- `Dashboard`: summary metrics and overview tables.
+- `Filter + Paper List`: searchable paper list with links to papers.
+- `Graphs`: visual summaries of the current filtered result.
+- `Data Quality`: missing metadata and verification checks.
+- `Export`: CSV exports of the current view.
+
+Admins can sign in from the app to update papers, metadata, verification status,
+and shared presets.
+
+## Backend Database
+
+The online dashboard is connected to a backend database so approved edits can be
+saved directly from the website. Local CSV files in `data/` are kept in the repo
+as a snapshot/fallback version of the database.
+
+## Run Locally
 
 ```bash
 pip install -r requirements.txt
-```
-
-## Run
-
-```bash
 streamlit run app.py
 ```
-
-## Deploy Online
-
-This project is ready for Streamlit Community Cloud. See [`DEPLOYMENT.md`](DEPLOYMENT.md) for the full step-by-step deployment workflow.
-
-For a hosted public version, set this Streamlit Cloud secret:
-
-```toml
-GO_CANADA_READ_ONLY = "true"
-```
-
-Read-only hosted mode keeps filtering, graphs, data quality checks, exports, and session-only exclusions enabled. If Supabase is configured, password-protected admins can still edit the online database from the hosted app.
-
-For password-protected online editing, add these Streamlit Cloud secrets:
-
-```toml
-GO_CANADA_READ_ONLY = "true"
-GO_CANADA_ADMIN_PASSWORD = "choose-a-password"
-SUPABASE_URL = "https://your-project.supabase.co"
-SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
-```
-
-Create the Supabase tables with [`docs/supabase_schema.sql`](docs/supabase_schema.sql), then use the app's **Admin Editor** page to seed Supabase from the repository CSVs.
-
-## CSV structure
-
-The dashboard loads the normalized CSV database in the `data/` folder:
-
-- `papers.csv`
-- `authors.csv`
-- `paper_authors.csv`
-- `instruments.csv`
-- `paper_instruments.csv`
-- `verification.csv`
-- `sources.csv`
-- `paper_sources.csv`
-
-The included CSV files are generated from the GO-Canada DOI post-processing workflow.
-To rebuild them after updating the source exports, run:
-
-```bash
-python3 scripts/build_dashboard_data_from_exports.py \
-  --import-csv ../output/dashboard_import_ready_standardized.csv \
-  --review-csv data/review/paper_instrument_verification_status.csv \
-  --data-dir data
-```
-
-The static DOI review exports are kept in:
-
-- `data/review/paper_verification_summary.csv`
-- `data/review/paper_instrument_verification_status.csv`
-
-These are historical exports from the review workflow. The live dashboard and admin editor use the normalized database tables instead.
-
-## Main features
-
-- Advanced filtering by instrument, author, year range, publisher, journal, paper type, verification status, GO-Canada status, and source.
-- Combined stored paper lists for building custom results from multiple different filter runs, with a separate preview mode for finding the next list.
-- Sidebar search across title, DOI, authors, instruments, journal, publisher, and paper type.
-- Toggle to remove known false positives.
-- Dynamic paper list.
-- Per-instrument verification status display for multi-instrument papers.
-- Live statistics for the current filtered subset.
-- Estimated false-positive rate and estimated clean count.
-- Plotly graphs based on current filters.
-- CSV export of the current filtered view.
-- Optional `filter_summary.csv` export.
-- Shared presets that admins can create, update, and delete for everyone, including combined stored lists.
-- Bulk CSV import and manual paper entry for local editing.
-- Password-protected online editing through Supabase, including paper metadata, verification status, and shared presets.
-- Optional hosted read-only mode for public deployment.
