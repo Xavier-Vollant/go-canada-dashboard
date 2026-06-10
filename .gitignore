@@ -10,3 +10,4 @@ env/
 
 presets/*.json
 !presets/.gitkeep
+!presets/GO-Canada instrument year lists.json

@@ -716,19 +716,8 @@ def fetch_supabase_presets(url: str, key: str) -> dict[str, dict[str, Any]]:
     return presets
 
 
-@st.cache_data(show_spinner=False)
-def load_shared_presets() -> dict[str, dict[str, Any]]:
-    """Load public shared presets from Supabase or local JSON files."""
-    config = supabase_config()
-    if config:
-        try:
-            url, key = config
-            return fetch_supabase_presets(url, key)
-        except requests.HTTPError:
-            return {}
-        except Exception:
-            return {}
-
+def load_local_presets() -> dict[str, dict[str, Any]]:
+    """Load bundled or local fallback shared presets."""
     presets: dict[str, dict[str, Any]] = {}
     for path in sorted(PRESET_DIR.glob("*.json")):
         try:
@@ -736,6 +725,23 @@ def load_shared_presets() -> dict[str, dict[str, Any]]:
                 presets[path.stem] = json.load(handle)
         except Exception:
             continue
+    return presets
+
+
+@st.cache_data(show_spinner=False)
+def load_shared_presets() -> dict[str, dict[str, Any]]:
+    """Load public shared presets from bundled JSON and Supabase when configured."""
+    presets = load_local_presets()
+    config = supabase_config()
+    if config:
+        try:
+            url, key = config
+            presets.update(fetch_supabase_presets(url, key))
+            return presets
+        except requests.HTTPError:
+            return presets
+        except Exception:
+            return presets
     return presets
 
 
