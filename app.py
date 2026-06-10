@@ -184,6 +184,7 @@ REVIEW_DETAIL_COLUMNS = [
 
 REVIEW_PAPER_STATUS_ORDER = ["verified", "partially_verified", "unverified"]
 REVIEW_ASSIGNMENT_STATUS_ORDER = ["verified", "unverified"]
+ADDITIONAL_INSTRUMENT_FILTER_OPTIONS = ["SMILE ASI", "IRIS"]
 
 FILTER_WIDGET_KEYS = [
     "selected_instruments",
@@ -1359,10 +1360,18 @@ def import_papers_from_dataframe(
 # Filtering
 # -----------------------------------------------------------------------------
 
-def get_filter_options(df: pd.DataFrame) -> dict[str, list[str]]:
+def get_filter_options(
+    df: pd.DataFrame,
+    instruments_table: pd.DataFrame | None = None,
+) -> dict[str, list[str]]:
     """Build options for filter widgets."""
+    instrument_values = [item for values in df["instruments"] for item in values]
+    if instruments_table is not None and "instrument_name" in instruments_table.columns:
+        instrument_values.extend(instruments_table["instrument_name"].fillna("").astype(str))
+    instrument_values.extend(ADDITIONAL_INSTRUMENT_FILTER_OPTIONS)
+
     options = {
-        "instruments": sorted_options(item for values in df["instruments"] for item in values),
+        "instruments": sorted_options(instrument_values),
         "authors": sorted_options(item for values in df["authors"] for item in values),
         "publishers": sorted_options(df["publisher"]),
         "journals": sorted_options(df["journal"]),
@@ -1531,9 +1540,12 @@ def render_saved_view_controls() -> None:
             st.caption("Admins can create and change shared presets in Admin Editor.")
 
 
-def render_filters(df: pd.DataFrame) -> dict[str, Any]:
+def render_filters(
+    df: pd.DataFrame,
+    instruments_table: pd.DataFrame | None = None,
+) -> dict[str, Any]:
     """Render sidebar filters and return the selected values."""
-    options = get_filter_options(df)
+    options = get_filter_options(df, instruments_table)
     min_year, max_year = year_bounds(df)
     paper_ids = df["paper_id"].tolist()
     paper_id_to_label = dict(
@@ -1778,14 +1790,14 @@ def apply_positive_filter_set(
     if search_query:
         out = out[paper_search_mask(out, search_query)]
 
-    out = out[
-        out["instruments"].apply(
-            lambda values: contains_any(values, filters.get("selected_instruments", []))
-        )
-    ]
-    out = out[
-        out["authors"].apply(lambda values: contains_any(values, filters.get("selected_authors", [])))
-    ]
+    instrument_mask = out["instruments"].apply(
+        lambda values: contains_any(values, filters.get("selected_instruments", []))
+    )
+    out = out.loc[instrument_mask.astype(bool)]
+    author_mask = out["authors"].apply(
+        lambda values: contains_any(values, filters.get("selected_authors", []))
+    )
+    out = out.loc[author_mask.astype(bool)]
 
     year_start, year_end = normalize_year_range_value(
         filters.get("year_range"),
@@ -1813,9 +1825,10 @@ def apply_positive_filter_set(
     if filters.get("selected_go_canada_statuses"):
         out = out[out["go_canada_status"].isin(filters.get("selected_go_canada_statuses", []))]
     if filters.get("selected_sources"):
-        out = out[
-            out["sources"].apply(lambda values: contains_any(values, filters.get("selected_sources", [])))
-        ]
+        source_mask = out["sources"].apply(
+            lambda values: contains_any(values, filters.get("selected_sources", []))
+        )
+        out = out.loc[source_mask.astype(bool)]
 
     return out
 
@@ -4090,7 +4103,7 @@ def main() -> None:
         return
 
     render_saved_view_controls()
-    filters = render_filters(paper_view)
+    filters = render_filters(paper_view, tables.get("instruments"))
     false_positive_reference_df = apply_filters(
         paper_view,
         filters,
