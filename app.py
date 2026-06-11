@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import inspect
 from itertools import combinations
 from datetime import datetime
 from pathlib import Path
@@ -433,6 +434,72 @@ def contains_any(items: list[str], selected: list[str]) -> bool:
 def sorted_options(values: Iterable[Any]) -> list[str]:
     """Return clean sorted options for Streamlit widgets."""
     return sorted(unique_preserve_order(values), key=lambda x: x.lower())
+
+
+def streamlit_widget_accepts_new_options(widget: Any) -> bool:
+    """Return whether this Streamlit version supports typed custom options."""
+    try:
+        return "accept_new_options" in inspect.signature(widget).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def ensure_options_include(options: Iterable[Any], values: Iterable[Any]) -> list[str]:
+    """Return sorted options that include current/default values."""
+    return sorted_options(list(options) + list(values))
+
+
+def metadata_selectbox(
+    label: str,
+    options: Iterable[Any],
+    value: Any = "",
+    *,
+    key: str,
+    help: str | None = None,
+) -> str:
+    """Render a searchable single-value metadata picker that can accept new text."""
+    current_value = clean_text(value)
+    option_list = ensure_options_include(options, [current_value])
+    if not option_list:
+        option_list = [""]
+    index = option_list.index(current_value) if current_value in option_list else 0
+    kwargs = {
+        "label": label,
+        "options": option_list,
+        "index": index,
+        "key": key,
+        "help": help,
+        "placeholder": f"Search or add {label.lower()}",
+    }
+    if streamlit_widget_accepts_new_options(st.selectbox):
+        kwargs["accept_new_options"] = True
+    return clean_text(st.selectbox(**kwargs))
+
+
+def metadata_multiselect(
+    label: str,
+    options: Iterable[Any],
+    values: Any = "",
+    *,
+    key: str,
+    help: str | None = None,
+) -> str:
+    """Render a searchable multi-value metadata picker that stores semicolon text."""
+    selected_values = unique_preserve_order(split_multi_value(values))
+    option_list = ensure_options_include(options, selected_values)
+    if not option_list:
+        option_list = []
+    kwargs = {
+        "label": label,
+        "options": option_list,
+        "default": selected_values,
+        "key": key,
+        "help": help,
+        "placeholder": f"Search or add {label.lower()}",
+    }
+    if streamlit_widget_accepts_new_options(st.multiselect):
+        kwargs["accept_new_options"] = True
+    return join_list(st.multiselect(**kwargs))
 
 
 def doi_to_url(doi: Any) -> str:
@@ -3315,6 +3382,7 @@ def render_add_import_papers_page(
         st.success(f"Import complete: {added} added, {skipped} skipped.")
         st.dataframe(results, use_container_width=True, hide_index=True)
 
+    metadata_options = admin_metadata_options(tables)
     bulk_tab, manual_tab = st.tabs(["Bulk CSV import", "Manual entry"])
 
     with bulk_tab:
@@ -3376,11 +3444,29 @@ def render_add_import_papers_page(
                 title = st.text_input("Title *")
                 doi = st.text_input("DOI")
                 year = st.number_input("Year", min_value=1800, max_value=2200, value=datetime.now().year)
-                journal = st.text_input("Journal")
-                publisher = st.text_input("Publisher")
+                journal = metadata_selectbox(
+                    "Journal",
+                    metadata_options["journals"],
+                    key="manual_journal",
+                )
+                publisher = metadata_selectbox(
+                    "Publisher",
+                    metadata_options["publishers"],
+                    key="manual_publisher",
+                )
             with c2:
-                paper_type = st.text_input("Paper type", value="Research article")
-                go_canada_status = st.text_input("GO-Canada status", value="candidate")
+                paper_type = metadata_selectbox(
+                    "Paper type",
+                    metadata_options["paper_types"],
+                    value="Research article",
+                    key="manual_paper_type",
+                )
+                go_canada_status = metadata_selectbox(
+                    "GO-Canada status",
+                    metadata_options["go_canada_statuses"],
+                    value="candidate",
+                    key="manual_go_canada_status",
+                )
                 is_known_false_positive = st.checkbox("Known false positive")
                 verification_status = st.selectbox(
                     "Verification status",
@@ -3388,15 +3474,37 @@ def render_add_import_papers_page(
                 )
                 checked_date = st.date_input("Checked date", value=datetime.now().date())
 
-            authors = st.text_input("Authors", help="Separate multiple authors with semicolons.")
-            instruments = st.text_input("Instruments", help="Separate multiple instruments with semicolons.")
+            authors = metadata_multiselect(
+                "Authors",
+                metadata_options["authors"],
+                key="manual_authors",
+                help="Search existing authors or type a new author name.",
+            )
+            instruments = metadata_multiselect(
+                "Instruments",
+                metadata_options["instruments"],
+                key="manual_instruments",
+                help="Search existing instruments or type a new instrument name.",
+            )
             instrument_status = st.text_input(
                 "Instrument status",
                 value="unchecked",
                 help="Use one value or semicolon-separated values matching the instruments.",
             )
-            source_name = st.text_input("Source / origin", value="Manual entry")
-            source_type = st.text_input("Source type", value="manual")
+            source_name = metadata_multiselect(
+                "Source name(s)",
+                metadata_options["source_names"],
+                values="Manual entry",
+                key="manual_source_name",
+                help="Search existing source names or type a new one.",
+            )
+            source_type = metadata_multiselect(
+                "Source type(s)",
+                metadata_options["source_types"],
+                values="manual",
+                key="manual_source_type",
+                help="Search existing source types or type a new one.",
+            )
             evidence_quote = st.text_area("Evidence quote")
             notes = st.text_area("Notes")
 
@@ -3512,6 +3620,40 @@ def selected_paper_from_search(
         format_func=lambda paper_id: label_by_id.get(paper_id, paper_id),
         key=select_key,
     )
+
+
+def admin_metadata_options(tables: dict[str, pd.DataFrame]) -> dict[str, list[str]]:
+    """Build controlled-vocabulary suggestions for admin metadata editors."""
+    papers = tables.get("papers", pd.DataFrame())
+    authors = tables.get("authors", pd.DataFrame())
+    instruments = tables.get("instruments", pd.DataFrame())
+    sources = tables.get("sources", pd.DataFrame())
+
+    return {
+        "authors": sorted_options(authors.get("author_name", [])),
+        "instruments": ensure_options_include(
+            instruments.get("instrument_name", []),
+            ADDITIONAL_INSTRUMENT_FILTER_OPTIONS,
+        ),
+        "journals": sorted_options(papers.get("journal", [])),
+        "publishers": sorted_options(papers.get("publisher", [])),
+        "paper_types": ensure_options_include(
+            papers.get("paper_type", []),
+            ["Research article"],
+        ),
+        "go_canada_statuses": ensure_options_include(
+            papers.get("go_canada_status", []),
+            ["candidate", "confirmed", "excluded"],
+        ),
+        "source_names": ensure_options_include(
+            sources.get("source_name", []),
+            ["Manual entry", "New import batch"],
+        ),
+        "source_types": ensure_options_include(
+            sources.get("source_type", []),
+            ["manual", "csv_import"],
+        ),
+    }
 
 
 def update_paper_metadata(
@@ -3674,6 +3816,7 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
 
     selected_paper = paper_view[paper_view["paper_id"] == selected_paper_id].iloc[0]
     source_names, source_types, source_notes = source_details_for_paper(tables, selected_paper_id)
+    metadata_options = admin_metadata_options(tables)
 
     with st.form("admin_metadata_form"):
         c1, c2 = st.columns(2)
@@ -3681,30 +3824,63 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
             title = st.text_input("Title", value=clean_text(selected_paper.get("title")))
             doi = st.text_input("DOI", value=clean_text(selected_paper.get("DOI")))
             year = st.text_input("Year", value=clean_text(selected_paper.get("year")))
-            journal = st.text_input("Journal", value=clean_text(selected_paper.get("journal")))
-            publisher = st.text_input("Publisher", value=clean_text(selected_paper.get("publisher")))
+            journal = metadata_selectbox(
+                "Journal",
+                metadata_options["journals"],
+                value=clean_text(selected_paper.get("journal")),
+                key=f"metadata_journal_{selected_paper_id}",
+            )
+            publisher = metadata_selectbox(
+                "Publisher",
+                metadata_options["publishers"],
+                value=clean_text(selected_paper.get("publisher")),
+                key=f"metadata_publisher_{selected_paper_id}",
+            )
         with c2:
-            paper_type = st.text_input("Paper type", value=clean_text(selected_paper.get("paper_type")))
-            go_canada_status = st.text_input(
+            paper_type = metadata_selectbox(
+                "Paper type",
+                metadata_options["paper_types"],
+                value=clean_text(selected_paper.get("paper_type")),
+                key=f"metadata_paper_type_{selected_paper_id}",
+            )
+            go_canada_status = metadata_selectbox(
                 "GO-Canada status",
+                metadata_options["go_canada_statuses"],
                 value=clean_text(selected_paper.get("go_canada_status")),
+                key=f"metadata_go_canada_status_{selected_paper_id}",
             )
             is_known_false_positive = st.checkbox(
                 "Known false positive",
-                value=bool(selected_paper.get("is_known_false_positive")),
+                value=parse_bool(selected_paper.get("is_known_false_positive")),
             )
-            source_name = st.text_input("Source name(s)", value=source_names)
-            source_type = st.text_input("Source type(s)", value=source_types)
+            source_name = metadata_multiselect(
+                "Source name(s)",
+                metadata_options["source_names"],
+                values=source_names,
+                key=f"metadata_source_name_{selected_paper_id}",
+                help="Search existing source names or type a new one.",
+            )
+            source_type = metadata_multiselect(
+                "Source type(s)",
+                metadata_options["source_types"],
+                values=source_types,
+                key=f"metadata_source_type_{selected_paper_id}",
+                help="Search existing source types or type a new one.",
+            )
 
-        authors = st.text_area(
+        authors = metadata_multiselect(
             "Authors",
-            value=clean_text(selected_paper.get("display_authors")),
-            help="Separate multiple authors with semicolons.",
+            metadata_options["authors"],
+            values=clean_text(selected_paper.get("display_authors")),
+            key=f"metadata_authors_{selected_paper_id}",
+            help="Search existing authors or type a new author name.",
         )
-        instruments = st.text_area(
+        instruments = metadata_multiselect(
             "Instruments",
-            value=clean_text(selected_paper.get("display_instruments")),
-            help="Separate multiple instruments with semicolons.",
+            metadata_options["instruments"],
+            values=clean_text(selected_paper.get("display_instruments")),
+            key=f"metadata_instruments_{selected_paper_id}",
+            help="Search existing instruments or type a new instrument name.",
         )
         instrument_status = st.text_input(
             "Instrument status",
