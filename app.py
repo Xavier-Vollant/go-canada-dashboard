@@ -323,6 +323,11 @@ def parse_bool(value: Any) -> bool:
     return clean_text(value).lower() in {"true", "1", "yes", "y", "known_false_positive"}
 
 
+def bool_storage_text(value: Any) -> str:
+    """Return a stable text value for boolean fields stored in CSV/Supabase tables."""
+    return "true" if parse_bool(value) else "false"
+
+
 def unique_preserve_order(values: Iterable[Any]) -> list[str]:
     """Deduplicate while keeping the original order."""
     seen: set[str] = set()
@@ -1203,7 +1208,9 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
 
     paper_id = generate_next_id(tables["papers"], "paper_id", "P")
     status = normalize_status(record.get("verification_status", "unchecked"))
-    known_false_positive = parse_bool(record.get("is_known_false_positive")) or status == "verified_false"
+    known_false_positive = (
+        parse_bool(record.get("is_known_false_positive")) or status == "verified_false"
+    )
 
     tables["papers"] = append_row(
         tables["papers"],
@@ -1216,7 +1223,7 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
             "publisher": clean_text(record.get("publisher")),
             "paper_type": clean_text(record.get("paper_type")),
             "go_canada_status": clean_text(record.get("go_canada_status")),
-            "is_known_false_positive": known_false_positive,
+            "is_known_false_positive": bool_storage_text(known_false_positive),
         },
         REQUIRED_COLUMNS["papers"],
     )
@@ -3520,6 +3527,9 @@ def update_paper_metadata(
 
     working = tables
     papers = working["papers"].copy()
+    for col in REQUIRED_COLUMNS["papers"]:
+        if col in papers.columns:
+            papers[col] = papers[col].astype("object")
     current_mask = papers["paper_id"].fillna("").astype(str) == paper_id
     if not bool(current_mask.any()):
         return False, "Paper not found"
@@ -3536,7 +3546,9 @@ def update_paper_metadata(
     papers.loc[current_mask, "publisher"] = clean_text(record.get("publisher"))
     papers.loc[current_mask, "paper_type"] = clean_text(record.get("paper_type"))
     papers.loc[current_mask, "go_canada_status"] = clean_text(record.get("go_canada_status"))
-    papers.loc[current_mask, "is_known_false_positive"] = bool(record.get("is_known_false_positive"))
+    papers.loc[current_mask, "is_known_false_positive"] = bool_storage_text(
+        record.get("is_known_false_positive")
+    )
     working["papers"] = papers
 
     paper_authors = working["paper_authors"].copy()
