@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import inspect
+import random
 from itertools import combinations
 from datetime import datetime
 from pathlib import Path
@@ -3605,6 +3606,11 @@ def selected_paper_from_search(
     """Render a paper search + select control and return the selected paper ID."""
     search_text = st.text_input("Find paper by title, DOI, author, or instrument", key=search_key)
     candidates = find_paper_candidates(paper_view, search_text)
+    selected_state = clean_text(st.session_state.get(select_key))
+    if selected_state and selected_state not in set(candidates.get("paper_id", [])):
+        selected_row = paper_view[paper_view["paper_id"].fillna("").astype(str) == selected_state]
+        if not selected_row.empty:
+            candidates = pd.concat([selected_row, candidates], ignore_index=True)
     if candidates.empty:
         st.info("No papers match that search.")
         return ""
@@ -3620,6 +3626,72 @@ def selected_paper_from_search(
         format_func=lambda paper_id: label_by_id.get(paper_id, paper_id),
         key=select_key,
     )
+
+
+def render_open_paper_button(selected_paper: pd.Series) -> None:
+    """Render a button-like link to the paper landing page when available."""
+    paper_url = clean_text(selected_paper.get("paper_url")) or doi_to_url(selected_paper.get("DOI"))
+    if paper_url:
+        st.link_button("Open paper page", paper_url)
+    else:
+        st.caption("No DOI or paper URL is available for this paper.")
+
+
+def set_random_paper_selection(
+    paper_view: pd.DataFrame,
+    *,
+    search_key: str,
+    select_key: str,
+    instrument_name: str = "",
+) -> None:
+    """Select a random paper, optionally limited to one instrument."""
+    candidates = paper_view.copy()
+    instrument_name = clean_text(instrument_name)
+    if instrument_name:
+        candidates = candidates[
+            candidates["instruments"].apply(lambda values: instrument_name in values)
+        ]
+    if candidates.empty:
+        st.warning("No papers match that random selection.")
+        return
+
+    selected_paper_id = random.choice(candidates["paper_id"].astype(str).tolist())
+    st.session_state[search_key] = ""
+    st.session_state[select_key] = selected_paper_id
+    st.rerun()
+
+
+def render_random_paper_controls(
+    paper_view: pd.DataFrame,
+    tables: dict[str, pd.DataFrame],
+    *,
+    search_key: str,
+    select_key: str,
+) -> None:
+    """Render quick random-paper controls for the admin verification workflow."""
+    metadata_options = admin_metadata_options(tables)
+    random_cols = st.columns([1, 2, 1])
+    with random_cols[0]:
+        if st.button("Random paper", key=f"{select_key}_random_any"):
+            set_random_paper_selection(
+                paper_view,
+                search_key=search_key,
+                select_key=select_key,
+            )
+    with random_cols[1]:
+        random_instrument = st.selectbox(
+            "Random within instrument",
+            metadata_options["instruments"],
+            key=f"{select_key}_random_instrument",
+        )
+    with random_cols[2]:
+        if st.button("Random in instrument", key=f"{select_key}_random_instrument_button"):
+            set_random_paper_selection(
+                paper_view,
+                search_key=search_key,
+                select_key=select_key,
+                instrument_name=random_instrument,
+            )
 
 
 def admin_metadata_options(tables: dict[str, pd.DataFrame]) -> dict[str, list[str]]:
@@ -3799,6 +3871,205 @@ def source_details_for_paper(tables: dict[str, pd.DataFrame], paper_id: str) -> 
     )
 
 
+def paper_instrument_assignments(tables: dict[str, pd.DataFrame], paper_id: str) -> pd.DataFrame:
+    """Return instrument assignments for one paper with instrument names attached."""
+    paper_instruments = tables["paper_instruments"]
+    instruments = tables["instruments"]
+    if paper_instruments.empty:
+        return pd.DataFrame(columns=["paper_id", "instrument_id", "instrument_status", "instrument_name"])
+    assignments = paper_instruments[
+        paper_instruments["paper_id"].fillna("").astype(str) == paper_id
+    ].merge(instruments, on="instrument_id", how="left")
+    return assignments.sort_values("instrument_name", na_position="last").reset_index(drop=True)
+
+
+def add_instrument_assignment_to_paper(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    instrument_name: str,
+    instrument_status: str = "uses",
+) -> tuple[bool, str]:
+    """Add one instrument assignment to a paper."""
+    instrument_name = clean_text(instrument_name)
+    if not instrument_name:
+        return False, "Choose or type an instrument name."
+
+    working_tables = {name: table.copy() for name, table in tables.items()}
+    instrument_id = get_or_create_instrument_id(working_tables, instrument_name)
+    paper_instruments = working_tables["paper_instruments"].copy()
+    existing_mask = (
+        (paper_instruments["paper_id"].fillna("").astype(str) == paper_id)
+        & (paper_instruments["instrument_id"].fillna("").astype(str) == instrument_id)
+    )
+    if bool(existing_mask.any()):
+        return False, f"{instrument_name} is already assigned to this paper."
+
+    working_tables["paper_instruments"] = append_row(
+        paper_instruments,
+        {
+            "paper_id": paper_id,
+            "instrument_id": instrument_id,
+            "instrument_status": clean_text(instrument_status) or "uses",
+        },
+        REQUIRED_COLUMNS["paper_instruments"],
+    )
+    save_database_tables(working_tables)
+    return True, instrument_name
+
+
+def save_paper_verification_updates(
+    tables: dict[str, pd.DataFrame],
+    updates: list[dict[str, Any]],
+) -> None:
+    """Save multiple paper-instrument verification rows in one database update."""
+    working_tables = {name: table.copy() for name, table in tables.items()}
+    verification = working_tables["verification"].copy()
+    for update in updates:
+        paper_id = clean_text(update.get("paper_id"))
+        instrument_id = clean_text(update.get("instrument_id"))
+        status = normalize_status(update.get("status"))
+        keep_mask = ~(
+            (verification["paper_id"].fillna("").astype(str) == paper_id)
+            & (verification["instrument_id"].fillna("").astype(str) == instrument_id)
+        )
+        verification = verification[keep_mask].reset_index(drop=True)
+        if status != "unchecked":
+            verification = append_row(
+                verification,
+                {
+                    "paper_id": paper_id,
+                    "instrument_id": instrument_id,
+                    "status": status,
+                    "evidence_quote": clean_text(update.get("evidence_quote")),
+                    "checked_date": clean_text(update.get("checked_date"))
+                    or datetime.now().isoformat(timespec="seconds"),
+                    "notes": clean_text(update.get("notes")),
+                },
+                REQUIRED_COLUMNS["verification"],
+            )
+    working_tables["verification"] = verification
+    save_database_tables(working_tables)
+
+
+def render_paper_verification_controls(
+    tables: dict[str, pd.DataFrame],
+    selected_paper_id: str,
+    *,
+    key_prefix: str,
+) -> None:
+    """Render per-instrument verification controls for one selected paper."""
+    metadata_options = admin_metadata_options(tables)
+    assignments = paper_instrument_assignments(tables, selected_paper_id)
+
+    st.markdown("#### Instrument Verification")
+    with st.form(f"{key_prefix}_add_instrument_form"):
+        add_cols = st.columns([2, 1, 1])
+        with add_cols[0]:
+            new_instrument = metadata_selectbox(
+                "Add instrument",
+                metadata_options["instruments"],
+                key=f"{key_prefix}_new_instrument",
+                help="Search existing instruments or type a new instrument name.",
+            )
+        with add_cols[1]:
+            new_instrument_status = st.text_input(
+                "Instrument status",
+                value="uses",
+                key=f"{key_prefix}_new_instrument_status",
+            )
+        with add_cols[2]:
+            add_submitted = st.form_submit_button("Add instrument")
+
+    if add_submitted:
+        try:
+            ok, message = add_instrument_assignment_to_paper(
+                tables,
+                selected_paper_id,
+                new_instrument,
+                new_instrument_status,
+            )
+            if ok:
+                st.success(f"Added instrument: {message}")
+                st.rerun()
+            else:
+                st.error(message)
+        except requests.HTTPError as exc:
+            response = exc.response
+            detail = response.text if response is not None else str(exc)
+            st.error(f"Supabase rejected the instrument assignment: {detail}")
+        except Exception as exc:
+            st.error(f"Could not add instrument: {exc}")
+
+    if assignments.empty:
+        st.info("This paper has no instrument assignments yet.")
+        return
+
+    existing = tables["verification"].copy()
+    status_options = ["unchecked", "verified_true", "verified_false", "unsure"]
+    with st.form(f"{key_prefix}_verification_form"):
+        update_payloads: list[dict[str, Any]] = []
+        for _, assignment in assignments.iterrows():
+            instrument_id = clean_text(assignment.get("instrument_id"))
+            instrument_name = clean_text(assignment.get("instrument_name")) or instrument_id
+            existing_rows = existing[
+                (existing["paper_id"].fillna("").astype(str) == selected_paper_id)
+                & (existing["instrument_id"].fillna("").astype(str) == instrument_id)
+            ]
+            existing_row = existing_rows.iloc[0] if not existing_rows.empty else pd.Series(dtype="object")
+            current_status = normalize_status(existing_row.get("status", "unchecked"))
+            default_status_index = status_options.index(current_status) if current_status in status_options else 0
+
+            st.markdown(f"**{instrument_name}**")
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                status = st.selectbox(
+                    "Verification status",
+                    status_options,
+                    index=default_status_index,
+                    key=f"{key_prefix}_{instrument_id}_status",
+                )
+                checked_date = st.text_input(
+                    "Checked date/time",
+                    value=clean_text(existing_row.get("checked_date")),
+                    key=f"{key_prefix}_{instrument_id}_checked_date",
+                )
+            with c2:
+                evidence_quote = st.text_area(
+                    "Evidence quote",
+                    value=clean_text(existing_row.get("evidence_quote")),
+                    key=f"{key_prefix}_{instrument_id}_evidence",
+                )
+                notes = st.text_area(
+                    "Notes",
+                    value=clean_text(existing_row.get("notes")),
+                    key=f"{key_prefix}_{instrument_id}_notes",
+                )
+            update_payloads.append(
+                {
+                    "paper_id": selected_paper_id,
+                    "instrument_id": instrument_id,
+                    "status": status,
+                    "evidence_quote": evidence_quote,
+                    "checked_date": checked_date,
+                    "notes": notes,
+                }
+            )
+
+        submitted = st.form_submit_button("Save all verification statuses", type="primary")
+
+    if submitted:
+        try:
+            save_paper_verification_updates(tables, update_payloads)
+            st.success("Verification statuses saved.")
+            st.rerun()
+        except requests.HTTPError as exc:
+            response = exc.response
+            detail = response.text if response is not None else str(exc)
+            st.error(f"Supabase rejected the verification update: {detail}")
+        except Exception as exc:
+            st.error(f"Could not save verification statuses: {exc}")
+
+
 def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
     """Render a full paper metadata editor."""
     st.subheader("Edit Paper Metadata")
@@ -3817,6 +4088,7 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
     selected_paper = paper_view[paper_view["paper_id"] == selected_paper_id].iloc[0]
     source_names, source_types, source_notes = source_details_for_paper(tables, selected_paper_id)
     metadata_options = admin_metadata_options(tables)
+    render_open_paper_button(selected_paper)
 
     with st.form("admin_metadata_form"):
         c1, c2 = st.columns(2)
@@ -3927,6 +4199,13 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
         else:
             st.error(f"Paper metadata was not saved: {message}")
 
+    st.divider()
+    render_paper_verification_controls(
+        tables,
+        selected_paper_id,
+        key_prefix=f"metadata_verify_{selected_paper_id}",
+    )
+
     with st.expander("Delete this paper", expanded=False):
         confirm_delete = st.checkbox(
             "I understand this removes the paper and its relationships from the live database.",
@@ -3948,16 +4227,25 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
 
 
 def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
-    """Render a simple editor for paper-instrument verification rows."""
+    """Render an editor for paper-instrument verification rows."""
     st.subheader("Change Verification Status")
     if paper_view.empty:
         st.info("No papers are loaded.")
         return
 
+    search_key = "admin_verify_search"
+    select_key = "admin_verify_paper"
+    render_random_paper_controls(
+        paper_view,
+        tables,
+        search_key=search_key,
+        select_key=select_key,
+    )
+
     selected_paper_id = selected_paper_from_search(
         paper_view,
-        search_key="admin_verify_search",
-        select_key="admin_verify_paper",
+        search_key=search_key,
+        select_key=select_key,
     )
     if not selected_paper_id:
         return
@@ -3966,76 +4254,12 @@ def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.D
     st.write(f"**Title:** {clean_text(selected_paper['title'])}")
     st.write(f"**DOI:** {clean_text(selected_paper['DOI']) or 'Missing'}")
     st.write(f"**Current paper status:** {clean_text(selected_paper['verification_status'])}")
-
-    paper_instruments = tables["paper_instruments"]
-    instruments = tables["instruments"]
-    assignments = paper_instruments[
-        paper_instruments["paper_id"].fillna("").astype(str) == selected_paper_id
-    ].merge(instruments, on="instrument_id", how="left")
-    if assignments.empty:
-        st.info("This paper has no instrument assignments.")
-        return
-
-    instrument_options = assignments["instrument_id"].astype(str).tolist()
-    instrument_labels = dict(
-        zip(
-            assignments["instrument_id"].astype(str),
-            assignments["instrument_name"].fillna("").astype(str),
-        )
+    render_open_paper_button(selected_paper)
+    render_paper_verification_controls(
+        tables,
+        selected_paper_id,
+        key_prefix=f"verify_{selected_paper_id}",
     )
-    selected_instrument_id = st.selectbox(
-        "Instrument assignment",
-        instrument_options,
-        format_func=lambda instrument_id: instrument_labels.get(instrument_id, instrument_id),
-        key="admin_verify_instrument",
-    )
-
-    existing = tables["verification"].copy()
-    existing = existing[
-        (existing["paper_id"].fillna("").astype(str) == selected_paper_id)
-        & (existing["instrument_id"].fillna("").astype(str) == selected_instrument_id)
-    ]
-    existing_row = existing.iloc[0] if not existing.empty else pd.Series(dtype="object")
-    current_status = normalize_status(existing_row.get("status", "unchecked"))
-    status_options = ["unchecked", "verified_true", "verified_false", "unsure"]
-    default_status_index = status_options.index(current_status) if current_status in status_options else 0
-
-    with st.form("admin_verification_form"):
-        new_status = st.selectbox(
-            "Verification status",
-            status_options,
-            index=default_status_index,
-        )
-        evidence_quote = st.text_area(
-            "Evidence quote",
-            value=clean_text(existing_row.get("evidence_quote")),
-        )
-        notes = st.text_area("Notes", value=clean_text(existing_row.get("notes")))
-        checked_date = st.text_input(
-            "Checked date/time",
-            value=clean_text(existing_row.get("checked_date")) or datetime.now().isoformat(timespec="seconds"),
-        )
-        submitted = st.form_submit_button("Save verification status", type="primary")
-
-    if submitted:
-        try:
-            save_verification_row(
-                tables,
-                selected_paper_id,
-                selected_instrument_id,
-                new_status,
-                evidence_quote,
-                checked_date,
-                notes,
-            )
-            st.success("Verification status saved.")
-            st.rerun()
-        except requests.HTTPError as exc:
-            response = exc.response
-            detail = response.text if response is not None else str(exc)
-            st.error(f"Supabase rejected the verification update: {detail}")
-        except Exception as exc:
-            st.error(f"Could not save verification status: {exc}")
 
 
 def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
