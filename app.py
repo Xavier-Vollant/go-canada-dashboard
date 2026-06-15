@@ -2627,7 +2627,30 @@ def render_chart_controls(
         elif not error_rate_available:
             st.caption("Error-rate overlays are not applicable to this chart.")
 
+    appearance_customized = any(
+        [
+            title != default_title,
+            title_align != "Left",
+            x_title != default_x_title,
+            y_title != default_y_title,
+            unit != "Automatic",
+            bool(custom_unit),
+            primary_color.lower() != "#1f77b4",
+            palette != "Plotly",
+            background != "White",
+            not show_grid,
+            not show_legend,
+            legend_position != "Right",
+            show_data_labels,
+            y_scale != "Linear",
+            parse_optional_number(y_min_text) is not None,
+            parse_optional_number(y_max_text) is not None,
+            height != 500,
+        ]
+    )
+
     return {
+        "appearance_customized": appearance_customized,
         "title": title,
         "title_align": title_align,
         "x_title": x_title,
@@ -2660,7 +2683,7 @@ def apply_chart_style(
     value_axis: str = "y",
 ) -> go.Figure:
     """Apply the shared graph controls to a Plotly figure."""
-    if not chart_config:
+    if not chart_config or not chart_config.get("appearance_customized", False):
         return fig
 
     title_positions = {
