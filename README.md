@@ -17,6 +17,12 @@ database. The main pages provide:
 - `Data Quality`: missing metadata and verification checks.
 - `Export`: CSV exports of the current view.
 
+Preset and custom graphs include controls for titles, axis labels, units, colors,
+palettes, grids, legends, value ranges, scale, data labels, background, and
+height. Compatible count charts can also show the estimated false-positive rate
+in tooltips, as an estimated clean-count overlay, with error bars, as a
+secondary percentage line, or as a shaded band.
+
 Admins can sign in from the app to update papers, metadata, verification status,
 and shared presets.
 

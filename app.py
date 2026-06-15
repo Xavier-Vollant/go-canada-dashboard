@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import inspect
+import math
 import random
 from itertools import combinations
 from datetime import datetime
@@ -294,6 +295,20 @@ MISSING_METADATA_FIELD_LABELS = {
     "instruments": "Instruments",
     "source": "Source / origin",
     "verification_status": "Verification status",
+}
+
+CHART_PALETTES = {
+    "Plotly": px.colors.qualitative.Plotly,
+    "D3": px.colors.qualitative.D3,
+    "Safe": px.colors.qualitative.Safe,
+    "Viridis": px.colors.sequential.Viridis,
+    "Cividis": px.colors.sequential.Cividis,
+    "Plasma": px.colors.sequential.Plasma,
+}
+CHART_BACKGROUND_COLORS = {
+    "White": "#ffffff",
+    "Light gray": "#f5f7fa",
+    "Transparent": "rgba(0,0,0,0)",
 }
 
 
@@ -886,9 +901,14 @@ def delete_shared_preset(name: str) -> None:
 
 def current_view_snapshot() -> dict[str, Any]:
     """Capture current filter and view widget state for a preset."""
+    chart_keys = [
+        key
+        for key in st.session_state
+        if key.startswith("chart_") and not key.endswith("_reset")
+    ]
     return {
         key: st.session_state.get(key)
-        for key in FILTER_WIDGET_KEYS + VIEW_WIDGET_KEYS
+        for key in FILTER_WIDGET_KEYS + VIEW_WIDGET_KEYS + chart_keys
         if key in st.session_state
     }
 
@@ -2374,6 +2394,442 @@ def missing_metadata_report(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
 # Graph helpers
 # -----------------------------------------------------------------------------
 
+def chart_control_prefix(*parts: str) -> str:
+    """Return a stable Streamlit widget prefix for one chart configuration."""
+    raw = "_".join(clean_text(part).lower() for part in parts if clean_text(part))
+    return "chart_" + "".join(char if char.isalnum() else "_" for char in raw).strip("_")
+
+
+def parse_optional_number(value: Any) -> float | None:
+    """Parse an optional numeric chart setting."""
+    text = clean_text(value)
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def hex_to_rgba(color: str, alpha: float) -> str:
+    """Convert a CSS hex color to rgba for translucent Plotly fills."""
+    value = clean_text(color).lstrip("#")
+    if len(value) != 6:
+        return f"rgba(214, 39, 40, {alpha})"
+    try:
+        red, green, blue = (int(value[index:index + 2], 16) for index in (0, 2, 4))
+    except ValueError:
+        return f"rgba(214, 39, 40, {alpha})"
+    return f"rgba({red}, {green}, {blue}, {alpha})"
+
+
+def render_chart_controls(
+    *,
+    default_title: str,
+    default_x_title: str,
+    default_y_title: str,
+    chart_type: str,
+    error_rate_available: bool,
+    key_prefix: str,
+    percent_value_axis: bool = False,
+) -> dict[str, Any]:
+    """Render shared appearance and error-rate controls for a Plotly chart."""
+    widget_names = [
+        "title",
+        "title_align",
+        "x_title",
+        "y_title",
+        "unit",
+        "custom_unit",
+        "primary_color",
+        "error_color",
+        "palette",
+        "background",
+        "grid",
+        "legend",
+        "legend_position",
+        "data_labels",
+        "y_scale",
+        "y_min",
+        "y_max",
+        "height",
+        "error_display",
+    ]
+
+    with st.expander("Chart appearance and error rate", expanded=False):
+        if st.button("Reset chart settings", key=f"{key_prefix}_reset"):
+            for name in widget_names:
+                st.session_state.pop(f"{key_prefix}_{name}", None)
+            st.rerun()
+
+        title = st.text_input(
+            "Chart title",
+            value=default_title,
+            key=f"{key_prefix}_title",
+        )
+        title_align = st.selectbox(
+            "Title alignment",
+            ["Left", "Center", "Right"],
+            key=f"{key_prefix}_title_align",
+        )
+
+        supports_axes = chart_type not in {"Pie chart", "Donut chart", "Network"}
+        supports_value_axis = supports_axes and chart_type != "Heatmap"
+        if supports_axes:
+            axis_col1, axis_col2 = st.columns(2)
+            with axis_col1:
+                x_title = st.text_input(
+                    "X-axis title",
+                    value=default_x_title,
+                    key=f"{key_prefix}_x_title",
+                )
+            with axis_col2:
+                y_title = st.text_input(
+                    "Y-axis title",
+                    value=default_y_title,
+                    key=f"{key_prefix}_y_title",
+                )
+        else:
+            x_title = default_x_title
+            y_title = default_y_title
+
+        format_col1, format_col2, format_col3 = st.columns(3)
+        with format_col1:
+            unit_options = ["Automatic", "Count", "Custom suffix"]
+            if percent_value_axis:
+                unit_options.insert(2, "Percent")
+            unit = st.selectbox(
+                "Value-axis units",
+                unit_options,
+                key=f"{key_prefix}_unit",
+                disabled=not supports_value_axis,
+            )
+        with format_col2:
+            custom_unit = st.text_input(
+                "Custom unit suffix",
+                key=f"{key_prefix}_custom_unit",
+                disabled=unit != "Custom suffix" or not supports_value_axis,
+            )
+        with format_col3:
+            y_scale = st.selectbox(
+                "Value-axis scale",
+                ["Linear", "Log"],
+                key=f"{key_prefix}_y_scale",
+                disabled=not supports_value_axis,
+            )
+
+        color_col1, color_col2, color_col3 = st.columns(3)
+        with color_col1:
+            primary_color = st.color_picker(
+                "Primary color",
+                "#1f77b4",
+                key=f"{key_prefix}_primary_color",
+            )
+        with color_col2:
+            error_color = st.color_picker(
+                "Error-rate color",
+                "#d62728",
+                key=f"{key_prefix}_error_color",
+                disabled=not error_rate_available,
+            )
+        with color_col3:
+            palette = st.selectbox(
+                "Multi-series palette",
+                list(CHART_PALETTES),
+                key=f"{key_prefix}_palette",
+            )
+
+        display_col1, display_col2, display_col3 = st.columns(3)
+        with display_col1:
+            background = st.selectbox(
+                "Background",
+                list(CHART_BACKGROUND_COLORS),
+                key=f"{key_prefix}_background",
+            )
+        with display_col2:
+            show_grid = st.checkbox(
+                "Show grid",
+                value=True,
+                key=f"{key_prefix}_grid",
+                disabled=not supports_axes,
+            )
+        with display_col3:
+            show_data_labels = st.checkbox(
+                "Show data labels",
+                key=f"{key_prefix}_data_labels",
+                disabled=chart_type == "Network",
+            )
+
+        legend_col1, legend_col2 = st.columns(2)
+        with legend_col1:
+            show_legend = st.checkbox(
+                "Show legend",
+                value=True,
+                key=f"{key_prefix}_legend",
+            )
+        with legend_col2:
+            legend_position = st.selectbox(
+                "Legend position",
+                ["Right", "Top", "Bottom"],
+                key=f"{key_prefix}_legend_position",
+                disabled=not show_legend,
+            )
+
+        range_col1, range_col2, range_col3 = st.columns(3)
+        with range_col1:
+            y_min_text = st.text_input(
+                "Value-axis minimum",
+                placeholder="Automatic",
+                key=f"{key_prefix}_y_min",
+                disabled=not supports_value_axis,
+            )
+        with range_col2:
+            y_max_text = st.text_input(
+                "Value-axis maximum",
+                placeholder="Automatic",
+                key=f"{key_prefix}_y_max",
+                disabled=not supports_value_axis,
+            )
+        with range_col3:
+            height = st.slider(
+                "Chart height",
+                min_value=350,
+                max_value=900,
+                value=500,
+                step=25,
+                key=f"{key_prefix}_height",
+            )
+
+        error_options = ["Hide", "Tooltip only"]
+        if chart_type in {"Bar chart", "Line chart"}:
+            error_options.extend(
+                ["Estimated clean count", "Error bars", "Error-rate line"]
+            )
+        if chart_type == "Line chart":
+            error_options.append("Shaded error band")
+
+        error_display = st.selectbox(
+            "Estimated false-positive display",
+            error_options,
+            key=f"{key_prefix}_error_display",
+            disabled=not error_rate_available,
+            help=(
+                "Error bars and the shaded band show the estimated gap between raw "
+                "and clean paper counts. They are not confidence intervals."
+            ),
+        )
+        if error_rate_available and error_display != "Hide":
+            st.caption(
+                "The rate uses the dashboard's checked-paper sample with its global "
+                "prior. Error bars show the raw-to-estimated-clean gap, not a "
+                "statistical confidence interval."
+            )
+        elif not error_rate_available:
+            st.caption("Error-rate overlays are not applicable to this chart.")
+
+    return {
+        "title": title,
+        "title_align": title_align,
+        "x_title": x_title,
+        "y_title": y_title,
+        "unit": unit,
+        "custom_unit": custom_unit,
+        "primary_color": primary_color,
+        "error_color": error_color,
+        "palette": palette,
+        "background": background,
+        "show_grid": show_grid,
+        "show_legend": show_legend,
+        "legend_position": legend_position,
+        "show_data_labels": show_data_labels,
+        "y_scale": y_scale,
+        "y_min": parse_optional_number(y_min_text),
+        "y_max": parse_optional_number(y_max_text),
+        "height": height,
+        "error_display": error_display if error_rate_available else "Hide",
+    }
+
+
+def apply_chart_style(
+    fig: go.Figure,
+    chart_config: dict[str, Any] | None,
+    *,
+    supports_axes: bool = True,
+    default_percent_y: bool = False,
+    color_mode: str = "standard",
+    value_axis: str = "y",
+) -> go.Figure:
+    """Apply the shared graph controls to a Plotly figure."""
+    if not chart_config:
+        return fig
+
+    title_positions = {
+        "Left": 0.0,
+        "Center": 0.5,
+        "Right": 1.0,
+    }
+    legend_layouts = {
+        "Right": dict(orientation="v", x=1.02, xanchor="left", y=1.0, yanchor="top"),
+        "Top": dict(orientation="h", x=0.0, xanchor="left", y=1.12, yanchor="bottom"),
+        "Bottom": dict(orientation="h", x=0.0, xanchor="left", y=-0.2, yanchor="top"),
+    }
+    palette = CHART_PALETTES[chart_config["palette"]]
+
+    if color_mode == "heatmap":
+        fig.update_traces(colorscale=palette, selector=dict(type="heatmap"))
+    elif color_mode == "network":
+        for trace in fig.data:
+            if trace.type == "scatter" and getattr(trace.marker, "showscale", False):
+                trace.marker.colorscale = palette
+    else:
+        for index, trace in enumerate(fig.data):
+            color = chart_config["primary_color"] if len(fig.data) == 1 else palette[index % len(palette)]
+            if trace.type == "pie":
+                trace.marker.colors = palette
+            elif trace.type == "bar":
+                marker_color = getattr(trace.marker, "color", None)
+                if marker_color is not None and not isinstance(marker_color, str):
+                    trace.marker.colorscale = palette
+                else:
+                    trace.marker.color = color
+            elif trace.type == "scatter":
+                if getattr(trace, "yaxis", "y") == "y2":
+                    continue
+                trace.line.color = color
+                marker_color = getattr(trace.marker, "color", None)
+                if marker_color is not None and not isinstance(marker_color, str):
+                    trace.marker.colorscale = palette
+                else:
+                    trace.marker.color = color
+
+    background_color = CHART_BACKGROUND_COLORS[chart_config["background"]]
+    title_x = title_positions[chart_config["title_align"]]
+    fig.update_layout(
+        title=dict(
+            text=chart_config["title"],
+            x=title_x,
+            xanchor=chart_config["title_align"].lower(),
+        ),
+        height=chart_config["height"],
+        showlegend=chart_config["show_legend"],
+        legend=legend_layouts[chart_config["legend_position"]],
+        plot_bgcolor=background_color,
+        paper_bgcolor=background_color,
+        margin=dict(l=60, r=60, t=80, b=70),
+    )
+
+    if supports_axes:
+        fig.update_xaxes(
+            title_text=chart_config["x_title"],
+            showgrid=chart_config["show_grid"],
+        )
+        fig.update_yaxes(
+            title_text=chart_config["y_title"],
+            showgrid=chart_config["show_grid"],
+        )
+
+        if color_mode != "heatmap":
+            value_axis_layout = fig.layout.xaxis if value_axis == "x" else fig.layout.yaxis
+            unit = chart_config["unit"]
+            if unit == "Count":
+                value_axis_layout.tickformat = ",.0f"
+            elif unit == "Percent" or (unit == "Automatic" and default_percent_y):
+                value_axis_layout.tickformat = ".0%"
+            elif unit == "Custom suffix":
+                value_axis_layout.ticksuffix = chart_config["custom_unit"]
+
+            y_min = chart_config["y_min"]
+            y_max = chart_config["y_max"]
+            if y_min is not None or y_max is not None:
+                current_range = list(value_axis_layout.range or [None, None])
+                current_range[0] = y_min if y_min is not None else current_range[0]
+                current_range[1] = y_max if y_max is not None else current_range[1]
+                if chart_config["y_scale"] == "Log":
+                    current_range = [
+                        None if value is None or value <= 0 else math.log10(value)
+                        for value in current_range
+                    ]
+                value_axis_layout.range = current_range
+
+            value_axis_layout.type = (
+                "log" if chart_config["y_scale"] == "Log" else "linear"
+            )
+
+    if chart_config["show_data_labels"] and color_mode != "network":
+        for trace in fig.data:
+            if trace.type == "bar":
+                value_token = "x" if value_axis == "x" else "y"
+                value_format = ".1%" if default_percent_y else ",.0f"
+                trace.texttemplate = f"%{{{value_token}:{value_format}}}"
+                trace.textposition = "outside"
+            elif trace.type == "pie":
+                trace.textinfo = "label+percent"
+            elif trace.type == "scatter" and getattr(trace, "yaxis", "y") != "y2":
+                trace.text = trace.y
+                trace.texttemplate = "%{y:.1%}" if default_percent_y else "%{y:,.0f}"
+                trace.textposition = "top center"
+                if "text" not in trace.mode:
+                    trace.mode = f"{trace.mode}+text"
+
+    return fig
+
+
+def add_false_positive_estimates(
+    counts: pd.DataFrame,
+    variable: str,
+    current_df: pd.DataFrame,
+    reference_df: pd.DataFrame,
+    fallback_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Add per-category estimated false-positive rates and clean counts."""
+    estimated = counts.copy()
+    if estimated.empty:
+        return estimated
+
+    current = explode_for_variable(current_df, variable)
+    reference = explode_for_variable(reference_df, variable)
+    if variable not in current.columns or variable not in reference.columns:
+        return estimated
+
+    current = current.drop_duplicates(subset=[variable, "paper_id"])
+    reference = reference.drop_duplicates(subset=[variable, "paper_id"])
+    rows: list[dict[str, Any]] = []
+
+    for category in estimated[variable]:
+        current_group = current[current[variable] == category]
+        reference_group = reference[reference[variable] == category]
+        rate, checked, false_count, source = estimate_false_positive_sample_rate(
+            reference_group,
+            fallback_df,
+        )
+        current_ids = set(current_group["paper_id"])
+        removed_known = int(
+            (
+                false_positive_mask(reference_group)
+                & ~reference_group["paper_id"].isin(current_ids)
+            ).sum()
+        )
+        current_total = int(current_group["paper_id"].nunique())
+        reference_total = int(reference_group["paper_id"].nunique())
+        estimated_errors = max(reference_total * rate - removed_known, 0.0)
+        estimated_errors = min(estimated_errors, float(current_total))
+        rows.append(
+            {
+                "estimated_false_positives": estimated_errors,
+                "estimated_error_rate": estimated_errors / current_total if current_total else 0.0,
+                "estimated_clean_count": max(current_total - estimated_errors, 0.0),
+                "error_sample_checked": checked,
+                "error_sample_false": false_count,
+                "error_sample_source": source,
+            }
+        )
+
+    return pd.concat(
+        [estimated.reset_index(drop=True), pd.DataFrame(rows)],
+        axis=1,
+    )
+
+
 def explode_for_variable(df: pd.DataFrame, variable: str) -> pd.DataFrame:
     """Return a dataframe where list-valued graph variables are exploded."""
     if variable == "instrument":
@@ -2409,22 +2865,176 @@ def count_by_variable(df: pd.DataFrame, variable: str, top_n: int | None = None)
     return counts
 
 
-def plot_count_chart(counts: pd.DataFrame, variable: str, chart_type: str, title: str):
+def plot_count_chart(
+    counts: pd.DataFrame,
+    variable: str,
+    chart_type: str,
+    title: str,
+    *,
+    chart_config: dict[str, Any] | None = None,
+    current_df: pd.DataFrame | None = None,
+    false_positive_reference_df: pd.DataFrame | None = None,
+    fallback_reference_df: pd.DataFrame | None = None,
+) -> None:
     """Plot a count table with the requested chart type."""
     if counts.empty:
         st.info("No data to plot for the current filters.")
         return
 
+    plot_data = counts.copy()
+    error_display = chart_config.get("error_display", "Hide") if chart_config else "Hide"
+    if (
+        error_display != "Hide"
+        and current_df is not None
+        and false_positive_reference_df is not None
+        and fallback_reference_df is not None
+    ):
+        plot_data = add_false_positive_estimates(
+            plot_data,
+            variable,
+            current_df,
+            false_positive_reference_df,
+            fallback_reference_df,
+        )
+
+    if chart_type == "Line chart":
+        plot_data = plot_data.sort_values(variable)
+
+    hover_data = None
+    if "estimated_error_rate" in plot_data.columns:
+        hover_data = {
+            "estimated_error_rate": ":.1%",
+            "estimated_false_positives": ":.1f",
+            "estimated_clean_count": ":.1f",
+            "error_sample_checked": True,
+            "error_sample_false": True,
+            "error_sample_source": True,
+        }
+
     if chart_type == "Bar chart":
-        fig = px.bar(counts, x=variable, y="papers", title=title)
+        fig = px.bar(
+            plot_data,
+            x=variable,
+            y="papers",
+            title=title,
+            hover_data=hover_data,
+        )
     elif chart_type == "Line chart":
-        fig = px.line(counts.sort_values(variable), x=variable, y="papers", markers=True, title=title)
+        fig = px.line(
+            plot_data,
+            x=variable,
+            y="papers",
+            markers=True,
+            title=title,
+            hover_data=hover_data,
+        )
     elif chart_type == "Pie chart":
-        fig = px.pie(counts, names=variable, values="papers", title=title)
+        fig = px.pie(
+            plot_data,
+            names=variable,
+            values="papers",
+            title=title,
+            hover_data=hover_data,
+        )
     elif chart_type == "Donut chart":
-        fig = px.pie(counts, names=variable, values="papers", hole=0.45, title=title)
+        fig = px.pie(
+            plot_data,
+            names=variable,
+            values="papers",
+            hole=0.45,
+            title=title,
+            hover_data=hover_data,
+        )
     else:
-        fig = px.bar(counts, x=variable, y="papers", title=title)
+        fig = px.bar(plot_data, x=variable, y="papers", title=title)
+
+    supports_axes = chart_type not in {"Pie chart", "Donut chart"}
+    apply_chart_style(fig, chart_config, supports_axes=supports_axes)
+
+    if chart_config and "estimated_error_rate" in plot_data.columns:
+        error_color = chart_config["error_color"]
+        if fig.data:
+            fig.data[0].name = "Raw paper count"
+
+        if error_display == "Estimated clean count":
+            if chart_type == "Bar chart":
+                fig.add_trace(
+                    go.Bar(
+                        x=plot_data[variable],
+                        y=plot_data["estimated_clean_count"],
+                        name="Estimated clean count",
+                        marker_color=error_color,
+                    )
+                )
+                fig.update_layout(barmode="group")
+            elif chart_type == "Line chart":
+                fig.add_trace(
+                    go.Scatter(
+                        x=plot_data[variable],
+                        y=plot_data["estimated_clean_count"],
+                        mode="lines+markers",
+                        name="Estimated clean count",
+                        line=dict(color=error_color, dash="dash"),
+                        marker=dict(color=error_color),
+                    )
+                )
+        elif error_display == "Error bars" and chart_type in {"Bar chart", "Line chart"}:
+            fig.data[0].error_y = dict(
+                type="data",
+                symmetric=False,
+                array=[0.0] * len(plot_data),
+                arrayminus=plot_data["estimated_false_positives"],
+                color=error_color,
+                thickness=2,
+                width=5,
+                visible=True,
+            )
+        elif error_display == "Error-rate line" and chart_type in {"Bar chart", "Line chart"}:
+            fig.add_trace(
+                go.Scatter(
+                    x=plot_data[variable],
+                    y=plot_data["estimated_error_rate"],
+                    mode="lines+markers",
+                    name="Estimated false-positive rate",
+                    line=dict(color=error_color, dash="dot"),
+                    marker=dict(color=error_color),
+                    yaxis="y2",
+                    hovertemplate="%{x}<br>Estimated false-positive rate: %{y:.1%}<extra></extra>",
+                )
+            )
+            fig.update_layout(
+                yaxis2=dict(
+                    title="Estimated false-positive rate",
+                    overlaying="y",
+                    side="right",
+                    tickformat=".0%",
+                    range=[0, max(1.0, float(plot_data["estimated_error_rate"].max()) * 1.15)],
+                    showgrid=False,
+                )
+            )
+        elif error_display == "Shaded error band" and chart_type == "Line chart":
+            fig.add_trace(
+                go.Scatter(
+                    x=plot_data[variable],
+                    y=plot_data["estimated_clean_count"],
+                    mode="lines",
+                    line=dict(width=0),
+                    hoverinfo="skip",
+                    showlegend=False,
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=plot_data[variable],
+                    y=plot_data["papers"],
+                    mode="lines",
+                    line=dict(width=0),
+                    fill="tonexty",
+                    fillcolor=hex_to_rgba(error_color, 0.2),
+                    name="Estimated false-positive range",
+                    hoverinfo="skip",
+                )
+            )
 
     st.plotly_chart(fig, use_container_width=True)
 
@@ -2453,6 +3063,7 @@ def plot_cooccurrence_network(
     list_column: str,
     title: str,
     top_n: int,
+    chart_config: dict[str, Any] | None = None,
 ) -> None:
     """Plot a network where nodes are authors or instruments and edges are shared papers."""
     edges = cooccurrence_edges(df, list_column)
@@ -2533,10 +3144,20 @@ def plot_cooccurrence_network(
         yaxis=dict(showgrid=False, zeroline=False, visible=False),
         height=650,
     )
+    apply_chart_style(
+        fig,
+        chart_config,
+        supports_axes=False,
+        color_mode="network",
+    )
     st.plotly_chart(fig, use_container_width=True)
 
 
-def plot_instrument_overlap(df: pd.DataFrame, top_n: int) -> None:
+def plot_instrument_overlap(
+    df: pd.DataFrame,
+    top_n: int,
+    chart_config: dict[str, Any] | None = None,
+) -> None:
     """Plot exact instrument combinations, similar to a compact UpSet summary."""
     rows = []
     for _, row in df.iterrows():
@@ -2577,6 +3198,7 @@ def plot_instrument_overlap(df: pd.DataFrame, top_n: int) -> None:
         },
     )
     fig.update_layout(yaxis=dict(autorange="reversed"), height=max(420, 28 * len(overlap)))
+    apply_chart_style(fig, chart_config, value_axis="x")
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -2585,6 +3207,7 @@ def plot_timeline_by_variable(
     variable: str,
     label: str,
     top_n: int,
+    chart_config: dict[str, Any] | None = None,
 ) -> None:
     """Plot yearly paper counts for the top authors or instruments."""
     out = explode_for_variable(df, variable)
@@ -2622,6 +3245,7 @@ def plot_timeline_by_variable(
         labels={"year": "Year", "papers": "Papers", variable: label},
     )
     fig.update_xaxes(dtick=1)
+    apply_chart_style(fig, chart_config)
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -2633,6 +3257,7 @@ def plot_preset_graph(
     false_positive_reference_df: pd.DataFrame | None = None,
     estimate_population_df: pd.DataFrame | None = None,
     fallback_reference_df: pd.DataFrame | None = None,
+    chart_config: dict[str, Any] | None = None,
 ) -> None:
     """Render one of the useful prebuilt graph examples."""
     if df.empty:
@@ -2641,23 +3266,68 @@ def plot_preset_graph(
 
     if preset == "Papers per year":
         counts = count_by_variable(df, "year").sort_values("year")
-        plot_count_chart(counts, "year", chart_type, "Papers per year")
+        plot_count_chart(
+            counts,
+            "year",
+            chart_type,
+            "Papers per year",
+            chart_config=chart_config,
+            current_df=df,
+            false_positive_reference_df=false_positive_reference_df,
+            fallback_reference_df=fallback_reference_df,
+        )
 
     elif preset == "Papers by instrument":
         counts = count_by_variable(df, "instrument", top_n)
-        plot_count_chart(counts, "instrument", chart_type, "Papers by instrument")
+        plot_count_chart(
+            counts,
+            "instrument",
+            chart_type,
+            "Papers by instrument",
+            chart_config=chart_config,
+            current_df=df,
+            false_positive_reference_df=false_positive_reference_df,
+            fallback_reference_df=fallback_reference_df,
+        )
 
     elif preset == "Papers by publisher":
         counts = count_by_variable(df, "publisher", top_n)
-        plot_count_chart(counts, "publisher", chart_type, "Papers by publisher")
+        plot_count_chart(
+            counts,
+            "publisher",
+            chart_type,
+            "Papers by publisher",
+            chart_config=chart_config,
+            current_df=df,
+            false_positive_reference_df=false_positive_reference_df,
+            fallback_reference_df=fallback_reference_df,
+        )
 
     elif preset == "Papers by journal":
         counts = count_by_variable(df, "journal", top_n)
-        plot_count_chart(counts, "journal", chart_type, "Papers by journal")
+        plot_count_chart(
+            counts,
+            "journal",
+            chart_type,
+            "Papers by journal",
+            chart_config=chart_config,
+            current_df=df,
+            false_positive_reference_df=false_positive_reference_df,
+            fallback_reference_df=fallback_reference_df,
+        )
 
     elif preset == "Papers by author":
         counts = count_by_variable(df, "author", top_n)
-        plot_count_chart(counts, "author", chart_type, "Papers by author")
+        plot_count_chart(
+            counts,
+            "author",
+            chart_type,
+            "Papers by author",
+            chart_config=chart_config,
+            current_df=df,
+            false_positive_reference_df=false_positive_reference_df,
+            fallback_reference_df=fallback_reference_df,
+        )
 
     elif preset == "Verified vs unchecked papers":
         counts = count_by_variable(df, "verification_status")
@@ -2670,6 +3340,10 @@ def plot_preset_graph(
             "verification_status",
             chart_type,
             "Verification status of filtered papers",
+            chart_config=chart_config,
+            current_df=df,
+            false_positive_reference_df=false_positive_reference_df,
+            fallback_reference_df=fallback_reference_df,
         )
 
     elif preset == "Raw vs cleaned count":
@@ -2685,7 +3359,13 @@ def plot_preset_graph(
                 "papers": [stats["total_papers"], stats["estimated_clean_count"]],
             }
         )
-        plot_count_chart(counts, "count_type", "Bar chart", "Raw vs estimated clean count")
+        plot_count_chart(
+            counts,
+            "count_type",
+            "Bar chart",
+            "Raw vs estimated clean count",
+            chart_config=chart_config,
+        )
 
     elif preset == "False-positive rate by instrument":
         reference = false_positive_reference_df if false_positive_reference_df is not None else df
@@ -2752,6 +3432,7 @@ def plot_preset_graph(
             title="Estimated false-positive rate by instrument",
         )
         fig.update_yaxes(tickformat=".0%")
+        apply_chart_style(fig, chart_config, default_percent_y=True)
         st.plotly_chart(fig, use_container_width=True)
 
     elif preset == "Instrument × year heatmap":
@@ -2775,6 +3456,7 @@ def plot_preset_graph(
             title="Instrument × year heatmap",
             aspect="auto",
         )
+        apply_chart_style(fig, chart_config, color_mode="heatmap")
         st.plotly_chart(fig, use_container_width=True)
 
     elif preset == "Stacked papers per year by verification status":
@@ -2790,6 +3472,7 @@ def plot_preset_graph(
             color="verification_status",
             title="Papers per year by verification status",
         )
+        apply_chart_style(fig, chart_config)
         st.plotly_chart(fig, use_container_width=True)
 
     elif preset == "Author collaboration network":
@@ -2798,6 +3481,7 @@ def plot_preset_graph(
             "authors",
             "Author collaboration network",
             top_n,
+            chart_config,
         )
 
     elif preset == "Instrument co-use network":
@@ -2806,19 +3490,24 @@ def plot_preset_graph(
             "instruments",
             "Instrument co-use network",
             top_n,
+            chart_config,
         )
 
     elif preset == "Instrument overlap combinations":
-        plot_instrument_overlap(df, top_n)
+        plot_instrument_overlap(df, top_n, chart_config)
 
     elif preset == "Author timeline":
-        plot_timeline_by_variable(df, "author", "Author", top_n)
+        plot_timeline_by_variable(df, "author", "Author", top_n, chart_config)
 
     elif preset == "Instrument timeline":
-        plot_timeline_by_variable(df, "instrument", "Instrument", top_n)
+        plot_timeline_by_variable(df, "instrument", "Instrument", top_n, chart_config)
 
 
-def plot_custom_graph(df: pd.DataFrame) -> None:
+def plot_custom_graph(
+    df: pd.DataFrame,
+    false_positive_reference_df: pd.DataFrame,
+    fallback_reference_df: pd.DataFrame,
+) -> None:
     """Simple user-selected graph builder."""
     variables = {
         "Year": "year",
@@ -2856,12 +3545,22 @@ def plot_custom_graph(df: pd.DataFrame) -> None:
             st.info("No data to plot.")
             return
         pivot = grouped.pivot(index=y_var, columns=x_var, values="papers").fillna(0)
+        title = f"{y_label} × {x_label} heatmap"
+        chart_config = render_chart_controls(
+            default_title=title,
+            default_x_title=x_label,
+            default_y_title=y_label,
+            chart_type=chart_type,
+            error_rate_available=False,
+            key_prefix=chart_control_prefix("custom", chart_type, x_var, y_var),
+        )
         fig = px.imshow(
             pivot,
             labels=dict(x=x_label, y=y_label, color="Papers"),
-            title=f"{y_label} × {x_label} heatmap",
+            title=title,
             aspect="auto",
         )
+        apply_chart_style(fig, chart_config, color_mode="heatmap")
         st.plotly_chart(fig, use_container_width=True)
         return
 
@@ -2890,17 +3589,45 @@ def plot_custom_graph(df: pd.DataFrame) -> None:
             grouped.groupby(x_var)["papers"].sum().sort_values(ascending=False).head(top_n).index
         )
         grouped = grouped[grouped[x_var].isin(top_categories)]
+        title = f"Papers by {x_label}, stacked by {stack_label}"
+        chart_config = render_chart_controls(
+            default_title=title,
+            default_x_title=x_label,
+            default_y_title="Papers",
+            chart_type=chart_type,
+            error_rate_available=False,
+            key_prefix=chart_control_prefix("custom", chart_type, x_var, stack_var),
+        )
         fig = px.bar(
             grouped,
             x=x_var,
             y="papers",
             color=stack_var,
-            title=f"Papers by {x_label}, stacked by {stack_label}",
+            title=title,
         )
+        apply_chart_style(fig, chart_config)
         st.plotly_chart(fig, use_container_width=True)
     else:
         counts = count_by_variable(df, x_var, int(top_n))
-        plot_count_chart(counts, x_var, chart_type, f"Papers by {x_label}")
+        title = f"Papers by {x_label}"
+        chart_config = render_chart_controls(
+            default_title=title,
+            default_x_title=x_label,
+            default_y_title="Papers",
+            chart_type=chart_type,
+            error_rate_available=True,
+            key_prefix=chart_control_prefix("custom", chart_type, x_var),
+        )
+        plot_count_chart(
+            counts,
+            x_var,
+            chart_type,
+            title,
+            chart_config=chart_config,
+            current_df=df,
+            false_positive_reference_df=false_positive_reference_df,
+            fallback_reference_df=fallback_reference_df,
+        )
 
 
 # -----------------------------------------------------------------------------
@@ -3073,6 +3800,64 @@ def render_graphs_page(
 
         chart_type = st.selectbox("Chart type", chart_options)
         top_n = st.number_input("Top N categories", min_value=3, max_value=100, value=20, key="top_n")
+        chart_defaults = {
+            "Papers per year": ("Papers per year", "Year", "Papers"),
+            "Papers by instrument": ("Papers by instrument", "Instrument", "Papers"),
+            "Papers by publisher": ("Papers by publisher", "Publisher", "Papers"),
+            "Papers by journal": ("Papers by journal", "Journal", "Papers"),
+            "Papers by author": ("Papers by author", "Author", "Papers"),
+            "Verified vs unchecked papers": (
+                "Verification status of filtered papers",
+                "Verification status",
+                "Papers",
+            ),
+            "False-positive rate by instrument": (
+                "Estimated false-positive rate by instrument",
+                "Instrument",
+                "Estimated false-positive rate",
+            ),
+            "Raw vs cleaned count": (
+                "Raw vs estimated clean count",
+                "Count type",
+                "Papers",
+            ),
+            "Instrument × year heatmap": (
+                "Instrument × year heatmap",
+                "Year",
+                "Instrument",
+            ),
+            "Stacked papers per year by verification status": (
+                "Papers per year by verification status",
+                "Year",
+                "Papers",
+            ),
+            "Author collaboration network": ("Author collaboration network", "", ""),
+            "Instrument co-use network": ("Instrument co-use network", "", ""),
+            "Instrument overlap combinations": (
+                "Instrument overlap combinations",
+                "Papers",
+                "Instrument combination",
+            ),
+            "Author timeline": ("Author timeline", "Year", "Papers"),
+            "Instrument timeline": ("Instrument timeline", "Year", "Papers"),
+        }
+        default_title, default_x_title, default_y_title = chart_defaults[preset]
+        error_rate_available = preset in {
+            "Papers per year",
+            "Papers by instrument",
+            "Papers by publisher",
+            "Papers by journal",
+            "Papers by author",
+        }
+        chart_config = render_chart_controls(
+            default_title=default_title,
+            default_x_title=default_x_title,
+            default_y_title=default_y_title,
+            chart_type=chart_type,
+            error_rate_available=error_rate_available,
+            key_prefix=chart_control_prefix("preset", preset, chart_type),
+            percent_value_axis=preset == "False-positive rate by instrument",
+        )
         plot_preset_graph(
             filtered_df,
             preset,
@@ -3081,9 +3866,14 @@ def render_graphs_page(
             false_positive_reference_df=false_positive_reference_df,
             estimate_population_df=estimate_population_df,
             fallback_reference_df=fallback_reference_df,
+            chart_config=chart_config,
         )
     else:
-        plot_custom_graph(filtered_df)
+        plot_custom_graph(
+            filtered_df,
+            false_positive_reference_df,
+            fallback_reference_df,
+        )
 
     with st.expander("Advanced graph notes"):
         st.markdown(
@@ -3093,6 +3883,9 @@ def render_graphs_page(
             - **Author collaboration network** connects authors who appear on the same paper.
             - **Instrument co-use network** connects instruments used in the same paper.
             - **Instrument overlap combinations** shows exact instrument combinations across papers.
+            - **Estimated error displays** use the checked-paper false-positive
+              estimate. Error bars and shaded bands show the raw-to-estimated-clean
+              gap; they are not confidence intervals.
             """
         )
 
