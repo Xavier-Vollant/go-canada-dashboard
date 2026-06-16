@@ -185,6 +185,17 @@
         2024
       ],
       "notes": "Only include when the paper actually uses the model, not just mentions CHAIN."
+    },
+    {
+      "name": "SEC/OTHER",
+      "selected_instruments": [
+        "SEC/OTHER"
+      ],
+      "year_range": [
+        1977,
+        2026
+      ],
+      "notes": "Include every paper assigned to SEC/OTHER."
     }
   ],
   "excluded_paper_ids": [],
