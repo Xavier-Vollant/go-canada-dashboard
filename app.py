@@ -1182,17 +1182,25 @@ def append_row(df: pd.DataFrame, row: dict[str, Any], columns: list[str]) -> pd.
 
 def existing_paper_match(papers: pd.DataFrame, doi: str, title: str) -> str:
     """Return a reason if a paper appears to already exist."""
+    paper_id, reason = find_existing_paper(papers, doi, title)
+    return reason if paper_id else ""
+
+
+def find_existing_paper(papers: pd.DataFrame, doi: str, title: str) -> tuple[str, str]:
+    """Return an existing paper_id and match reason for a DOI/title import row."""
     doi_key = clean_text(doi).lower()
-    title_key = clean_text(title).lower()
     if doi_key:
         doi_matches = papers["DOI"].fillna("").astype(str).str.lower().str.strip() == doi_key
         if bool(doi_matches.any()):
-            return "Duplicate DOI"
+            return clean_text(papers.loc[doi_matches, "paper_id"].iloc[0]), "Duplicate DOI"
+
+    title_key = normalized_match_key(pd.Series([title])).iloc[0]
     if title_key:
         title_matches = normalized_match_key(papers["title"]) == title_key
         if bool(title_matches.any()):
-            return "Duplicate title"
-    return ""
+            return clean_text(papers.loc[title_matches, "paper_id"].iloc[0]), "Duplicate title"
+
+    return "", ""
 
 
 def get_or_create_author_id(tables: dict[str, pd.DataFrame], author_name: str) -> str:
@@ -1263,16 +1271,224 @@ def get_or_create_source_id(
     return source_id
 
 
-def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) -> tuple[bool, str]:
-    """Add one paper and related normalized rows to the in-memory tables."""
+def link_author_to_paper(tables: dict[str, pd.DataFrame], paper_id: str, author_name: str, order: int) -> None:
+    """Create one paper-author link."""
+    author_id = get_or_create_author_id(tables, author_name)
+    tables["paper_authors"] = append_row(
+        tables["paper_authors"],
+        {"paper_id": paper_id, "author_id": author_id, "author_order": order},
+        REQUIRED_COLUMNS["paper_authors"],
+    )
+
+
+def add_or_update_paper_instrument(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    instrument_name: str,
+    instrument_status: str,
+) -> tuple[str, bool]:
+    """Create or update one paper-instrument link and return whether it was new."""
+    instrument_id = get_or_create_instrument_id(tables, instrument_name)
+    paper_instruments = tables["paper_instruments"]
+    existing = (
+        (paper_instruments["paper_id"].fillna("").astype(str) == paper_id)
+        & (paper_instruments["instrument_id"].fillna("").astype(str) == instrument_id)
+    )
+    if bool(existing.any()):
+        if clean_text(instrument_status):
+            paper_instruments.loc[existing, "instrument_status"] = clean_text(instrument_status)
+            tables["paper_instruments"] = paper_instruments
+        return instrument_id, False
+
+    tables["paper_instruments"] = append_row(
+        paper_instruments,
+        {
+            "paper_id": paper_id,
+            "instrument_id": instrument_id,
+            "instrument_status": clean_text(instrument_status) or "unchecked",
+        },
+        REQUIRED_COLUMNS["paper_instruments"],
+    )
+    return instrument_id, True
+
+
+def link_source_to_paper(tables: dict[str, pd.DataFrame], paper_id: str, source_id: str) -> bool:
+    """Create a paper-source link if it does not already exist."""
+    paper_sources = tables["paper_sources"]
+    existing = (
+        (paper_sources["paper_id"].fillna("").astype(str) == paper_id)
+        & (paper_sources["source_id"].fillna("").astype(str) == source_id)
+    )
+    if bool(existing.any()):
+        return False
+
+    tables["paper_sources"] = append_row(
+        paper_sources,
+        {"paper_id": paper_id, "source_id": source_id},
+        REQUIRED_COLUMNS["paper_sources"],
+    )
+    return True
+
+
+def upsert_verification_link(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    instrument_id: str,
+    status: str,
+    evidence_quote: str,
+    checked_date: str,
+    notes: str,
+) -> bool:
+    """Create or update one verification row and return whether it was new."""
+    verification = tables["verification"]
+    existing = (
+        (verification["paper_id"].fillna("").astype(str) == paper_id)
+        & (verification["instrument_id"].fillna("").astype(str) == instrument_id)
+    )
+    row = {
+        "paper_id": paper_id,
+        "instrument_id": instrument_id,
+        "status": status,
+        "evidence_quote": clean_text(evidence_quote),
+        "checked_date": clean_text(checked_date),
+        "notes": clean_text(notes),
+    }
+    if bool(existing.any()):
+        for column, value in row.items():
+            if column in {"paper_id", "instrument_id"}:
+                continue
+            if clean_text(value):
+                verification.loc[existing, column] = value
+        tables["verification"] = verification
+        return False
+
+    tables["verification"] = append_row(
+        verification,
+        row,
+        REQUIRED_COLUMNS["verification"],
+    )
+    return True
+
+
+def update_existing_paper_record(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    record: dict[str, Any],
+    match_reason: str,
+) -> tuple[str, str]:
+    """Update an existing paper from an import row and merge related records."""
+    papers = tables["papers"]
+    paper_mask = papers["paper_id"].fillna("").astype(str) == paper_id
+    if not bool(paper_mask.any()):
+        return "skipped", "Matched paper no longer exists"
+
+    changed_fields: list[str] = []
+    for field in ["DOI", "title", "year", "journal", "publisher", "paper_type", "go_canada_status"]:
+        incoming = clean_text(record.get(field))
+        if incoming and clean_text(papers.loc[paper_mask, field].iloc[0]) != incoming:
+            papers.loc[paper_mask, field] = incoming
+            changed_fields.append(field)
+
+    status = normalize_status(record.get("verification_status", "unchecked"))
+    false_positive_text = clean_text(record.get("is_known_false_positive"))
+    if false_positive_text or status == "verified_false":
+        incoming_false_positive = parse_bool(false_positive_text) or status == "verified_false"
+        stored_false_positive = bool_storage_text(incoming_false_positive)
+        if clean_text(papers.loc[paper_mask, "is_known_false_positive"].iloc[0]) != stored_false_positive:
+            papers.loc[paper_mask, "is_known_false_positive"] = stored_false_positive
+            changed_fields.append("is_known_false_positive")
+    tables["papers"] = papers
+
+    imported_authors = unique_preserve_order(split_multi_value(record.get("authors")))
+    if imported_authors:
+        existing_authors = tables["paper_authors"]
+        tables["paper_authors"] = existing_authors[
+            existing_authors["paper_id"].fillna("").astype(str) != paper_id
+        ].reset_index(drop=True)
+        for order, author_name in enumerate(imported_authors, start=1):
+            link_author_to_paper(tables, paper_id, author_name, order)
+        changed_fields.append("authors")
+
+    instrument_names = unique_preserve_order(split_multi_value(record.get("instruments")))
+    instrument_statuses = split_multi_value(record.get("instrument_status"))
+    instrument_ids: list[str] = []
+    added_instruments: list[str] = []
+    for index, instrument_name in enumerate(instrument_names):
+        instrument_status = (
+            instrument_statuses[index]
+            if index < len(instrument_statuses)
+            else clean_text(record.get("instrument_status")) or "unchecked"
+        )
+        instrument_id, was_added = add_or_update_paper_instrument(
+            tables,
+            paper_id,
+            instrument_name,
+            instrument_status,
+        )
+        instrument_ids.append(instrument_id)
+        if was_added:
+            added_instruments.append(instrument_name)
+    if added_instruments:
+        changed_fields.append(f"instruments +{', '.join(added_instruments)}")
+    elif instrument_names:
+        changed_fields.append("instrument_status")
+
+    source_names = unique_preserve_order(split_multi_value(record.get("source_name") or record.get("source")))
+    source_types = split_multi_value(record.get("source_type"))
+    linked_sources = 0
+    for index, source_name in enumerate(source_names):
+        source_type = source_types[index] if index < len(source_types) else clean_text(record.get("source_type"))
+        source_id = get_or_create_source_id(
+            tables,
+            source_name,
+            source_type,
+            clean_text(record.get("source_notes")),
+        )
+        if link_source_to_paper(tables, paper_id, source_id):
+            linked_sources += 1
+    if linked_sources:
+        changed_fields.append("sources")
+
+    if status != "unchecked":
+        verification_instrument_ids = instrument_ids
+        if not verification_instrument_ids:
+            verification_instrument_ids = (
+                tables["paper_instruments"]
+                .loc[
+                    tables["paper_instruments"]["paper_id"].fillna("").astype(str) == paper_id,
+                    "instrument_id",
+                ]
+                .fillna("")
+                .astype(str)
+                .tolist()
+            )
+        for instrument_id in verification_instrument_ids or [""]:
+            upsert_verification_link(
+                tables,
+                paper_id,
+                instrument_id,
+                status,
+                clean_text(record.get("evidence_quote")),
+                clean_text(record.get("checked_date")),
+                clean_text(record.get("notes")),
+            )
+        changed_fields.append("verification")
+
+    if not changed_fields:
+        return "updated", f"{paper_id}: already up to date ({match_reason})"
+    return "updated", f"{paper_id}: updated {', '.join(unique_preserve_order(changed_fields))} ({match_reason})"
+
+
+def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) -> tuple[str, str]:
+    """Add or update one paper and related normalized rows in memory."""
     title = clean_text(record.get("title"))
     doi = clean_text(record.get("DOI"))
     if not title:
-        return False, "Missing title"
+        return "skipped", "Missing title"
 
-    duplicate_reason = existing_paper_match(tables["papers"], doi, title)
-    if duplicate_reason:
-        return False, duplicate_reason
+    existing_paper_id, duplicate_reason = find_existing_paper(tables["papers"], doi, title)
+    if existing_paper_id:
+        return update_existing_paper_record(tables, existing_paper_id, record, duplicate_reason)
 
     paper_id = generate_next_id(tables["papers"], "paper_id", "P")
     status = normalize_status(record.get("verification_status", "unchecked"))
@@ -1297,33 +1513,24 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
     )
 
     for order, author_name in enumerate(unique_preserve_order(split_multi_value(record.get("authors"))), start=1):
-        author_id = get_or_create_author_id(tables, author_name)
-        tables["paper_authors"] = append_row(
-            tables["paper_authors"],
-            {"paper_id": paper_id, "author_id": author_id, "author_order": order},
-            REQUIRED_COLUMNS["paper_authors"],
-        )
+        link_author_to_paper(tables, paper_id, author_name, order)
 
     instrument_names = unique_preserve_order(split_multi_value(record.get("instruments")))
     instrument_statuses = split_multi_value(record.get("instrument_status"))
     instrument_ids = []
     for index, instrument_name in enumerate(instrument_names):
-        instrument_id = get_or_create_instrument_id(tables, instrument_name)
-        instrument_ids.append(instrument_id)
         instrument_status = (
             instrument_statuses[index]
             if index < len(instrument_statuses)
             else clean_text(record.get("instrument_status")) or "unchecked"
         )
-        tables["paper_instruments"] = append_row(
-            tables["paper_instruments"],
-            {
-                "paper_id": paper_id,
-                "instrument_id": instrument_id,
-                "instrument_status": instrument_status,
-            },
-            REQUIRED_COLUMNS["paper_instruments"],
+        instrument_id, _ = add_or_update_paper_instrument(
+            tables,
+            paper_id,
+            instrument_name,
+            instrument_status,
         )
+        instrument_ids.append(instrument_id)
 
     source_names = unique_preserve_order(split_multi_value(record.get("source_name") or record.get("source")))
     source_types = split_multi_value(record.get("source_type"))
@@ -1335,29 +1542,22 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
             source_type,
             clean_text(record.get("source_notes")),
         )
-        tables["paper_sources"] = append_row(
-            tables["paper_sources"],
-            {"paper_id": paper_id, "source_id": source_id},
-            REQUIRED_COLUMNS["paper_sources"],
-        )
+        link_source_to_paper(tables, paper_id, source_id)
 
     if status != "unchecked":
         verification_instrument_ids = instrument_ids or [""]
         for instrument_id in verification_instrument_ids:
-            tables["verification"] = append_row(
-                tables["verification"],
-                {
-                    "paper_id": paper_id,
-                    "instrument_id": instrument_id,
-                    "status": status,
-                    "evidence_quote": clean_text(record.get("evidence_quote")),
-                    "checked_date": clean_text(record.get("checked_date")),
-                    "notes": clean_text(record.get("notes")),
-                },
-                REQUIRED_COLUMNS["verification"],
+            upsert_verification_link(
+                tables,
+                paper_id,
+                instrument_id,
+                status,
+                clean_text(record.get("evidence_quote")),
+                clean_text(record.get("checked_date")),
+                clean_text(record.get("notes")),
             )
 
-    return True, paper_id
+    return "added", paper_id
 
 
 def save_database_tables(tables: dict[str, pd.DataFrame]) -> None:
@@ -1418,13 +1618,13 @@ def import_papers_from_dataframe(
     results = []
     for row_number, (_, row) in enumerate(normalized_df.iterrows(), start=2):
         record = {col: row.get(col, "") for col in normalized_df.columns}
-        added, message = add_paper_record(tables, record)
+        action, message = add_paper_record(tables, record)
         results.append(
             {
                 "csv_row": row_number,
                 "title": clean_text(record.get("title")),
                 "DOI": clean_text(record.get("DOI")),
-                "result": "added" if added else "skipped",
+                "result": action,
                 "message": message,
             }
         )
@@ -3532,21 +3732,21 @@ def render_add_import_papers_page(
                     "source_notes": "Added through manual entry form",
                 }
                 working_tables = {name: table.copy() for name, table in tables.items()}
-                added, message = add_paper_record(working_tables, record)
-                if added:
+                action, message = add_paper_record(working_tables, record)
+                if action in {"added", "updated"}:
                     save_database_tables(working_tables)
                     st.session_state["last_import_results"] = [
                         {
                             "csv_row": "",
                             "title": title,
                             "DOI": doi,
-                            "result": "added",
+                            "result": action,
                             "message": message,
                         }
                     ]
                     st.rerun()
                 else:
-                    st.error(f"Paper was not added: {message}")
+                    st.error(f"Paper was not saved: {message}")
 
 
 def render_admin_login() -> bool:
