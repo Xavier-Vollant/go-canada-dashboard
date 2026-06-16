@@ -3579,8 +3579,9 @@ def render_add_import_papers_page(
     if "last_import_results" in st.session_state:
         results = pd.DataFrame(st.session_state.pop("last_import_results"))
         added = int((results["result"] == "added").sum()) if not results.empty else 0
+        updated = int((results["result"] == "updated").sum()) if not results.empty else 0
         skipped = int((results["result"] == "skipped").sum()) if not results.empty else 0
-        st.success(f"Import complete: {added} added, {skipped} skipped.")
+        st.success(f"Import complete: {added} added, {updated} updated, {skipped} skipped.")
         st.dataframe(results, use_container_width=True, hide_index=True)
 
     metadata_options = admin_metadata_options(tables)
@@ -3630,7 +3631,7 @@ def render_add_import_papers_page(
                 if st.button("Import uploaded CSV", type="primary"):
                     working_tables = {name: table.copy() for name, table in tables.items()}
                     results = import_papers_from_dataframe(working_tables, uploaded_df)
-                    if (results["result"] == "added").any():
+                    if results["result"].isin(["added", "updated"]).any():
                         save_database_tables(working_tables)
                     st.session_state["last_import_results"] = results.to_dict("records")
                     st.rerun()
