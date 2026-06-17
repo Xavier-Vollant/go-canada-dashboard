@@ -1132,6 +1132,29 @@ def upsert_supabase_verification_row(
     upsert_response.raise_for_status()
 
 
+def update_supabase_paper_fields(
+    paper_id: str,
+    fields: dict[str, Any],
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
+) -> None:
+    """Patch scalar fields for one paper in Supabase."""
+    params = {"paper_id": f"eq.{paper_id}"}
+    if scoped:
+        params[DATABASE_ID_COLUMN] = f"eq.{database_id}"
+    patch_response = requests.patch(
+        f"{url}/rest/v1/papers",
+        params=params,
+        json={field: clean_text(value) for field, value in fields.items()},
+        headers=supabase_headers(key),
+        timeout=30,
+    )
+    patch_response.raise_for_status()
+
+
 def save_verification_row(
     tables: dict[str, pd.DataFrame],
     paper_id: str,
@@ -5143,6 +5166,43 @@ def add_instrument_assignment_to_paper(
     return True, instrument_name
 
 
+def save_paper_go_canada_status(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    go_canada_status: str,
+) -> None:
+    """Save paper-level GO Canada status without requiring instruments."""
+    database_id = active_database_id()
+    paper_id = clean_text(paper_id)
+    go_canada_status = clean_text(go_canada_status) or "unknown"
+    if not paper_id:
+        return
+
+    config = supabase_config()
+    if config:
+        url, key = config
+        scoped = require_supabase_database_scoping(url, key, database_id)
+        update_supabase_paper_fields(
+            paper_id,
+            {"go_canada_status": go_canada_status},
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
+        clear_database_caches()
+        return
+
+    papers = tables["papers"].copy()
+    mask = papers["paper_id"].fillna("").astype(str) == paper_id
+    if not bool(mask.any()):
+        return
+    papers.loc[mask, "go_canada_status"] = go_canada_status
+    tables["papers"] = papers
+    write_csv_table("papers", papers, database_id)
+    clear_database_caches()
+
+
 def save_paper_verification_updates(
     tables: dict[str, pd.DataFrame],
     updates: list[dict[str, Any]],
@@ -5223,6 +5283,7 @@ def render_paper_verification_controls(
     *,
     key_prefix: str,
     allow_instrument_editing: bool = True,
+    selected_paper: pd.Series | None = None,
 ) -> None:
     """Render per-instrument verification controls for one selected paper."""
     assignments = paper_instrument_assignments(tables, selected_paper_id)
@@ -5272,6 +5333,36 @@ def render_paper_verification_controls(
 
     if assignments.empty:
         st.info("This paper has no instrument assignments yet.")
+        if selected_paper is None:
+            return
+
+        current_status = clean_text(selected_paper.get("go_canada_status")) or "unknown"
+        status_options = ["unknown", "yes", "no"]
+        default_index = status_options.index(current_status) if current_status in status_options else 0
+        with st.form(f"{key_prefix}_paper_level_verification_form"):
+            go_canada_status = st.selectbox(
+                "Paper-level GO Canada status",
+                status_options,
+                index=default_index,
+                format_func={
+                    "unknown": "Unknown / not checked",
+                    "yes": "Yes, GO Canada",
+                    "no": "No, not GO Canada",
+                }.get,
+                key=f"{key_prefix}_paper_go_canada_status",
+            )
+            submitted = st.form_submit_button("Save paper verification", type="primary")
+
+        if submitted:
+            try:
+                save_paper_go_canada_status(tables, selected_paper_id, go_canada_status)
+                st.success("Paper-level GO Canada status saved.")
+            except requests.HTTPError as exc:
+                response = exc.response
+                detail = response.text if response is not None else str(exc)
+                st.error(f"Supabase rejected the paper verification update: {detail}")
+            except Exception as exc:
+                st.error(f"Could not save paper verification: {exc}")
         return
 
     existing = tables["verification"].copy()
@@ -5473,6 +5564,7 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
         tables,
         selected_paper_id,
         key_prefix=f"metadata_verify_{selected_paper_id}",
+        selected_paper=selected_paper,
     )
 
     with st.expander("Delete this paper", expanded=False):
@@ -5526,6 +5618,7 @@ def render_verification_editor(
     st.write(f"**Title:** {clean_text(selected_paper['title'])}")
     st.write(f"**DOI:** {clean_text(selected_paper['DOI']) or 'Missing'}")
     st.write(f"**Current paper status:** {clean_text(selected_paper['verification_status'])}")
+    st.write(f"**GO Canada status:** {clean_text(selected_paper.get('go_canada_status')) or 'unknown'}")
     render_open_paper_button(selected_paper)
     verification_tables = tables or load_verification_context(
         database_id,
@@ -5537,6 +5630,7 @@ def render_verification_editor(
         selected_paper_id,
         key_prefix=f"verify_{selected_paper_id}",
         allow_instrument_editing=tables is not None,
+        selected_paper=selected_paper,
     )
 
 
