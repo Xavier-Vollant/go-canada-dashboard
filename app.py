@@ -15,6 +15,7 @@ import json
 import os
 import inspect
 import random
+import re
 from itertools import combinations
 from datetime import datetime
 from pathlib import Path
@@ -2984,6 +2985,257 @@ def missing_metadata_report(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
 
 
 # -----------------------------------------------------------------------------
+# Database comparison helpers
+# -----------------------------------------------------------------------------
+
+def comparison_doi_key(value: Any) -> str:
+    """Normalize DOI values for cross-database comparisons."""
+    text = clean_text(value).lower()
+    text = re.sub(r"^https?://(dx\.)?doi\.org/", "", text)
+    text = re.sub(r"^doi:\s*", "", text)
+    return text.strip()
+
+
+def comparison_text_key(value: Any) -> str:
+    """Normalize scalar text values for comparison."""
+    text = clean_text(value).lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def comparison_title_key(value: Any) -> str:
+    """Normalize titles for optional no-DOI matching."""
+    return comparison_text_key(value)
+
+
+def prepare_comparison_frame(database_id: str, df: pd.DataFrame) -> pd.DataFrame:
+    """Add comparison helper columns to one paper view."""
+    out = df.copy()
+    out["database_id"] = database_id
+    out["database"] = database_label(database_id)
+    out["doi_key"] = out["DOI"].apply(comparison_doi_key)
+    out["title_key"] = out["title"].apply(comparison_title_key)
+    out["author_count"] = out["authors"].apply(len)
+    out["instrument_count"] = out["instruments"].apply(len)
+    return out
+
+
+def load_comparison_frames(database_ids: list[str]) -> dict[str, pd.DataFrame]:
+    """Load lightweight paper views for the selected databases."""
+    frames = {}
+    for database_id in database_ids:
+        frames[database_id] = prepare_comparison_frame(
+            database_id,
+            load_paper_view(database_id, str(DATA_DIR)),
+        )
+    return frames
+
+
+def comparison_summary(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Return one summary row per selected database."""
+    rows = []
+    for database_id, df in frames.items():
+        masks = missing_metadata_masks(df)
+        any_missing = pd.concat(masks.values(), axis=1).any(axis=1) if masks else pd.Series(False)
+        rows.append(
+            {
+                "database": database_label(database_id),
+                "database_id": database_id,
+                "papers": len(df),
+                "papers_with_doi": int((df["doi_key"] != "").sum()),
+                "missing_doi": int((df["doi_key"] == "").sum()),
+                "unique_dois": df.loc[df["doi_key"] != "", "doi_key"].nunique(),
+                "unique_titles": df.loc[df["title_key"] != "", "title_key"].nunique(),
+                "authors": int(df["authors"].explode().dropna().nunique()) if not df.empty else 0,
+                "papers_with_authors": int(df["authors"].apply(bool).sum()) if not df.empty else 0,
+                "papers_with_instruments": int(df["instruments"].apply(bool).sum()) if not df.empty else 0,
+                "papers_missing_any_metadata": int(any_missing.sum()) if len(df) else 0,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def comparison_overlap_matrix(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Build a pairwise DOI overlap matrix for selected databases."""
+    doi_sets = {
+        database_id: set(df.loc[df["doi_key"] != "", "doi_key"])
+        for database_id, df in frames.items()
+    }
+    rows = []
+    for row_id in frames:
+        row = {"database": database_label(row_id)}
+        for col_id in frames:
+            row[database_label(col_id)] = len(doi_sets[row_id] & doi_sets[col_id])
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def comparison_combined_frame(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Concatenate selected database views for comparison charts and tables."""
+    if not frames:
+        return pd.DataFrame(columns=PAPER_VIEW_COLUMNS + ["database_id", "database", "doi_key"])
+    return pd.concat(frames.values(), ignore_index=True)
+
+
+def doi_presence_table(combined: pd.DataFrame) -> pd.DataFrame:
+    """Return one row per DOI with database presence flags."""
+    rows = []
+    with_doi = combined[combined["doi_key"] != ""].copy()
+    if with_doi.empty:
+        return pd.DataFrame()
+
+    database_labels = list(dict.fromkeys(with_doi["database"].tolist()))
+    for doi_key, group in with_doi.groupby("doi_key"):
+        databases = sorted(group["database"].unique())
+        example = group.iloc[0]
+        row = {
+            "DOI": example["DOI"],
+            "database_count": len(databases),
+            "databases": "; ".join(databases),
+            "title": example["title"],
+            "year": example["year"],
+            "journal": example["journal"],
+            "publisher": example["publisher"],
+        }
+        for label in database_labels:
+            row[label] = "yes" if label in databases else ""
+        rows.append(row)
+    return pd.DataFrame(rows).sort_values(["database_count", "DOI"], ascending=[False, True])
+
+
+def doi_uniqueness_table(presence: pd.DataFrame) -> pd.DataFrame:
+    """Return DOI rows that appear in exactly one selected database."""
+    if presence.empty:
+        return presence
+    return presence[presence["database_count"] == 1].copy()
+
+
+def shared_doi_table(presence: pd.DataFrame) -> pd.DataFrame:
+    """Return DOI rows that appear in multiple selected databases."""
+    if presence.empty:
+        return presence
+    return presence[presence["database_count"] > 1].copy()
+
+
+def metadata_conflict_table(combined: pd.DataFrame) -> pd.DataFrame:
+    """Find shared DOI rows where selected metadata differs across databases."""
+    rows = []
+    with_doi = combined[combined["doi_key"] != ""].copy()
+    if with_doi.empty:
+        return pd.DataFrame()
+
+    fields = [
+        "title",
+        "year",
+        "journal",
+        "publisher",
+        "paper_type",
+        "go_canada_status",
+        "display_authors",
+    ]
+    for doi_key, group in with_doi.groupby("doi_key"):
+        if group["database"].nunique() < 2:
+            continue
+        conflict_fields = [
+            field
+            for field in fields
+            if group[field].map(comparison_text_key).nunique() > 1
+        ]
+        if not conflict_fields:
+            continue
+        for _, row in group.sort_values("database").iterrows():
+            rows.append(
+                {
+                    "DOI": row["DOI"],
+                    "conflict_fields": "; ".join(conflict_fields),
+                    "database": row["database"],
+                    "title": row["title"],
+                    "year": row["year"],
+                    "journal": row["journal"],
+                    "publisher": row["publisher"],
+                    "paper_type": row["paper_type"],
+                    "go_canada_status": row["go_canada_status"],
+                    "authors": row["display_authors"],
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def missing_metadata_comparison(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Return missing metadata counts by database and field."""
+    rows = []
+    for database_id, df in frames.items():
+        masks = missing_metadata_masks(df)
+        for field, mask in masks.items():
+            rows.append(
+                {
+                    "database": database_label(database_id),
+                    "field": MISSING_METADATA_FIELD_LABELS.get(field, field),
+                    "missing_papers": int(mask.sum()) if len(df) else 0,
+                    "missing_percent": int(mask.sum()) / len(df) if len(df) else 0.0,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def comparison_year_counts(combined: pd.DataFrame) -> pd.DataFrame:
+    """Return paper counts by database and year."""
+    work = combined.copy()
+    work["year"] = pd.to_numeric(work["year"], errors="coerce")
+    work = work.dropna(subset=["year"])
+    if work.empty:
+        return pd.DataFrame(columns=["database", "year", "papers"])
+    work["year"] = work["year"].astype(int)
+    return (
+        work.groupby(["database", "year"])["paper_id"]
+        .nunique()
+        .reset_index(name="papers")
+        .sort_values(["year", "database"])
+    )
+
+
+def comparison_category_counts(
+    combined: pd.DataFrame,
+    field: str,
+    *,
+    top_n: int = 20,
+) -> pd.DataFrame:
+    """Return per-database counts for a scalar or list-valued comparison field."""
+    if field in {"authors", "instruments", "sources"}:
+        out = combined.explode(field).rename(columns={field: "category"})
+        out = out[out["category"].notna() & (out["category"] != "")]
+    else:
+        out = combined.rename(columns={field: "category"}).copy()
+        out["category"] = out["category"].fillna("").astype(str).replace("", "Unknown")
+    if out.empty:
+        return pd.DataFrame(columns=["database", "category", "papers"])
+
+    counts = (
+        out.groupby(["database", "category"])["paper_id"]
+        .nunique()
+        .reset_index(name="papers")
+    )
+    top_categories = (
+        counts.groupby("category")["papers"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(top_n)
+        .index
+    )
+    return counts[counts["category"].isin(top_categories)].sort_values(["category", "database"])
+
+
+def download_dataframe_button(df: pd.DataFrame, label: str, file_name: str) -> None:
+    """Render a CSV download button for a dataframe."""
+    st.download_button(
+        label=label,
+        data=df.to_csv(index=False).encode("utf-8"),
+        file_name=file_name,
+        mime="text/csv",
+    )
+
+
+# -----------------------------------------------------------------------------
 # Graph helpers
 # -----------------------------------------------------------------------------
 
@@ -3519,6 +3771,247 @@ def plot_custom_graph(df: pd.DataFrame) -> None:
 # -----------------------------------------------------------------------------
 # Page rendering
 # -----------------------------------------------------------------------------
+
+def render_compare_databases_page(active_db: str) -> None:
+    """Render cross-database comparison tables and charts."""
+    st.header("Compare Databases")
+
+    database_ids = [database["id"] for database in DATABASES]
+    default_ids = unique_preserve_order([active_db] + [db for db in database_ids if db != active_db])
+    selected_ids = st.multiselect(
+        "Databases",
+        database_ids,
+        default=st.session_state.get("comparison_database_ids", default_ids) or default_ids,
+        format_func=database_label,
+        key="comparison_database_ids",
+    )
+    selected_ids = [normalize_database_id(database_id) for database_id in selected_ids]
+
+    if not selected_ids:
+        st.info("Select at least one database.")
+        return
+
+    frames = load_comparison_frames(selected_ids)
+    combined = comparison_combined_frame(frames)
+    presence = doi_presence_table(combined)
+    shared = shared_doi_table(presence)
+    unique_only = doi_uniqueness_table(presence)
+    conflicts = metadata_conflict_table(combined)
+    summary = comparison_summary(frames)
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Databases", f"{len(selected_ids):,}")
+    c2.metric("Total paper rows", f"{len(combined):,}")
+    c3.metric("Unique DOIs", f"{presence['DOI'].nunique() if not presence.empty else 0:,}")
+    c4.metric("Shared DOI rows", f"{len(shared):,}")
+
+    c5, c6, c7, c8 = st.columns(4)
+    c5.metric("Only in one database", f"{len(unique_only):,}")
+    c6.metric("Metadata conflict rows", f"{len(conflicts):,}")
+    c7.metric("Rows without DOI", f"{int((combined['doi_key'] == '').sum()) if not combined.empty else 0:,}")
+    c8.metric(
+        "Rows with authors",
+        f"{int(combined['authors'].apply(bool).sum()) if not combined.empty else 0:,}",
+    )
+
+    tabs = st.tabs(["Overview", "Graphs", "Overlap", "Metadata Quality"])
+
+    with tabs[0]:
+        st.subheader("Database Summary")
+        summary_display = summary.copy()
+        if not summary_display.empty:
+            summary_display["metadata_missing_percent"] = (
+                summary_display["papers_missing_any_metadata"] / summary_display["papers"]
+            ).fillna(0.0)
+        st.dataframe(summary_display, use_container_width=True, hide_index=True)
+        download_dataframe_button(
+            summary_display,
+            "Download database summary",
+            "database_comparison_summary.csv",
+        )
+
+        st.subheader("Pairwise DOI Overlap")
+        overlap = comparison_overlap_matrix(frames)
+        st.dataframe(overlap, use_container_width=True, hide_index=True)
+        if len(overlap) > 1:
+            heatmap_data = overlap.set_index("database")
+            fig = px.imshow(
+                heatmap_data,
+                text_auto=True,
+                aspect="auto",
+                title="Shared DOI count by database pair",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    with tabs[1]:
+        st.subheader("Timeline")
+        year_counts = comparison_year_counts(combined)
+        if year_counts.empty:
+            st.info("No year data available for the selected databases.")
+        else:
+            timeline_mode = st.radio(
+                "Timeline chart",
+                ["Line", "Stacked bar"],
+                horizontal=True,
+                key="comparison_timeline_mode",
+            )
+            if timeline_mode == "Line":
+                fig = px.line(
+                    year_counts,
+                    x="year",
+                    y="papers",
+                    color="database",
+                    markers=True,
+                    title="Papers per year by database",
+                )
+            else:
+                fig = px.bar(
+                    year_counts,
+                    x="year",
+                    y="papers",
+                    color="database",
+                    title="Papers per year by database",
+                )
+            st.plotly_chart(fig, use_container_width=True)
+
+        st.subheader("Category Comparison")
+        c1, c2 = st.columns([2, 1])
+        with c1:
+            category_field = st.selectbox(
+                "Compare by",
+                [
+                    "paper_type",
+                    "go_canada_status",
+                    "verification_status",
+                    "publisher",
+                    "journal",
+                    "authors",
+                    "instruments",
+                    "sources",
+                ],
+                format_func=lambda value: {
+                    "paper_type": "Paper type",
+                    "go_canada_status": "GO Canada status",
+                    "verification_status": "Verification status",
+                    "publisher": "Publisher",
+                    "journal": "Journal",
+                    "authors": "Author",
+                    "instruments": "Instrument/component",
+                    "sources": "Source",
+                }.get(value, value),
+                key="comparison_category_field",
+            )
+        with c2:
+            top_n = st.number_input(
+                "Top N",
+                min_value=3,
+                max_value=100,
+                value=20,
+                key="comparison_top_n",
+            )
+        category_counts = comparison_category_counts(combined, category_field, top_n=int(top_n))
+        if category_counts.empty:
+            st.info("No category data available for the selected databases.")
+        else:
+            fig = px.bar(
+                category_counts,
+                x="category",
+                y="papers",
+                color="database",
+                barmode="group",
+                title="Papers by category and database",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.dataframe(category_counts, use_container_width=True, hide_index=True)
+
+    with tabs[2]:
+        st.subheader("Shared DOIs")
+        if shared.empty:
+            st.info("No shared DOIs among the selected databases.")
+        else:
+            st.dataframe(shared, use_container_width=True, hide_index=True)
+            download_dataframe_button(shared, "Download shared DOI report", "shared_dois.csv")
+
+        st.subheader("Only in One Database")
+        if unique_only.empty:
+            st.info("No DOI appears in only one selected database.")
+        else:
+            database_options = ["All"] + sorted(unique_only["databases"].dropna().unique().tolist())
+            selected_unique_database = st.selectbox(
+                "Only-in database",
+                database_options,
+                key="comparison_unique_database",
+            )
+            unique_display = unique_only
+            if selected_unique_database != "All":
+                unique_display = unique_only[unique_only["databases"] == selected_unique_database]
+            st.dataframe(unique_display, use_container_width=True, hide_index=True)
+            download_dataframe_button(
+                unique_display,
+                "Download only-in-one-database report",
+                "database_unique_dois.csv",
+            )
+
+        st.subheader("Metadata Conflicts on Shared DOIs")
+        if conflicts.empty:
+            st.info("No metadata conflicts found for shared DOIs.")
+        else:
+            conflict_fields = sorted(
+                {
+                    field
+                    for value in conflicts["conflict_fields"].dropna()
+                    for field in split_multi_value(value)
+                }
+            )
+            selected_conflict_fields = st.multiselect(
+                "Conflict fields",
+                conflict_fields,
+                default=conflict_fields,
+                key="comparison_conflict_fields",
+            )
+            conflict_display = conflicts
+            if selected_conflict_fields:
+                conflict_display = conflicts[
+                    conflicts["conflict_fields"].apply(
+                        lambda value: contains_any(
+                            split_multi_value(value),
+                            selected_conflict_fields,
+                        )
+                    )
+                ]
+            st.dataframe(conflict_display, use_container_width=True, hide_index=True)
+            download_dataframe_button(
+                conflict_display,
+                "Download metadata conflict report",
+                "database_metadata_conflicts.csv",
+            )
+
+    with tabs[3]:
+        st.subheader("Missing Metadata by Database")
+        missing = missing_metadata_comparison(frames)
+        if missing.empty:
+            st.info("No metadata quality data available.")
+        else:
+            fig = px.bar(
+                missing,
+                x="field",
+                y="missing_papers",
+                color="database",
+                barmode="group",
+                title="Missing metadata fields by database",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            missing_display = missing.copy()
+            missing_display["missing_percent"] = missing_display["missing_percent"].map(
+                lambda value: f"{value:.1%}"
+            )
+            st.dataframe(missing_display, use_container_width=True, hide_index=True)
+            download_dataframe_button(
+                missing,
+                "Download missing metadata comparison",
+                "database_missing_metadata_comparison.csv",
+            )
+
 
 def render_dashboard_page(
     filtered_df: pd.DataFrame,
@@ -5111,6 +5604,7 @@ def main() -> None:
     active_db = render_database_selector()
     page_options = [
         "Dashboard",
+        "Compare Databases",
         "Filter + Paper List",
         "Graphs",
         "Data Quality",
@@ -5137,6 +5631,13 @@ def main() -> None:
         st.sidebar.caption(f"Database backend: {database_backend_label()}")
         st.sidebar.caption(f"Active database: {database_label(active_db)}")
         render_add_import_papers_page(tables)
+        return
+
+    if page == "Compare Databases":
+        st.sidebar.divider()
+        st.sidebar.caption(f"Database backend: {database_backend_label()}")
+        st.sidebar.caption(f"Active database: {database_label(active_db)}")
+        render_compare_databases_page(active_db)
         return
 
     paper_view = load_paper_view(active_db, str(DATA_DIR))
