@@ -1,1 +1,2 @@
 source_id,source_name,source_type,notes
+S00001,GO-Canada Library queries,scopus_query_csv,Metadata filled from DOI post-processing and Main database DOI matches when available; Library components came from the GO-Canada query CSV file names.

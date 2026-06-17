@@ -1,1 +1,13 @@
 instrument_id,instrument_name
+I00001,Magnetometers
+I00002,Authored by GO Canada PIs
+I00003,DNT Instruments
+I00004,Auroral Imagers
+I00005,SuperDARN
+I00006,Ionosondes
+I00007,GNSS Receivers
+I00008,Meridian Scanning Photometers
+I00009,Riometers
+I00010,THEMIS
+I00011,CHAIN
+I00012,VLF Receivers
