@@ -147,6 +147,7 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
 CSV_PATHS = {name: DATA_DIR / f"{name}.csv" for name in REQUIRED_COLUMNS}
 SUPABASE_PAGE_SIZE = 1000
 SUPABASE_INSERT_CHUNK_SIZE = 500
+SUPABASE_DASHBOARD_VIEW_NAME = "paper_dashboard_view"
 GLOBAL_PRESET_COLUMNS = ["preset_name", "preset_json", "updated_at"]
 
 TABLE_DELETE_FILTER_COLUMN = {
@@ -767,6 +768,123 @@ def fetch_supabase_table(
     return df[columns]
 
 
+def split_dashboard_list(value: Any) -> list[str]:
+    """Split semicolon text from the Supabase dashboard view into a clean list."""
+    if isinstance(value, (list, tuple, set)):
+        return unique_preserve_order(value)
+    text = clean_text(value)
+    if not text:
+        return []
+    return unique_preserve_order(part.strip() for part in text.split(";") if part.strip())
+
+
+def normalize_paper_view_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize a one-row-per-paper dataframe to the dashboard paper view shape."""
+    if df.empty:
+        return pd.DataFrame(columns=PAPER_VIEW_COLUMNS)
+
+    out = df.copy()
+    for col in PAPER_VIEW_COLUMNS:
+        if col not in out.columns:
+            out[col] = ""
+
+    list_columns = [
+        "authors",
+        "instruments",
+        "instrument_statuses",
+        "all_verification_statuses",
+        "instrument_verification_pairs",
+        "sources",
+        "source_types",
+    ]
+    for col in list_columns:
+        out[col] = out[col].apply(split_dashboard_list)
+
+    scalar_columns = [
+        "paper_id",
+        "DOI",
+        "title",
+        "journal",
+        "publisher",
+        "paper_type",
+        "go_canada_status",
+        "display_authors",
+        "first_author",
+        "display_instruments",
+        "display_instrument_verification",
+        "verification_status",
+        "evidence_quote",
+        "checked_date",
+        "paper_url",
+        "display_sources",
+        "notes",
+    ]
+    for col in scalar_columns:
+        out[col] = out[col].apply(clean_text)
+
+    out["year"] = safe_year_series(out["year"])
+    out["is_known_false_positive"] = out["is_known_false_positive"].apply(parse_bool)
+    out["verification_status"] = out["verification_status"].apply(normalize_status)
+
+    missing_author_display = out["display_authors"] == ""
+    out.loc[missing_author_display, "display_authors"] = out.loc[
+        missing_author_display, "authors"
+    ].apply(join_list)
+
+    missing_first_author = out["first_author"] == ""
+    out.loc[missing_first_author, "first_author"] = out.loc[
+        missing_first_author, "authors"
+    ].apply(lambda values: values[0] if values else "")
+
+    missing_instrument_display = out["display_instruments"] == ""
+    out.loc[missing_instrument_display, "display_instruments"] = out.loc[
+        missing_instrument_display, "instruments"
+    ].apply(join_list)
+
+    missing_instrument_verification = out["display_instrument_verification"] == ""
+    out.loc[missing_instrument_verification, "display_instrument_verification"] = out.loc[
+        missing_instrument_verification, "instrument_verification_pairs"
+    ].apply(join_list)
+
+    missing_source_display = out["display_sources"] == ""
+    out.loc[missing_source_display, "display_sources"] = out.loc[
+        missing_source_display, "sources"
+    ].apply(join_list)
+
+    missing_paper_url = out["paper_url"] == ""
+    out.loc[missing_paper_url, "paper_url"] = out.loc[missing_paper_url, "DOI"].apply(doi_to_url)
+
+    return out[PAPER_VIEW_COLUMNS]
+
+
+def fetch_supabase_dashboard_view(
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+) -> pd.DataFrame:
+    """Fetch the prebuilt one-row-per-paper Supabase dashboard view."""
+    rows: list[dict[str, Any]] = []
+    start = 0
+    headers = supabase_headers(key)
+    database_id = normalize_database_id(database_id)
+    while True:
+        end = start + SUPABASE_PAGE_SIZE - 1
+        response = requests.get(
+            f"{url}/rest/v1/{SUPABASE_DASHBOARD_VIEW_NAME}",
+            params={"select": "*", DATABASE_ID_COLUMN: f"eq.{database_id}"},
+            headers={**headers, "Range": f"{start}-{end}"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        page_rows = response.json()
+        rows.extend(page_rows)
+        if len(page_rows) < SUPABASE_PAGE_SIZE:
+            break
+        start += SUPABASE_PAGE_SIZE
+
+    return normalize_paper_view_df(pd.DataFrame(rows))
+
+
 @st.cache_data(show_spinner="Loading Supabase database...")
 def load_supabase_database(
     url: str,
@@ -782,12 +900,24 @@ def load_supabase_database(
     }
 
 
+@st.cache_data(show_spinner="Loading dashboard view...")
+def load_supabase_paper_view(
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+) -> pd.DataFrame:
+    """Load the lightweight Supabase paper view used by normal dashboard pages."""
+    return fetch_supabase_dashboard_view(url, key, database_id)
+
+
 def clear_database_caches() -> None:
     """Clear all cached database reads."""
     read_csv_safe.clear()
     load_csv_database.clear()
     load_database.clear()
     load_supabase_database.clear()
+    load_supabase_paper_view.clear()
+    load_paper_view.clear()
     supabase_supports_database_scoping.clear()
     load_shared_presets.clear()
 
@@ -1194,6 +1324,30 @@ def load_database(
         return load_supabase_database(url, key, database_id)
 
     return load_csv_database(str(database_data_dir(database_id)))
+
+
+@st.cache_data(show_spinner="Loading dashboard data...")
+def load_paper_view(
+    database_id: str = DEFAULT_DATABASE_ID,
+    data_dir: str = "data",
+) -> pd.DataFrame:
+    """
+    Load the lightweight paper view for normal dashboard pages.
+
+    Supabase deployments should use paper_dashboard_view. CSV/local runs and
+    Supabase projects that have not installed the view fall back to building the
+    same shape from normalized tables.
+    """
+    database_id = normalize_database_id(database_id)
+    config = supabase_config()
+    if config:
+        url, key = config
+        try:
+            return load_supabase_paper_view(url, key, database_id)
+        except requests.RequestException:
+            pass
+
+    return build_paper_view(load_database(database_id, data_dir))
 
 
 @st.cache_data(show_spinner="Loading review database...")
@@ -4955,9 +5109,6 @@ def main() -> None:
         )
 
     active_db = render_database_selector()
-    tables = load_database(active_db, str(DATA_DIR))
-    paper_view = build_paper_view(tables)
-
     page_options = [
         "Dashboard",
         "Filter + Paper List",
@@ -4972,14 +5123,25 @@ def main() -> None:
     page = st.sidebar.radio("Page", page_options)
 
     if page == "Admin Editor":
+        tables = load_database(active_db, str(DATA_DIR))
+        paper_view = build_paper_view(tables)
         st.sidebar.divider()
         st.sidebar.caption(f"Database backend: {database_backend_label()}")
         st.sidebar.caption(f"Active database: {database_label(active_db)}")
         render_admin_editor_page(tables, paper_view)
         return
 
+    if page == "Add / Import Papers":
+        tables = load_database(active_db, str(DATA_DIR))
+        st.sidebar.divider()
+        st.sidebar.caption(f"Database backend: {database_backend_label()}")
+        st.sidebar.caption(f"Active database: {database_label(active_db)}")
+        render_add_import_papers_page(tables)
+        return
+
+    paper_view = load_paper_view(active_db, str(DATA_DIR))
     render_saved_view_controls()
-    filters = render_filters(paper_view, tables.get("instruments"))
+    filters = render_filters(paper_view)
     false_positive_reference_df = apply_filters(
         paper_view,
         filters,
@@ -5027,8 +5189,6 @@ def main() -> None:
         )
     elif page == "Data Quality":
         render_data_quality_page(filtered_df)
-    elif page == "Add / Import Papers":
-        render_add_import_papers_page(tables)
     elif page == "Export":
         render_export_page(
             filtered_df,
