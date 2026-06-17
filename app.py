@@ -736,16 +736,22 @@ def fetch_supabase_table(
     url: str,
     key: str,
     database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
 ) -> pd.DataFrame:
     """Fetch one Supabase table through the REST API."""
     rows: list[dict[str, Any]] = []
     start = 0
     headers = supabase_headers(key)
+    database_id = normalize_database_id(database_id)
     while True:
         end = start + SUPABASE_PAGE_SIZE - 1
+        params = {"select": "*"}
+        if scoped:
+            params[DATABASE_ID_COLUMN] = f"eq.{database_id}"
         response = requests.get(
             f"{url}/rest/v1/{table_name}",
-            params={"select": "*"},
+            params=params,
             headers={**headers, "Range": f"{start}-{end}"},
             timeout=30,
         )
@@ -759,14 +765,14 @@ def fetch_supabase_table(
     df = pd.DataFrame(rows)
     if DATABASE_ID_COLUMN in df.columns:
         df[DATABASE_ID_COLUMN] = df[DATABASE_ID_COLUMN].fillna("").astype(str)
-        database_id = normalize_database_id(database_id)
-        if database_id == DEFAULT_DATABASE_ID:
-            df = df[
-                (df[DATABASE_ID_COLUMN] == DEFAULT_DATABASE_ID)
-                | (df[DATABASE_ID_COLUMN] == "")
-            ]
-        else:
-            df = df[df[DATABASE_ID_COLUMN] == database_id]
+        if not scoped:
+            if database_id == DEFAULT_DATABASE_ID:
+                df = df[
+                    (df[DATABASE_ID_COLUMN] == DEFAULT_DATABASE_ID)
+                    | (df[DATABASE_ID_COLUMN] == "")
+                ]
+            else:
+                df = df[df[DATABASE_ID_COLUMN] == database_id]
     elif normalize_database_id(database_id) != DEFAULT_DATABASE_ID:
         df = pd.DataFrame(columns=columns)
 
@@ -784,8 +790,9 @@ def load_supabase_database(
 ) -> dict[str, pd.DataFrame]:
     """Load all normalized tables from Supabase."""
     database_id = normalize_database_id(database_id)
+    scoped = supabase_supports_database_scoping(url, key)
     return {
-        name: fetch_supabase_table(name, columns, url, key, database_id)
+        name: fetch_supabase_table(name, columns, url, key, database_id, scoped=scoped)
         for name, columns in REQUIRED_COLUMNS.items()
     }
 
