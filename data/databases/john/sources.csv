@@ -1,1 +1,2 @@
 source_id,source_name,source_type,notes
+S00001,John database,excel_workbook,Metadata filled from DOI post-processing. John records do not use component or instrument tags; go_canada_status stores GO Canada author status as yes or unknown.
