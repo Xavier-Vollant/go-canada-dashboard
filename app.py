@@ -769,6 +769,40 @@ def fetch_supabase_table(
     return df[columns]
 
 
+def fetch_supabase_filtered_table(
+    table_name: str,
+    columns: list[str],
+    url: str,
+    key: str,
+    filters: dict[str, str],
+) -> pd.DataFrame:
+    """Fetch one filtered Supabase table through the REST API."""
+    rows: list[dict[str, Any]] = []
+    start = 0
+    headers = supabase_headers(key)
+    while True:
+        end = start + SUPABASE_PAGE_SIZE - 1
+        params = {"select": "*", **filters}
+        response = requests.get(
+            f"{url}/rest/v1/{table_name}",
+            params=params,
+            headers={**headers, "Range": f"{start}-{end}"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        page_rows = response.json()
+        rows.extend(page_rows)
+        if len(page_rows) < SUPABASE_PAGE_SIZE:
+            break
+        start += SUPABASE_PAGE_SIZE
+
+    df = pd.DataFrame(rows)
+    for col in columns:
+        if col not in df.columns:
+            df[col] = ""
+    return df[columns]
+
+
 def split_dashboard_list(value: Any) -> list[str]:
     """Split semicolon text from the Supabase dashboard view into a clean list."""
     if isinstance(value, (list, tuple, set)):
@@ -901,6 +935,65 @@ def load_supabase_database(
     }
 
 
+@st.cache_data(show_spinner="Loading selected paper verification...")
+def load_supabase_verification_context(
+    url: str,
+    key: str,
+    database_id: str,
+    paper_id: str,
+) -> dict[str, pd.DataFrame]:
+    """Load only the rows needed to verify one selected paper."""
+    database_id = normalize_database_id(database_id)
+    paper_id = clean_text(paper_id)
+    scoped = require_supabase_database_scoping(url, key, database_id)
+    base_filters = {"paper_id": f"eq.{paper_id}"}
+    if scoped:
+        base_filters[DATABASE_ID_COLUMN] = f"eq.{database_id}"
+
+    paper_instruments = fetch_supabase_filtered_table(
+        "paper_instruments",
+        REQUIRED_COLUMNS["paper_instruments"],
+        url,
+        key,
+        base_filters,
+    )
+    verification = fetch_supabase_filtered_table(
+        "verification",
+        REQUIRED_COLUMNS["verification"],
+        url,
+        key,
+        base_filters,
+    )
+
+    instrument_ids = unique_preserve_order(paper_instruments.get("instrument_id", []))
+    instrument_filters: dict[str, str] = {}
+    if instrument_ids:
+        if scoped:
+            instrument_filters[DATABASE_ID_COLUMN] = f"eq.{database_id}"
+        instrument_filters["instrument_id"] = f"in.({','.join(instrument_ids)})"
+
+    instruments = (
+        fetch_supabase_filtered_table(
+            "instruments",
+            REQUIRED_COLUMNS["instruments"],
+            url,
+            key,
+            instrument_filters,
+        )
+        if instrument_filters
+        else pd.DataFrame(columns=REQUIRED_COLUMNS["instruments"])
+    )
+
+    tables = {
+        name: pd.DataFrame(columns=columns)
+        for name, columns in REQUIRED_COLUMNS.items()
+    }
+    tables["paper_instruments"] = paper_instruments
+    tables["verification"] = verification
+    tables["instruments"] = instruments
+    return tables
+
+
 @st.cache_data(show_spinner="Loading dashboard view...")
 def load_supabase_paper_view(
     url: str,
@@ -917,6 +1010,7 @@ def clear_database_caches() -> None:
     load_csv_database.clear()
     load_database.clear()
     load_supabase_database.clear()
+    load_supabase_verification_context.clear()
     load_supabase_paper_view.clear()
     load_paper_view.clear()
     supabase_supports_database_scoping.clear()
@@ -1349,6 +1443,20 @@ def load_paper_view(
             pass
 
     return build_paper_view(load_database(database_id, data_dir))
+
+
+def load_verification_context(
+    database_id: str,
+    paper_id: str,
+    data_dir: str = "data",
+) -> dict[str, pd.DataFrame]:
+    """Load the smallest table set needed by the verification editor."""
+    database_id = normalize_database_id(database_id)
+    config = supabase_config()
+    if config:
+        url, key = config
+        return load_supabase_verification_context(url, key, database_id, paper_id)
+    return load_database(database_id, data_dir)
 
 
 @st.cache_data(show_spinner="Loading review database...")
@@ -4770,13 +4878,16 @@ def set_random_paper_selection(
 
 def render_random_paper_controls(
     paper_view: pd.DataFrame,
-    tables: dict[str, pd.DataFrame],
     *,
     search_key: str,
     select_key: str,
 ) -> None:
     """Render quick random-paper controls for the admin verification workflow."""
-    metadata_options = admin_metadata_options(tables)
+    instrument_options = sorted_options(
+        item
+        for values in paper_view.get("instruments", pd.Series(dtype="object"))
+        for item in values
+    )
     random_cols = st.columns([1, 2, 1])
     with random_cols[0]:
         if st.button("Random paper", key=f"{select_key}_random_any"):
@@ -4786,13 +4897,21 @@ def render_random_paper_controls(
                 select_key=select_key,
             )
     with random_cols[1]:
-        random_instrument = st.selectbox(
-            "Random within instrument",
-            metadata_options["instruments"],
-            key=f"{select_key}_random_instrument",
-        )
+        if instrument_options:
+            random_instrument = st.selectbox(
+                "Random within instrument",
+                instrument_options,
+                key=f"{select_key}_random_instrument",
+            )
+        else:
+            random_instrument = ""
+            st.caption("No instruments are available in this database.")
     with random_cols[2]:
-        if st.button("Random in instrument", key=f"{select_key}_random_instrument_button"):
+        if st.button(
+            "Random in instrument",
+            key=f"{select_key}_random_instrument_button",
+            disabled=not instrument_options,
+        ):
             set_random_paper_selection(
                 paper_view,
                 search_key=search_key,
@@ -5103,49 +5222,53 @@ def render_paper_verification_controls(
     selected_paper_id: str,
     *,
     key_prefix: str,
+    allow_instrument_editing: bool = True,
 ) -> None:
     """Render per-instrument verification controls for one selected paper."""
-    metadata_options = admin_metadata_options(tables)
     assignments = paper_instrument_assignments(tables, selected_paper_id)
 
     st.markdown("#### Instrument Verification")
-    with st.form(f"{key_prefix}_add_instrument_form"):
-        add_cols = st.columns([2, 1, 1])
-        with add_cols[0]:
-            new_instrument = metadata_selectbox(
-                "Add instrument",
-                metadata_options["instruments"],
-                key=f"{key_prefix}_new_instrument",
-                help="Search existing instruments or type a new instrument name.",
-            )
-        with add_cols[1]:
-            new_instrument_status = st.text_input(
-                "Instrument status",
-                value="uses",
-                key=f"{key_prefix}_new_instrument_status",
-            )
-        with add_cols[2]:
-            add_submitted = st.form_submit_button("Add instrument")
+    if allow_instrument_editing:
+        metadata_options = admin_metadata_options(tables)
+        with st.form(f"{key_prefix}_add_instrument_form"):
+            add_cols = st.columns([2, 1, 1])
+            with add_cols[0]:
+                new_instrument = metadata_selectbox(
+                    "Add instrument",
+                    metadata_options["instruments"],
+                    key=f"{key_prefix}_new_instrument",
+                    help="Search existing instruments or type a new instrument name.",
+                )
+            with add_cols[1]:
+                new_instrument_status = st.text_input(
+                    "Instrument status",
+                    value="uses",
+                    key=f"{key_prefix}_new_instrument_status",
+                )
+            with add_cols[2]:
+                add_submitted = st.form_submit_button("Add instrument")
 
-    if add_submitted:
-        try:
-            ok, message = add_instrument_assignment_to_paper(
-                tables,
-                selected_paper_id,
-                new_instrument,
-                new_instrument_status,
-            )
-            if ok:
-                st.success(f"Added instrument: {message}")
-                st.rerun()
-            else:
-                st.error(message)
-        except requests.HTTPError as exc:
-            response = exc.response
-            detail = response.text if response is not None else str(exc)
-            st.error(f"Supabase rejected the instrument assignment: {detail}")
-        except Exception as exc:
-            st.error(f"Could not add instrument: {exc}")
+        if add_submitted:
+            try:
+                ok, message = add_instrument_assignment_to_paper(
+                    tables,
+                    selected_paper_id,
+                    new_instrument,
+                    new_instrument_status,
+                )
+                if ok:
+                    st.success(f"Added instrument: {message}")
+                    st.rerun()
+                else:
+                    st.error(message)
+            except requests.HTTPError as exc:
+                response = exc.response
+                detail = response.text if response is not None else str(exc)
+                st.error(f"Supabase rejected the instrument assignment: {detail}")
+            except Exception as exc:
+                st.error(f"Could not add instrument: {exc}")
+    else:
+        st.caption("Use Paper Metadata to add or change instrument assignments.")
 
     if assignments.empty:
         st.info("This paper has no instrument assignments yet.")
@@ -5372,7 +5495,11 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
                 st.error(f"Could not delete paper: {exc}")
 
 
-def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
+def render_verification_editor(
+    paper_view: pd.DataFrame,
+    database_id: str,
+    tables: dict[str, pd.DataFrame] | None = None,
+) -> None:
     """Render an editor for paper-instrument verification rows."""
     st.subheader("Change Verification Status")
     if paper_view.empty:
@@ -5383,7 +5510,6 @@ def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.D
     select_key = "admin_verify_paper"
     render_random_paper_controls(
         paper_view,
-        tables,
         search_key=search_key,
         select_key=select_key,
     )
@@ -5401,10 +5527,16 @@ def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.D
     st.write(f"**DOI:** {clean_text(selected_paper['DOI']) or 'Missing'}")
     st.write(f"**Current paper status:** {clean_text(selected_paper['verification_status'])}")
     render_open_paper_button(selected_paper)
+    verification_tables = tables or load_verification_context(
+        database_id,
+        selected_paper_id,
+        str(DATA_DIR),
+    )
     render_paper_verification_controls(
-        tables,
+        verification_tables,
         selected_paper_id,
         key_prefix=f"verify_{selected_paper_id}",
+        allow_instrument_editing=tables is not None,
     )
 
 
@@ -5586,12 +5718,14 @@ def render_admin_editor_page(active_db: str) -> None:
         render_database_sync_page(tables)
         return
 
-    tables = load_database(active_db, str(DATA_DIR))
-    paper_view = load_paper_view(active_db, str(DATA_DIR))
     if admin_tool == "Paper Metadata":
+        tables = load_database(active_db, str(DATA_DIR))
+        paper_view = load_paper_view(active_db, str(DATA_DIR))
         render_paper_metadata_editor(tables, paper_view)
     elif admin_tool == "Verification Status":
-        render_verification_editor(tables, paper_view)
+        paper_view = load_paper_view(active_db, str(DATA_DIR))
+        tables = None if supabase_config() else load_database(active_db, str(DATA_DIR))
+        render_verification_editor(paper_view, active_db, tables)
 
 
 def render_export_page(
