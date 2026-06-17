@@ -36,6 +36,27 @@ APP_TITLE = "GO-Canada Publication Analytics Dashboard"
 DATA_DIR = Path("data")
 REVIEW_DIR = DATA_DIR / "review"
 PRESET_DIR = Path("presets")
+DEFAULT_DATABASE_ID = "main"
+DATABASE_ID_COLUMN = "database_id"
+DATABASES = [
+    {
+        "id": "main",
+        "label": "Main database",
+        "description": "Current GO-Canada dashboard database.",
+    },
+    {
+        "id": "library",
+        "label": "Library database",
+        "description": "Empty database reserved for library records.",
+    },
+    {
+        "id": "john",
+        "label": "John database",
+        "description": "Empty database reserved for John's records.",
+    },
+]
+DATABASE_LABELS = {database["id"]: database["label"] for database in DATABASES}
+VALID_DATABASE_IDS = {database["id"] for database in DATABASES}
 
 
 def is_enabled_flag(value: Any) -> bool:
@@ -148,6 +169,11 @@ TABLE_PRIMARY_KEY_COLUMNS = {
     "verification": ["paper_id", "instrument_id"],
     "sources": ["source_id"],
     "paper_sources": ["paper_id", "source_id"],
+}
+
+SUPABASE_SCOPED_PRIMARY_KEY_COLUMNS = {
+    name: [DATABASE_ID_COLUMN] + columns
+    for name, columns in TABLE_PRIMARY_KEY_COLUMNS.items()
 }
 
 REVIEW_SUMMARY_COLUMNS = [
@@ -268,6 +294,21 @@ COLUMN_LABELS = {
     "display_sources": "Source / origin",
     "notes": "Notes",
 }
+
+PAPER_VIEW_COLUMNS = list(
+    dict.fromkeys(
+        list(COLUMN_LABELS.keys())
+        + [
+            "authors",
+            "instruments",
+            "instrument_statuses",
+            "all_verification_statuses",
+            "instrument_verification_pairs",
+            "sources",
+            "source_types",
+        ]
+    )
+)
 
 STATUS_ORDER = ["verified_true", "verified_false", "unsure", "unchecked"]
 FALSE_POSITIVE_PRIOR_WEIGHT = 20
@@ -563,11 +604,123 @@ def dataframe_for_storage(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     return out
 
 
+def normalize_database_id(database_id: Any) -> str:
+    """Return a known database id, falling back to the main database."""
+    database_id = clean_text(database_id) or DEFAULT_DATABASE_ID
+    if database_id not in VALID_DATABASE_IDS:
+        return DEFAULT_DATABASE_ID
+    return database_id
+
+
+def database_label(database_id: Any) -> str:
+    """Return the display label for a database id."""
+    return DATABASE_LABELS.get(normalize_database_id(database_id), DATABASE_LABELS[DEFAULT_DATABASE_ID])
+
+
+def active_database_id() -> str:
+    """Return the currently selected dashboard database."""
+    return normalize_database_id(st.session_state.get("active_database_id", DEFAULT_DATABASE_ID))
+
+
+def database_data_dir(database_id: Any) -> Path:
+    """Return the CSV directory for one dashboard database."""
+    database_id = normalize_database_id(database_id)
+    if database_id == DEFAULT_DATABASE_ID:
+        return DATA_DIR
+    return DATA_DIR / "databases" / database_id
+
+
+def clear_database_view_state() -> None:
+    """Clear filter/view widgets when switching isolated databases."""
+    keys_to_clear = (
+        FILTER_WIDGET_KEYS
+        + VIEW_WIDGET_KEYS
+        + [
+            "last_import_results",
+            "pending_excluded_paper_ids",
+            "selected_columns",
+        ]
+    )
+    for key in keys_to_clear:
+        st.session_state.pop(key, None)
+
+
+def render_database_selector() -> str:
+    """Render the sidebar database selector and return the active database id."""
+    st.sidebar.subheader("Database")
+    show_other_databases = st.sidebar.toggle(
+        "Show other databases",
+        value=bool(st.session_state.get("show_other_databases", False)),
+        key="show_other_databases",
+        help="Library database and John database are hidden until this is enabled.",
+    )
+
+    previous_database_id = active_database_id()
+    if show_other_databases:
+        database_ids = [database["id"] for database in DATABASES]
+        selected_database_id = st.sidebar.selectbox(
+            "Active database",
+            database_ids,
+            index=database_ids.index(previous_database_id)
+            if previous_database_id in database_ids
+            else database_ids.index(DEFAULT_DATABASE_ID),
+            format_func=database_label,
+            key="database_selector",
+        )
+    else:
+        selected_database_id = DEFAULT_DATABASE_ID
+        st.sidebar.caption(f"Active database: {database_label(selected_database_id)}")
+
+    selected_database_id = normalize_database_id(selected_database_id)
+    if previous_database_id != selected_database_id:
+        st.session_state["active_database_id"] = selected_database_id
+        clear_database_view_state()
+        st.rerun()
+
+    st.session_state["active_database_id"] = selected_database_id
+    description = next(
+        (
+            database["description"]
+            for database in DATABASES
+            if database["id"] == selected_database_id
+        ),
+        "",
+    )
+    if description:
+        st.sidebar.caption(description)
+    return selected_database_id
+
+
+@st.cache_data(show_spinner=False)
+def supabase_supports_database_scoping(url: str, key: str) -> bool:
+    """Return whether Supabase normalized tables have a database_id column."""
+    response = requests.get(
+        f"{url}/rest/v1/papers",
+        params={"select": DATABASE_ID_COLUMN, "limit": "1"},
+        headers=supabase_headers(key),
+        timeout=30,
+    )
+    return response.ok
+
+
+def require_supabase_database_scoping(url: str, key: str, database_id: str) -> bool:
+    """Return Supabase scoping support or raise for non-main databases."""
+    supports_scoping = supabase_supports_database_scoping(url, key)
+    if database_id != DEFAULT_DATABASE_ID and not supports_scoping:
+        raise RuntimeError(
+            "Supabase needs the multi-database migration before Library database "
+            "or John database can save independently. Run "
+            "docs/supabase_multi_database_migration.sql in Supabase SQL Editor."
+        )
+    return supports_scoping
+
+
 def fetch_supabase_table(
     table_name: str,
     columns: list[str],
     url: str,
     key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
 ) -> pd.DataFrame:
     """Fetch one Supabase table through the REST API."""
     rows: list[dict[str, Any]] = []
@@ -589,6 +742,19 @@ def fetch_supabase_table(
         start += SUPABASE_PAGE_SIZE
 
     df = pd.DataFrame(rows)
+    if DATABASE_ID_COLUMN in df.columns:
+        df[DATABASE_ID_COLUMN] = df[DATABASE_ID_COLUMN].fillna("").astype(str)
+        database_id = normalize_database_id(database_id)
+        if database_id == DEFAULT_DATABASE_ID:
+            df = df[
+                (df[DATABASE_ID_COLUMN] == DEFAULT_DATABASE_ID)
+                | (df[DATABASE_ID_COLUMN] == "")
+            ]
+        else:
+            df = df[df[DATABASE_ID_COLUMN] == database_id]
+    elif normalize_database_id(database_id) != DEFAULT_DATABASE_ID:
+        df = pd.DataFrame(columns=columns)
+
     for col in columns:
         if col not in df.columns:
             df[col] = ""
@@ -596,10 +762,15 @@ def fetch_supabase_table(
 
 
 @st.cache_data(show_spinner="Loading Supabase database...")
-def load_supabase_database(url: str, key: str) -> dict[str, pd.DataFrame]:
+def load_supabase_database(
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+) -> dict[str, pd.DataFrame]:
     """Load all normalized tables from Supabase."""
+    database_id = normalize_database_id(database_id)
     return {
-        name: fetch_supabase_table(name, columns, url, key)
+        name: fetch_supabase_table(name, columns, url, key, database_id)
         for name, columns in REQUIRED_COLUMNS.items()
     }
 
@@ -610,16 +781,25 @@ def clear_database_caches() -> None:
     load_csv_database.clear()
     load_database.clear()
     load_supabase_database.clear()
+    supabase_supports_database_scoping.clear()
     load_shared_presets.clear()
 
 
-def delete_supabase_table(table_name: str, url: str, key: str) -> None:
+def delete_supabase_table(
+    table_name: str,
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
+) -> None:
     """Delete all rows from one Supabase table."""
     headers = supabase_headers(key)
-    delete_column = TABLE_DELETE_FILTER_COLUMN[table_name]
+    delete_column = DATABASE_ID_COLUMN if scoped else TABLE_DELETE_FILTER_COLUMN[table_name]
+    delete_value = f"eq.{database_id}" if scoped else "not.is.null"
     delete_response = requests.delete(
         f"{url}/rest/v1/{table_name}",
-        params={delete_column: "not.is.null"},
+        params={delete_column: delete_value},
         headers=headers,
         timeout=30,
     )
@@ -632,11 +812,22 @@ def insert_supabase_table(
     columns: list[str],
     url: str,
     key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
 ) -> None:
     """Insert all rows for one Supabase table."""
     headers = supabase_headers(key)
-    out = dataframe_for_storage(df, columns)
-    primary_key_columns = TABLE_PRIMARY_KEY_COLUMNS.get(table_name, [])
+    storage_columns = [DATABASE_ID_COLUMN] + columns if scoped else columns
+    out = df.copy()
+    if scoped:
+        out[DATABASE_ID_COLUMN] = database_id
+    out = dataframe_for_storage(out, storage_columns)
+    primary_key_columns = (
+        SUPABASE_SCOPED_PRIMARY_KEY_COLUMNS.get(table_name, [])
+        if scoped
+        else TABLE_PRIMARY_KEY_COLUMNS.get(table_name, [])
+    )
     if primary_key_columns:
         out = out.drop_duplicates(subset=primary_key_columns, keep="last")
     records = out.to_dict("records")
@@ -653,30 +844,56 @@ def insert_supabase_table(
         insert_response.raise_for_status()
 
 
-def delete_supabase_verification_row(paper_id: str, instrument_id: str, url: str, key: str) -> None:
+def delete_supabase_verification_row(
+    paper_id: str,
+    instrument_id: str,
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
+) -> None:
     """Delete one paper-instrument verification row from Supabase."""
+    params = {
+        "paper_id": f"eq.{paper_id}",
+        "instrument_id": f"eq.{instrument_id}",
+    }
+    if scoped:
+        params[DATABASE_ID_COLUMN] = f"eq.{database_id}"
     delete_response = requests.delete(
         f"{url}/rest/v1/verification",
-        params={
-            "paper_id": f"eq.{paper_id}",
-            "instrument_id": f"eq.{instrument_id}",
-        },
+        params=params,
         headers=supabase_headers(key),
         timeout=30,
     )
     delete_response.raise_for_status()
 
 
-def upsert_supabase_verification_row(row: dict[str, Any], url: str, key: str) -> None:
+def upsert_supabase_verification_row(
+    row: dict[str, Any],
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
+) -> None:
     """Insert or update one paper-instrument verification row in Supabase."""
     headers = {
         **supabase_headers(key),
         "Prefer": "resolution=merge-duplicates,return=minimal",
     }
+    storage_columns = REQUIRED_COLUMNS["verification"]
+    if scoped:
+        storage_columns = [DATABASE_ID_COLUMN] + storage_columns
+        row = {**row, DATABASE_ID_COLUMN: database_id}
     upsert_response = requests.post(
         f"{url}/rest/v1/verification",
-        params={"on_conflict": "paper_id,instrument_id"},
-        json=[{column: clean_text(row.get(column)) for column in REQUIRED_COLUMNS["verification"]}],
+        params={
+            "on_conflict": "database_id,paper_id,instrument_id"
+            if scoped
+            else "paper_id,instrument_id"
+        },
+        json=[{column: clean_text(row.get(column)) for column in storage_columns}],
         headers=headers,
         timeout=30,
     )
@@ -693,6 +910,7 @@ def save_verification_row(
     notes: str,
 ) -> None:
     """Save one paper-instrument verification row to Supabase or CSV storage."""
+    database_id = active_database_id()
     row = {
         "paper_id": paper_id,
         "instrument_id": instrument_id,
@@ -705,10 +923,18 @@ def save_verification_row(
     config = supabase_config()
     if config:
         url, key = config
+        scoped = require_supabase_database_scoping(url, key, database_id)
         if status == "unchecked":
-            delete_supabase_verification_row(paper_id, instrument_id, url, key)
+            delete_supabase_verification_row(
+                paper_id,
+                instrument_id,
+                url,
+                key,
+                database_id,
+                scoped=scoped,
+            )
         else:
-            upsert_supabase_verification_row(row, url, key)
+            upsert_supabase_verification_row(row, url, key, database_id, scoped=scoped)
         clear_database_caches()
         return
 
@@ -722,15 +948,20 @@ def save_verification_row(
     if status != "unchecked":
         verification = append_row(verification, row, REQUIRED_COLUMNS["verification"])
     working_tables["verification"] = verification
-    save_database_tables(working_tables)
+    save_database_tables(working_tables, database_id)
 
 
-def replace_supabase_database(tables: dict[str, pd.DataFrame]) -> None:
-    """Replace all Supabase normalized tables with current app tables."""
+def replace_supabase_database(
+    tables: dict[str, pd.DataFrame],
+    database_id: str = DEFAULT_DATABASE_ID,
+) -> None:
+    """Replace one Supabase normalized database with current app tables."""
     config = supabase_config()
     if not config:
         raise RuntimeError("Supabase is not configured.")
     url, key = config
+    database_id = normalize_database_id(database_id)
+    scoped = require_supabase_database_scoping(url, key, database_id)
 
     delete_order = [
         "paper_sources",
@@ -753,9 +984,17 @@ def replace_supabase_database(tables: dict[str, pd.DataFrame]) -> None:
         "paper_sources",
     ]
     for name in delete_order:
-        delete_supabase_table(name, url, key)
+        delete_supabase_table(name, url, key, database_id, scoped=scoped)
     for name in insert_order:
-        insert_supabase_table(name, tables[name], REQUIRED_COLUMNS[name], url, key)
+        insert_supabase_table(
+            name,
+            tables[name],
+            REQUIRED_COLUMNS[name],
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
     clear_database_caches()
 
 
@@ -909,15 +1148,20 @@ def read_csv_safe(path: Path, required_columns: list[str]) -> pd.DataFrame:
     return df
 
 
-def write_csv_table(name: str, df: pd.DataFrame) -> None:
+def write_csv_table(
+    name: str,
+    df: pd.DataFrame,
+    database_id: str = DEFAULT_DATABASE_ID,
+) -> None:
     """Write one normalized table back to disk with the expected column order."""
     if READ_ONLY_MODE:
         raise RuntimeError("CSV writes are disabled in read-only deployment mode.")
 
-    DATA_DIR.mkdir(exist_ok=True)
+    out_dir = database_data_dir(database_id)
+    out_dir.mkdir(parents=True, exist_ok=True)
     required_columns = REQUIRED_COLUMNS[name]
     out = dataframe_for_storage(df, required_columns)
-    out.to_csv(CSV_PATHS[name], index=False)
+    out.to_csv(out_dir / f"{name}.csv", index=False)
 
 
 @st.cache_data(show_spinner="Loading CSV database...")
@@ -931,14 +1175,18 @@ def load_csv_database(data_dir: str = "data") -> dict[str, pd.DataFrame]:
 
 
 @st.cache_data(show_spinner="Loading database...")
-def load_database(data_dir: str = "data") -> dict[str, pd.DataFrame]:
+def load_database(
+    database_id: str = DEFAULT_DATABASE_ID,
+    data_dir: str = "data",
+) -> dict[str, pd.DataFrame]:
     """Load all normalized tables from Supabase when configured, otherwise CSV."""
+    database_id = normalize_database_id(database_id)
     config = supabase_config()
     if config:
         url, key = config
-        return load_supabase_database(url, key)
+        return load_supabase_database(url, key, database_id)
 
-    return load_csv_database(data_dir)
+    return load_csv_database(str(database_data_dir(database_id)))
 
 
 @st.cache_data(show_spinner="Loading review database...")
@@ -981,7 +1229,7 @@ def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
     papers = tables["papers"].copy()
     if papers.empty:
-        return pd.DataFrame(columns=list(COLUMN_LABELS.keys()))
+        return pd.DataFrame(columns=PAPER_VIEW_COLUMNS)
 
     papers["paper_id"] = papers["paper_id"].astype(str)
     papers["year"] = safe_year_series(papers["year"])
@@ -1560,14 +1808,18 @@ def add_paper_record(tables: dict[str, pd.DataFrame], record: dict[str, Any]) ->
     return "added", paper_id
 
 
-def save_database_tables(tables: dict[str, pd.DataFrame]) -> None:
+def save_database_tables(
+    tables: dict[str, pd.DataFrame],
+    database_id: str | None = None,
+) -> None:
     """Persist all normalized tables to Supabase or local CSV files."""
+    database_id = normalize_database_id(database_id or active_database_id())
     if supabase_config():
-        replace_supabase_database(tables)
+        replace_supabase_database(tables, database_id)
         return
 
     for name in REQUIRED_COLUMNS:
-        write_csv_table(name, tables[name])
+        write_csv_table(name, tables[name], database_id)
     clear_database_caches()
 
 
@@ -4465,8 +4717,10 @@ def render_verification_editor(tables: dict[str, pd.DataFrame], paper_view: pd.D
 
 def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
     """Render backend setup and sync controls."""
+    database_id = active_database_id()
     st.subheader("Online Database")
     st.write(f"Current backend: **{database_backend_label()}**")
+    st.write(f"Active database: **{database_label(database_id)}**")
 
     if not supabase_config():
         st.info(
@@ -4487,13 +4741,19 @@ def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
 
     st.success("Supabase is configured. Admin saves will update the online database.")
     st.warning(
-        "The sync button replaces the Supabase tables with the CSV database currently in this repository."
+        "The sync button replaces only the active Supabase database with the matching "
+        "repository CSV database."
     )
-    if st.button("Seed / replace Supabase from repository CSVs", type="primary"):
-        csv_tables = load_csv_database(str(DATA_DIR))
-        replace_supabase_database(csv_tables)
-        st.success("Supabase was replaced with the repository CSV database.")
-        st.rerun()
+    if st.button("Seed / replace active Supabase database from repository CSVs", type="primary"):
+        try:
+            csv_tables = load_csv_database(str(database_data_dir(database_id)))
+            replace_supabase_database(csv_tables, database_id)
+            st.success(
+                f"{database_label(database_id)} was replaced with its repository CSV database."
+            )
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Could not seed {database_label(database_id)}: {exc}")
 
     st.download_button(
         label="Download current papers table",
@@ -4687,14 +4947,9 @@ def main() -> None:
             "and exports work normally. Password-protected online editing works when Supabase is configured."
         )
 
-    tables = load_database(str(DATA_DIR))
+    active_db = render_database_selector()
+    tables = load_database(active_db, str(DATA_DIR))
     paper_view = build_paper_view(tables)
-
-    if paper_view.empty:
-        st.error(
-            "No papers loaded. Add CSV files to the data/ folder, starting with data/papers.csv."
-        )
-        st.stop()
 
     page_options = [
         "Dashboard",
@@ -4712,6 +4967,7 @@ def main() -> None:
     if page == "Admin Editor":
         st.sidebar.divider()
         st.sidebar.caption(f"Database backend: {database_backend_label()}")
+        st.sidebar.caption(f"Active database: {database_label(active_db)}")
         render_admin_editor_page(tables, paper_view)
         return
 
@@ -4731,8 +4987,15 @@ def main() -> None:
     filtered_df = apply_filters(paper_view, filters)
 
     st.sidebar.divider()
+    st.sidebar.caption(f"Active database: {database_label(active_db)}")
     st.sidebar.caption(f"Loaded papers: {len(paper_view):,}")
     st.sidebar.caption(f"Current filtered papers: {len(filtered_df):,}")
+
+    if paper_view.empty:
+        st.info(
+            f"{database_label(active_db)} is empty. "
+            "Use Add / Import Papers or the Admin Editor to add papers to this database."
+        )
 
     if page == "Dashboard":
         render_dashboard_page(
