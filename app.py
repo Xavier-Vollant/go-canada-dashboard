@@ -5028,13 +5028,60 @@ def save_paper_verification_updates(
     tables: dict[str, pd.DataFrame],
     updates: list[dict[str, Any]],
 ) -> None:
-    """Save multiple paper-instrument verification rows in one database update."""
-    working_tables = {name: table.copy() for name, table in tables.items()}
-    verification = working_tables["verification"].copy()
+    """Save multiple paper-instrument verification rows without replacing the database."""
+    database_id = active_database_id()
+    normalized_updates = []
     for update in updates:
         paper_id = clean_text(update.get("paper_id"))
         instrument_id = clean_text(update.get("instrument_id"))
         status = normalize_status(update.get("status"))
+        if not paper_id or not instrument_id:
+            continue
+        normalized_updates.append(
+            {
+                "paper_id": paper_id,
+                "instrument_id": instrument_id,
+                "status": status,
+                "evidence_quote": clean_text(update.get("evidence_quote")),
+                "checked_date": clean_text(update.get("checked_date"))
+                or datetime.now().isoformat(timespec="seconds"),
+                "notes": clean_text(update.get("notes")),
+            }
+        )
+
+    if not normalized_updates:
+        return
+
+    config = supabase_config()
+    if config:
+        url, key = config
+        scoped = require_supabase_database_scoping(url, key, database_id)
+        for row in normalized_updates:
+            if row["status"] == "unchecked":
+                delete_supabase_verification_row(
+                    row["paper_id"],
+                    row["instrument_id"],
+                    url,
+                    key,
+                    database_id,
+                    scoped=scoped,
+                )
+            else:
+                upsert_supabase_verification_row(
+                    row,
+                    url,
+                    key,
+                    database_id,
+                    scoped=scoped,
+                )
+        clear_database_caches()
+        return
+
+    verification = tables["verification"].copy()
+    for update in normalized_updates:
+        paper_id = update["paper_id"]
+        instrument_id = update["instrument_id"]
+        status = update["status"]
         keep_mask = ~(
             (verification["paper_id"].fillna("").astype(str) == paper_id)
             & (verification["instrument_id"].fillna("").astype(str) == instrument_id)
@@ -5043,19 +5090,12 @@ def save_paper_verification_updates(
         if status != "unchecked":
             verification = append_row(
                 verification,
-                {
-                    "paper_id": paper_id,
-                    "instrument_id": instrument_id,
-                    "status": status,
-                    "evidence_quote": clean_text(update.get("evidence_quote")),
-                    "checked_date": clean_text(update.get("checked_date"))
-                    or datetime.now().isoformat(timespec="seconds"),
-                    "notes": clean_text(update.get("notes")),
-                },
+                update,
                 REQUIRED_COLUMNS["verification"],
             )
-    working_tables["verification"] = verification
-    save_database_tables(working_tables)
+    tables["verification"] = verification
+    write_csv_table("verification", verification, database_id)
+    clear_database_caches()
 
 
 def render_paper_verification_controls(
@@ -5168,7 +5208,6 @@ def render_paper_verification_controls(
         try:
             save_paper_verification_updates(tables, update_payloads)
             st.success("Verification statuses saved.")
-            st.rerun()
         except requests.HTTPError as exc:
             response = exc.response
             detail = response.text if response is not None else str(exc)
@@ -5507,7 +5546,7 @@ def render_admin_presets_page() -> None:
             st.error(f"Could not save preset: {exc}")
 
 
-def render_admin_editor_page(tables: dict[str, pd.DataFrame], paper_view: pd.DataFrame) -> None:
+def render_admin_editor_page(active_db: str) -> None:
     """Render password-protected database editing tools."""
     st.header("Admin Editor")
     if not render_admin_login():
@@ -5520,25 +5559,39 @@ def render_admin_editor_page(tables: dict[str, pd.DataFrame], paper_view: pd.Dat
         )
 
     st.caption(f"Database backend: {database_backend_label()}")
-    add_tab, metadata_tab, verify_tab, presets_tab, sync_tab = st.tabs(
+    admin_tool = st.radio(
+        "Admin tool",
         [
-            "Add / Import Papers",
-            "Paper Metadata",
             "Verification Status",
+            "Paper Metadata",
+            "Add / Import Papers",
             "Shared Presets",
             "Online Database",
-        ]
+        ],
+        horizontal=True,
+        key="admin_tool",
     )
-    with add_tab:
-        render_add_import_papers_page(tables, admin_mode=True)
-    with metadata_tab:
-        render_paper_metadata_editor(tables, paper_view)
-    with verify_tab:
-        render_verification_editor(tables, paper_view)
-    with presets_tab:
+
+    if admin_tool == "Shared Presets":
         render_admin_presets_page()
-    with sync_tab:
+        return
+
+    if admin_tool == "Add / Import Papers":
+        tables = load_database(active_db, str(DATA_DIR))
+        render_add_import_papers_page(tables, admin_mode=True)
+        return
+
+    if admin_tool == "Online Database":
+        tables = load_database(active_db, str(DATA_DIR))
         render_database_sync_page(tables)
+        return
+
+    tables = load_database(active_db, str(DATA_DIR))
+    paper_view = load_paper_view(active_db, str(DATA_DIR))
+    if admin_tool == "Paper Metadata":
+        render_paper_metadata_editor(tables, paper_view)
+    elif admin_tool == "Verification Status":
+        render_verification_editor(tables, paper_view)
 
 
 def render_export_page(
@@ -5617,12 +5670,10 @@ def main() -> None:
     page = st.sidebar.radio("Page", page_options)
 
     if page == "Admin Editor":
-        tables = load_database(active_db, str(DATA_DIR))
-        paper_view = build_paper_view(tables)
         st.sidebar.divider()
         st.sidebar.caption(f"Database backend: {database_backend_label()}")
         st.sidebar.caption(f"Active database: {database_label(active_db)}")
-        render_admin_editor_page(tables, paper_view)
+        render_admin_editor_page(active_db)
         return
 
     if page == "Add / Import Papers":
