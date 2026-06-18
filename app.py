@@ -25,6 +25,7 @@ import networkx as nx
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import requests
 import streamlit as st
 
@@ -3943,6 +3944,57 @@ def comparison_year_counts(combined: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def comparison_rate_columns(pivot: pd.DataFrame) -> pd.DataFrame:
+    """Add shared verification rate columns to a grouped status pivot."""
+    out = pivot.copy()
+    for status in STATUS_ORDER:
+        if status not in out.columns:
+            out[status] = 0
+    out["checked_papers"] = out["verified_true"] + out["verified_false"] + out["unsure"]
+    out["checked_decisive"] = out["verified_true"] + out["verified_false"]
+    out["checked_rate"] = out["checked_papers"] / out["papers"].replace(0, pd.NA)
+    out["false_positive_rate"] = out["verified_false"] / out["checked_decisive"].replace(0, pd.NA)
+    out["unsure_rate_checked"] = out["unsure"] / out["checked_papers"].replace(0, pd.NA)
+    for field in ["checked_rate", "false_positive_rate", "unsure_rate_checked"]:
+        out[field] = pd.to_numeric(out[field], errors="coerce").fillna(0.0)
+    return out
+
+
+def comparison_rates_over_time(combined: pd.DataFrame) -> pd.DataFrame:
+    """Return verification rates by database and year."""
+    work = combined.copy()
+    work["year"] = pd.to_numeric(work["year"], errors="coerce")
+    work = work.dropna(subset=["year"])
+    if work.empty:
+        return pd.DataFrame()
+
+    work["year"] = work["year"].astype(int)
+    work["normalized_status"] = work["verification_status"].apply(normalize_status)
+    paper_counts = (
+        work.groupby(["database", "year"])["paper_id"]
+        .nunique()
+        .reset_index(name="papers")
+    )
+    status_counts = (
+        work.groupby(["database", "year", "normalized_status"])["paper_id"]
+        .nunique()
+        .reset_index(name="status_papers")
+    )
+    pivot = (
+        status_counts.pivot_table(
+            index=["database", "year"],
+            columns="normalized_status",
+            values="status_papers",
+            fill_value=0,
+            aggfunc="sum",
+        )
+        .reset_index()
+        .rename_axis(None, axis=1)
+    )
+    pivot = paper_counts.merge(pivot, on=["database", "year"], how="left").fillna(0)
+    return comparison_rate_columns(pivot).sort_values(["year", "database"])
+
+
 def comparison_category_counts(
     combined: pd.DataFrame,
     field: str,
@@ -3972,6 +4024,56 @@ def comparison_category_counts(
         .index
     )
     return counts[counts["category"].isin(top_categories)].sort_values(["category", "database"])
+
+
+def comparison_rates_by_category(
+    combined: pd.DataFrame,
+    field: str,
+    *,
+    top_n: int = 20,
+) -> pd.DataFrame:
+    """Return verification rates by database and category."""
+    if field in {"authors", "instruments", "sources"}:
+        out = combined.explode(field).rename(columns={field: "category"})
+        out = out[out["category"].notna() & (out["category"] != "")]
+    else:
+        out = combined.rename(columns={field: "category"}).copy()
+        out["category"] = out["category"].fillna("").astype(str).replace("", "Unknown")
+    if out.empty:
+        return pd.DataFrame()
+
+    out["normalized_status"] = out["verification_status"].apply(normalize_status)
+    paper_counts = (
+        out.groupby(["database", "category"])["paper_id"]
+        .nunique()
+        .reset_index(name="papers")
+    )
+    status_counts = (
+        out.groupby(["database", "category", "normalized_status"])["paper_id"]
+        .nunique()
+        .reset_index(name="status_papers")
+    )
+    pivot = (
+        status_counts.pivot_table(
+            index=["database", "category"],
+            columns="normalized_status",
+            values="status_papers",
+            fill_value=0,
+            aggfunc="sum",
+        )
+        .reset_index()
+        .rename_axis(None, axis=1)
+    )
+    pivot = paper_counts.merge(pivot, on=["database", "category"], how="left").fillna(0)
+    rates = comparison_rate_columns(pivot)
+    top_categories = (
+        rates.groupby("category")["papers"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(top_n)
+        .index
+    )
+    return rates[rates["category"].isin(top_categories)].sort_values(["category", "database"])
 
 
 def comparison_overlap_combinations(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -4013,13 +4115,8 @@ def comparison_error_rate_by_category(
     top_n: int = 20,
 ) -> pd.DataFrame:
     """Return false-positive/error rates by database and category."""
-    if field in {"authors", "instruments", "sources"}:
-        out = combined.explode(field).rename(columns={field: "category"})
-        out = out[out["category"].notna() & (out["category"] != "")]
-    else:
-        out = combined.rename(columns={field: "category"}).copy()
-        out["category"] = out["category"].fillna("").astype(str).replace("", "Unknown")
-    if out.empty:
+    rates = comparison_rates_by_category(combined, field, top_n=top_n)
+    if rates.empty:
         return pd.DataFrame(
             columns=[
                 "database",
@@ -4030,52 +4127,7 @@ def comparison_error_rate_by_category(
                 "false_positive_rate",
             ]
         )
-
-    out["normalized_status"] = out["verification_status"].apply(normalize_status)
-    decisive = out[out["normalized_status"].isin(["verified_true", "verified_false"])].copy()
-    if decisive.empty:
-        return pd.DataFrame(
-            columns=[
-                "database",
-                "category",
-                "checked_decisive",
-                "verified_true",
-                "verified_false",
-                "false_positive_rate",
-            ]
-        )
-
-    grouped = (
-        decisive.groupby(["database", "category", "normalized_status"])["paper_id"]
-        .nunique()
-        .reset_index(name="papers")
-    )
-    pivot = (
-        grouped.pivot_table(
-            index=["database", "category"],
-            columns="normalized_status",
-            values="papers",
-            fill_value=0,
-            aggfunc="sum",
-        )
-        .reset_index()
-        .rename_axis(None, axis=1)
-    )
-    for status in ["verified_true", "verified_false"]:
-        if status not in pivot.columns:
-            pivot[status] = 0
-    pivot["checked_decisive"] = pivot["verified_true"] + pivot["verified_false"]
-    pivot["false_positive_rate"] = pivot["verified_false"] / pivot["checked_decisive"].replace(0, pd.NA)
-    pivot["false_positive_rate"] = pivot["false_positive_rate"].fillna(0.0)
-
-    top_categories = (
-        pivot.groupby("category")["checked_decisive"]
-        .sum()
-        .sort_values(ascending=False)
-        .head(top_n)
-        .index
-    )
-    return pivot[pivot["category"].isin(top_categories)].sort_values(
+    return rates.sort_values(
         ["false_positive_rate", "checked_decisive"],
         ascending=[False, False],
     )
@@ -4435,6 +4487,91 @@ def plot_database_overlap_venn_style(frames: dict[str, pd.DataFrame]) -> None:
         height=560,
         margin=dict(l=10, r=10, t=55, b=10),
     )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def plot_count_graph_with_rate_overlay(
+    counts: pd.DataFrame,
+    rates: pd.DataFrame,
+    *,
+    x_column: str,
+    count_mode: str,
+    rate_metric: str,
+    rate_label: str,
+    title: str,
+    shaded_rate: bool = False,
+) -> None:
+    """Plot paper counts with an optional verification-rate overlay on a second axis."""
+    if counts.empty:
+        st.info("No count data available for this graph.")
+        return
+
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    database_order = sorted(counts["database"].dropna().unique())
+    for database in database_order:
+        db_counts = counts[counts["database"] == database].sort_values(x_column)
+        if count_mode == "Line":
+            fig.add_trace(
+                go.Scatter(
+                    x=db_counts[x_column],
+                    y=db_counts["papers"],
+                    mode="lines+markers",
+                    name=f"{database} papers",
+                ),
+                secondary_y=False,
+            )
+        elif count_mode == "Area":
+            fig.add_trace(
+                go.Scatter(
+                    x=db_counts[x_column],
+                    y=db_counts["papers"],
+                    mode="lines",
+                    fill="tozeroy",
+                    name=f"{database} papers",
+                    opacity=0.55,
+                ),
+                secondary_y=False,
+            )
+        else:
+            fig.add_trace(
+                go.Bar(
+                    x=db_counts[x_column],
+                    y=db_counts["papers"],
+                    name=f"{database} papers",
+                    opacity=0.72,
+                ),
+                secondary_y=False,
+            )
+
+    if rate_metric:
+        if rates.empty:
+            st.info("No rate data available for the selected overlay.")
+        else:
+            for database in database_order:
+                db_rates = rates[rates["database"] == database].sort_values(x_column)
+                if db_rates.empty or rate_metric not in db_rates.columns:
+                    continue
+                fig.add_trace(
+                    go.Scatter(
+                        x=db_rates[x_column],
+                        y=db_rates[rate_metric],
+                        mode="lines+markers",
+                        fill="tozeroy" if shaded_rate else None,
+                        name=f"{database} {rate_label}",
+                        line=dict(width=3, dash="dot"),
+                    ),
+                    secondary_y=True,
+                )
+
+    fig.update_layout(
+        title=title,
+        barmode="stack" if count_mode == "Stacked bar" else "group",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=-0.32, xanchor="left", x=0),
+        margin=dict(l=10, r=10, t=55, b=120),
+    )
+    fig.update_yaxes(title_text="Papers", secondary_y=False)
+    fig.update_yaxes(title_text=rate_label or "Rate", tickformat=".0%", secondary_y=True, rangemode="tozero")
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -4832,19 +4969,52 @@ def render_compare_databases_page(active_db: str) -> None:
             "Instrument/component": "instruments",
             "Source": "sources",
         }
+        rate_overlay_options = {
+            "No rate overlay": "",
+            "False-positive rate": "false_positive_rate",
+            "Checked-paper rate": "checked_rate",
+            "Unsure rate": "unsure_rate_checked",
+        }
 
         if graph_type == "Papers over time":
             year_counts = comparison_year_counts(combined)
             if year_counts.empty:
                 st.info("No year data available for the selected databases.")
             else:
-                chart_mode = st.radio(
-                    "Chart style",
-                    ["Line", "Grouped bar", "Stacked bar", "Area"],
-                    horizontal=True,
-                    key="comparison_timeline_mode",
-                )
-                if chart_mode == "Line":
+                c1, c2, c3 = st.columns([1, 1, 1])
+                with c1:
+                    chart_mode = st.selectbox(
+                        "Chart style",
+                        ["Line", "Grouped bar", "Stacked bar", "Area"],
+                        key="comparison_timeline_mode",
+                    )
+                with c2:
+                    rate_overlay_label = st.selectbox(
+                        "Rate overlay",
+                        list(rate_overlay_options),
+                        key="comparison_timeline_rate_overlay",
+                    )
+                with c3:
+                    shaded_rate = st.checkbox(
+                        "Shade rate lines",
+                        value=False,
+                        key="comparison_timeline_shaded_rate",
+                        disabled=rate_overlay_label == "No rate overlay",
+                    )
+                rate_metric = rate_overlay_options[rate_overlay_label]
+                if rate_metric:
+                    timeline_rates = comparison_rates_over_time(combined)
+                    plot_count_graph_with_rate_overlay(
+                        year_counts,
+                        timeline_rates,
+                        x_column="year",
+                        count_mode=chart_mode,
+                        rate_metric=rate_metric,
+                        rate_label=rate_overlay_label,
+                        title=f"Papers per year with {rate_overlay_label.lower()} overlay",
+                        shaded_rate=shaded_rate,
+                    )
+                elif chart_mode == "Line":
                     fig = px.line(
                         year_counts,
                         x="year",
@@ -4853,6 +5023,7 @@ def render_compare_databases_page(active_db: str) -> None:
                         markers=True,
                         title="Papers per year by database",
                     )
+                    st.plotly_chart(fig, use_container_width=True)
                 elif chart_mode == "Area":
                     fig = px.area(
                         year_counts,
@@ -4861,6 +5032,7 @@ def render_compare_databases_page(active_db: str) -> None:
                         color="database",
                         title="Papers per year by database",
                     )
+                    st.plotly_chart(fig, use_container_width=True)
                 else:
                     fig = px.bar(
                         year_counts,
@@ -4870,10 +5042,10 @@ def render_compare_databases_page(active_db: str) -> None:
                         barmode="group" if chart_mode == "Grouped bar" else "stack",
                         title="Papers per year by database",
                     )
-                st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True)
 
         elif graph_type == "Category counts":
-            c1, c2, c3 = st.columns([2, 1, 1])
+            c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
             with c1:
                 category_label = st.selectbox(
                     "Compare by",
@@ -4894,6 +5066,12 @@ def render_compare_databases_page(active_db: str) -> None:
                     ["Grouped bar", "Stacked bar", "Line"],
                     key="comparison_category_chart_mode",
                 )
+            with c4:
+                rate_overlay_label = st.selectbox(
+                    "Rate overlay",
+                    list(rate_overlay_options),
+                    key="comparison_category_rate_overlay",
+                )
             category_counts = comparison_category_counts(
                 combined,
                 category_options[category_label],
@@ -4901,6 +5079,27 @@ def render_compare_databases_page(active_db: str) -> None:
             )
             if category_counts.empty:
                 st.info("No category data available for the selected databases.")
+            elif rate_overlay_options[rate_overlay_label]:
+                category_rates = comparison_rates_by_category(
+                    combined,
+                    category_options[category_label],
+                    top_n=int(top_n),
+                )
+                shaded_rate = st.checkbox(
+                    "Shade rate lines",
+                    value=False,
+                    key="comparison_category_shaded_rate",
+                )
+                plot_count_graph_with_rate_overlay(
+                    category_counts,
+                    category_rates,
+                    x_column="category",
+                    count_mode=chart_mode,
+                    rate_metric=rate_overlay_options[rate_overlay_label],
+                    rate_label=rate_overlay_label,
+                    title=f"Papers by {category_label.lower()} with {rate_overlay_label.lower()} overlay",
+                    shaded_rate=shaded_rate,
+                )
             elif chart_mode == "Line":
                 fig = px.line(
                     category_counts,
