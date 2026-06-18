@@ -3667,6 +3667,72 @@ def comparison_summary(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def comparison_status_label(statuses: Iterable[Any]) -> str:
+    """Collapse one or more verification statuses into one comparison label."""
+    normalized = {normalize_status(status) for status in statuses}
+    for status in ["verified_true", "verified_false", "unsure", "unchecked"]:
+        if status in normalized:
+            return status
+    return "unchecked"
+
+
+def comparison_verification_summary(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Return verification and error-rate metrics by database."""
+    rows = []
+    for database_id, df in frames.items():
+        statuses = df["verification_status"].apply(normalize_status) if not df.empty else pd.Series(dtype=str)
+        counts = statuses.value_counts()
+        verified_true = int(counts.get("verified_true", 0))
+        verified_false = int(counts.get("verified_false", 0))
+        unsure = int(counts.get("unsure", 0))
+        unchecked = int(counts.get("unchecked", 0))
+        checked = verified_true + verified_false + unsure
+        decisive = verified_true + verified_false
+        papers = len(df)
+        rows.append(
+            {
+                "database": database_label(database_id),
+                "database_id": database_id,
+                "papers": papers,
+                "checked_papers": checked,
+                "unchecked_papers": unchecked,
+                "verified_true": verified_true,
+                "verified_false": verified_false,
+                "unsure": unsure,
+                "checked_rate": checked / papers if papers else 0.0,
+                "false_positive_rate": verified_false / decisive if decisive else 0.0,
+                "unsure_rate_checked": unsure / checked if checked else 0.0,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def comparison_component_summary(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Return component/instrument coverage metrics by database."""
+    rows = []
+    for database_id, df in frames.items():
+        papers = len(df)
+        component_counts = df["instruments"].apply(len) if not df.empty else pd.Series(dtype=int)
+        unique_components = (
+            df["instruments"].explode().dropna().replace("", pd.NA).dropna().nunique()
+            if not df.empty
+            else 0
+        )
+        rows.append(
+            {
+                "database": database_label(database_id),
+                "database_id": database_id,
+                "papers": papers,
+                "papers_with_components": int((component_counts > 0).sum()) if papers else 0,
+                "papers_without_components": int((component_counts == 0).sum()) if papers else 0,
+                "component_links": int(component_counts.sum()) if papers else 0,
+                "unique_components": int(unique_components),
+                "avg_components_per_paper": float(component_counts.mean()) if papers else 0.0,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def comparison_overlap_matrix(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Build a pairwise DOI overlap matrix for selected databases."""
     doi_sets = {
@@ -3771,6 +3837,180 @@ def metadata_conflict_table(combined: pd.DataFrame) -> pd.DataFrame:
                 }
             )
     return pd.DataFrame(rows)
+
+
+def shared_doi_verification_difference_table(combined: pd.DataFrame) -> pd.DataFrame:
+    """Find shared DOI rows where verification status differs across databases."""
+    rows = []
+    with_doi = combined[combined["doi_key"] != ""].copy()
+    if with_doi.empty:
+        return pd.DataFrame()
+
+    for _, group in with_doi.groupby("doi_key"):
+        if group["database_id"].nunique() < 2:
+            continue
+        status_by_database = {
+            database_label(database_id): comparison_status_label(rows_for_database["verification_status"])
+            for database_id, rows_for_database in group.groupby("database_id")
+        }
+        if len(set(status_by_database.values())) <= 1:
+            continue
+        example = group.iloc[0]
+        rows.append(
+            {
+                "DOI": example["DOI"],
+                "title": example["title"],
+                "year": example["year"],
+                "status_by_database": "; ".join(
+                    f"{database}: {status}" for database, status in sorted(status_by_database.items())
+                ),
+                "databases": "; ".join(sorted(status_by_database)),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def shared_doi_component_difference_table(combined: pd.DataFrame) -> pd.DataFrame:
+    """Find shared DOI rows where component assignments differ across databases."""
+    rows = []
+    with_doi = combined[combined["doi_key"] != ""].copy()
+    if with_doi.empty:
+        return pd.DataFrame()
+
+    for _, group in with_doi.groupby("doi_key"):
+        if group["database_id"].nunique() < 2:
+            continue
+        components_by_database = {}
+        for database_id, rows_for_database in group.groupby("database_id"):
+            components = unique_preserve_order(
+                component
+                for values in rows_for_database["instruments"]
+                for component in values
+            )
+            components_by_database[database_label(database_id)] = sorted(components)
+        comparison_keys = {
+            tuple(comparison_text_key(component) for component in components)
+            for components in components_by_database.values()
+        }
+        if len(comparison_keys) <= 1:
+            continue
+        example = group.iloc[0]
+        rows.append(
+            {
+                "DOI": example["DOI"],
+                "title": example["title"],
+                "year": example["year"],
+                "components_by_database": "; ".join(
+                    f"{database}: {join_list(components) or 'None'}"
+                    for database, components in sorted(components_by_database.items())
+                ),
+                "databases": "; ".join(sorted(components_by_database)),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def comparison_false_negative_estimate(
+    frames: dict[str, pd.DataFrame],
+    reference_database_id: str,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Estimate missed verified-true DOI overlap against one reference database."""
+    reference = frames.get(reference_database_id, pd.DataFrame())
+    if reference.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    reference_true = reference[
+        (reference["doi_key"] != "")
+        & (reference["verification_status"].apply(normalize_status) == "verified_true")
+    ].copy()
+    if reference_true.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    reference_by_doi = {
+        doi_key: rows.iloc[0]
+        for doi_key, rows in reference_true.groupby("doi_key")
+    }
+    reference_true_dois = set(reference_by_doi)
+    summary_rows = []
+    candidate_rows = []
+
+    for database_id, target in frames.items():
+        if database_id == reference_database_id:
+            continue
+        target_with_doi = target[target["doi_key"] != ""].copy()
+        target_dois = set(target_with_doi["doi_key"])
+        shared_dois = reference_true_dois & target_dois
+        missing_dois = reference_true_dois - target_dois
+
+        status_counts = {"verified_true": 0, "verified_false": 0, "unsure": 0, "unchecked": 0}
+        for doi_key in shared_dois:
+            target_rows = target_with_doi[target_with_doi["doi_key"] == doi_key]
+            target_status = comparison_status_label(target_rows["verification_status"])
+            status_counts[target_status] = status_counts.get(target_status, 0) + 1
+            if target_status in {"verified_false", "unchecked"}:
+                reference_row = reference_by_doi[doi_key]
+                candidate_rows.append(
+                    {
+                        "reference_database": database_label(reference_database_id),
+                        "target_database": database_label(database_id),
+                        "DOI": reference_row["DOI"],
+                        "title": reference_row["title"],
+                        "year": reference_row["year"],
+                        "target_status": target_status,
+                        "reason": "Target marks the shared DOI as " + target_status,
+                        "reference_components": join_list(reference_row.get("instruments", [])),
+                        "target_components": join_list(
+                            unique_preserve_order(
+                                component
+                                for values in target_rows["instruments"]
+                                for component in values
+                            )
+                        ),
+                    }
+                )
+
+        for doi_key in missing_dois:
+            reference_row = reference_by_doi[doi_key]
+            candidate_rows.append(
+                {
+                    "reference_database": database_label(reference_database_id),
+                    "target_database": database_label(database_id),
+                    "DOI": reference_row["DOI"],
+                    "title": reference_row["title"],
+                    "year": reference_row["year"],
+                    "target_status": "not_in_database",
+                    "reason": "Reference verified true DOI is not present in target database",
+                    "reference_components": join_list(reference_row.get("instruments", [])),
+                    "target_components": "",
+                }
+            )
+
+        shared_potential_false_negatives = status_counts["verified_false"] + status_counts["unchecked"]
+        potential_false_negatives = len(missing_dois) + shared_potential_false_negatives
+        denominator = len(reference_true_dois)
+        summary_rows.append(
+            {
+                "reference_database": database_label(reference_database_id),
+                "target_database": database_label(database_id),
+                "reference_verified_true_dois": denominator,
+                "shared_reference_true_dois": len(shared_dois),
+                "missing_from_target": len(missing_dois),
+                "target_verified_true": status_counts["verified_true"],
+                "target_verified_false": status_counts["verified_false"],
+                "target_unsure": status_counts["unsure"],
+                "target_unchecked": status_counts["unchecked"],
+                "shared_potential_false_negatives": shared_potential_false_negatives,
+                "potential_false_negatives": potential_false_negatives,
+                "overlap_false_negative_rate": shared_potential_false_negatives / len(shared_dois)
+                if shared_dois
+                else 0.0,
+                "estimated_false_negative_rate": potential_false_negatives / denominator
+                if denominator
+                else 0.0,
+            }
+        )
+
+    return pd.DataFrame(summary_rows), pd.DataFrame(candidate_rows)
 
 
 def missing_metadata_comparison(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -4410,6 +4650,10 @@ def render_compare_databases_page(active_db: str) -> None:
     unique_only = doi_uniqueness_table(presence)
     conflicts = metadata_conflict_table(combined)
     summary = comparison_summary(frames)
+    verification_summary = comparison_verification_summary(frames)
+    verification_differences = shared_doi_verification_difference_table(combined)
+    component_summary = comparison_component_summary(frames)
+    component_differences = shared_doi_component_difference_table(combined)
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Databases", f"{len(selected_ids):,}")
@@ -4426,7 +4670,16 @@ def render_compare_databases_page(active_db: str) -> None:
         f"{int(combined['authors'].apply(bool).sum()) if not combined.empty else 0:,}",
     )
 
-    tabs = st.tabs(["Overview", "Graphs", "Overlap", "Metadata Quality"])
+    tabs = st.tabs(
+        [
+            "Overview",
+            "Graphs",
+            "Overlap",
+            "Verification",
+            "Components",
+            "Metadata Quality",
+        ]
+    )
 
     with tabs[0]:
         st.subheader("Database Summary")
@@ -4599,6 +4852,160 @@ def render_compare_databases_page(active_db: str) -> None:
             )
 
     with tabs[3]:
+        st.subheader("Verification and Error Rates")
+        if verification_summary.empty:
+            st.info("No verification data available for the selected databases.")
+        else:
+            verification_display = verification_summary.copy()
+            for field in ["checked_rate", "false_positive_rate", "unsure_rate_checked"]:
+                verification_display[field] = verification_display[field].map(lambda value: f"{value:.1%}")
+            st.dataframe(verification_display, use_container_width=True, hide_index=True)
+            download_dataframe_button(
+                verification_summary,
+                "Download verification comparison",
+                "database_verification_comparison.csv",
+            )
+
+            fig = px.bar(
+                verification_summary,
+                x="database",
+                y=["verified_true", "verified_false", "unsure", "unchecked_papers"],
+                title="Verification status counts by database",
+                barmode="stack",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            rate_fig = px.bar(
+                verification_summary,
+                x="database",
+                y="false_positive_rate",
+                title="False-positive rate among decisive checked papers",
+            )
+            rate_fig.update_yaxes(tickformat=".0%")
+            st.plotly_chart(rate_fig, use_container_width=True)
+
+        st.subheader("Overlap-Based False Negative Estimate")
+        verified_reference_options = [
+            database_id
+            for database_id, df in frames.items()
+            if not df.empty
+            and (
+                df["verification_status"].apply(normalize_status) == "verified_true"
+            ).any()
+        ]
+        if len(selected_ids) < 2:
+            st.info("Select at least two databases to estimate cross-database false negatives.")
+        elif not verified_reference_options:
+            st.info("No selected database has verified true DOI rows to use as a reference.")
+        else:
+            default_reference = active_db if active_db in verified_reference_options else verified_reference_options[0]
+            reference_database_id = st.selectbox(
+                "Reference database",
+                verified_reference_options,
+                index=verified_reference_options.index(default_reference),
+                format_func=database_label,
+                key="comparison_false_negative_reference",
+            )
+            st.caption(
+                "This estimates possible false negatives by asking whether DOIs marked verified true "
+                "in the reference database are missing, unchecked, or verified false in another selected database."
+            )
+            false_negative_summary, false_negative_candidates = comparison_false_negative_estimate(
+                frames,
+                reference_database_id,
+            )
+            if false_negative_summary.empty:
+                st.info("No false-negative estimate could be calculated for this reference.")
+            else:
+                estimate_display = false_negative_summary.copy()
+                for field in ["overlap_false_negative_rate", "estimated_false_negative_rate"]:
+                    estimate_display[field] = estimate_display[field].map(lambda value: f"{value:.1%}")
+                st.dataframe(estimate_display, use_container_width=True, hide_index=True)
+                download_dataframe_button(
+                    false_negative_summary,
+                    "Download false-negative estimate",
+                    "database_false_negative_estimate.csv",
+                )
+
+                fn_fig = px.bar(
+                    false_negative_summary,
+                    x="target_database",
+                    y=[
+                        "missing_from_target",
+                        "target_verified_false",
+                        "target_unchecked",
+                        "target_unsure",
+                    ],
+                    title="Reference verified-true DOI outcomes by target database",
+                    barmode="stack",
+                )
+                st.plotly_chart(fn_fig, use_container_width=True)
+
+            st.subheader("Potential False Negative DOI Candidates")
+            if false_negative_candidates.empty:
+                st.info("No potential false-negative DOI candidates found for this reference.")
+            else:
+                target_options = ["All"] + sorted(false_negative_candidates["target_database"].unique().tolist())
+                selected_target = st.selectbox(
+                    "Target database",
+                    target_options,
+                    key="comparison_false_negative_target",
+                )
+                candidate_display = false_negative_candidates
+                if selected_target != "All":
+                    candidate_display = false_negative_candidates[
+                        false_negative_candidates["target_database"] == selected_target
+                    ]
+                st.dataframe(candidate_display, use_container_width=True, hide_index=True)
+                download_dataframe_button(
+                    candidate_display,
+                    "Download potential false-negative candidates",
+                    "database_false_negative_candidates.csv",
+                )
+
+        st.subheader("Verification Differences on Shared DOIs")
+        if verification_differences.empty:
+            st.info("No verification differences found on shared DOIs.")
+        else:
+            st.dataframe(verification_differences, use_container_width=True, hide_index=True)
+            download_dataframe_button(
+                verification_differences,
+                "Download verification differences",
+                "database_verification_differences.csv",
+            )
+
+    with tabs[4]:
+        st.subheader("Component Coverage")
+        if component_summary.empty:
+            st.info("No component data available for the selected databases.")
+        else:
+            st.dataframe(component_summary, use_container_width=True, hide_index=True)
+            download_dataframe_button(
+                component_summary,
+                "Download component comparison",
+                "database_component_comparison.csv",
+            )
+            coverage_fig = px.bar(
+                component_summary,
+                x="database",
+                y=["papers_with_components", "papers_without_components"],
+                title="Papers with and without components by database",
+                barmode="stack",
+            )
+            st.plotly_chart(coverage_fig, use_container_width=True)
+
+        st.subheader("Component Differences on Shared DOIs")
+        if component_differences.empty:
+            st.info("No component differences found on shared DOIs.")
+        else:
+            st.dataframe(component_differences, use_container_width=True, hide_index=True)
+            download_dataframe_button(
+                component_differences,
+                "Download component differences",
+                "database_component_differences.csv",
+            )
+
+    with tabs[5]:
         st.subheader("Missing Metadata by Database")
         missing = missing_metadata_comparison(frames)
         if missing.empty:
