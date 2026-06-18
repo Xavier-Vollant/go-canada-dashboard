@@ -3724,7 +3724,7 @@ def apply_compare_preset_to_frames(
     frames: dict[str, pd.DataFrame],
     preset: dict[str, Any],
 ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
-    """Use a preset-selected Main set as the reference for all comparison frames."""
+    """Filter Main by the preset and leave all other databases unfiltered."""
     filters = compare_preset_filters(preset)
     main_source = frames.get(DEFAULT_DATABASE_ID)
     if main_source is None:
@@ -3737,26 +3737,14 @@ def apply_compare_preset_to_frames(
         apply_filters(main_source, filters),
     )
     main_reference.attrs["source_count"] = len(main_source)
-    reference_paper_ids = set(main_reference["paper_id"].astype(str))
-    reference_doi_keys = set(main_reference.loc[main_reference["doi_key"] != "", "doi_key"])
-    reference_title_keys = set(
-        main_reference.loc[
-            (main_reference["doi_key"] == "") & (main_reference["title_key"] != ""),
-            "title_key",
-        ]
-    )
+    main_paper_ids = set(main_reference["paper_id"].astype(str))
 
     filtered_frames = {}
     for database_id, df in frames.items():
         if database_id == DEFAULT_DATABASE_ID:
-            filtered = df[df["paper_id"].astype(str).isin(reference_paper_ids)].copy()
+            filtered = df[df["paper_id"].astype(str).isin(main_paper_ids)].copy()
         else:
-            match_mask = pd.Series(False, index=df.index)
-            if reference_doi_keys:
-                match_mask = match_mask | df["doi_key"].isin(reference_doi_keys)
-            if reference_title_keys:
-                match_mask = match_mask | df["title_key"].isin(reference_title_keys)
-            filtered = df[match_mask].copy()
+            filtered = df.copy()
         filtered_frames[database_id] = prepare_comparison_frame(database_id, filtered)
     return filtered_frames, main_reference
 
