@@ -313,7 +313,6 @@ PAPER_VIEW_COLUMNS = list(
 )
 
 STATUS_ORDER = ["verified_true", "verified_false", "unsure", "unchecked"]
-INHERITABLE_VERIFICATION_STATUSES = {"verified_true", "verified_false", "unsure"}
 FALSE_POSITIVE_PRIOR_WEIGHT = 20
 MISSING_METADATA_FIELDS = [
     "DOI",
@@ -1625,61 +1624,14 @@ def load_paper_view_base(
     return build_paper_view(load_database(database_id, data_dir))
 
 
-def inherit_main_verification_status(
-    paper_view: pd.DataFrame,
-    main_paper_view: pd.DataFrame,
-) -> pd.DataFrame:
-    """Fill unchecked non-main statuses from matching verified Main DOI records."""
-    if paper_view.empty or main_paper_view.empty:
-        return paper_view
-
-    out = paper_view.copy()
-    if "DOI" not in out.columns or "verification_status" not in out.columns:
-        return out
-    if (
-        "DOI" not in main_paper_view.columns
-        or "verification_status" not in main_paper_view.columns
-    ):
-        return out
-
-    main_statuses = main_paper_view[["DOI", "verification_status"]].copy()
-    main_statuses["doi_key"] = main_statuses["DOI"].apply(doi_match_key)
-    main_statuses["verification_status"] = main_statuses["verification_status"].apply(
-        normalize_status
-    )
-    main_statuses = main_statuses[
-        (main_statuses["doi_key"] != "")
-        & main_statuses["verification_status"].isin(INHERITABLE_VERIFICATION_STATUSES)
-    ].drop_duplicates("doi_key", keep="first")
-    if main_statuses.empty:
-        return out
-
-    inherited_status_by_doi = dict(
-        zip(main_statuses["doi_key"], main_statuses["verification_status"])
-    )
-    out_status = out["verification_status"].apply(normalize_status)
-    out_doi_key = out["DOI"].apply(doi_match_key)
-    inherited_status = out_doi_key.map(inherited_status_by_doi).fillna("")
-    should_inherit = out_status.eq("unchecked") & inherited_status.isin(
-        INHERITABLE_VERIFICATION_STATUSES
-    )
-    out.loc[should_inherit, "verification_status"] = inherited_status[should_inherit]
-    return out
-
-
 @st.cache_data(show_spinner="Loading dashboard data...")
 def load_paper_view(
     database_id: str = DEFAULT_DATABASE_ID,
     data_dir: str = "data",
 ) -> pd.DataFrame:
-    """Load the dashboard paper view, inheriting Main verification when needed."""
+    """Load the dashboard paper view for one isolated database."""
     database_id = normalize_database_id(database_id)
-    paper_view = load_paper_view_base(database_id, data_dir)
-    if database_id == DEFAULT_DATABASE_ID:
-        return paper_view
-
-    main_paper_view = load_paper_view_base(DEFAULT_DATABASE_ID, data_dir)
-    return inherit_main_verification_status(paper_view, main_paper_view)
+    return load_paper_view_base(database_id, data_dir)
 
 
 def load_verification_context(
