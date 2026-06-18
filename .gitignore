@@ -11,3 +11,6 @@ env/
 presets/*.json
 !presets/.gitkeep
 !presets/GO-Canada instrument year lists.json
+!presets/GO-Canada all instruments to 2026.json
+!presets/GO-Canada with full SuperDARN.json
+!presets/GO-Canada SuperDARN with Canadian PIs.json

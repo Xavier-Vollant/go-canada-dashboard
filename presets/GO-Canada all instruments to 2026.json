@@ -1,0 +1,219 @@
+{
+  "selected_instruments": [],
+  "selected_authors": [],
+  "selected_publishers": [],
+  "selected_journals": [],
+  "selected_paper_types": [],
+  "selected_verification_statuses": [],
+  "selected_go_canada_statuses": [],
+  "selected_sources": [],
+  "paper_search_query": "",
+  "combined_filter_result_mode": "Combined stored lists",
+  "combined_filter_groups": [
+    {
+      "name": "AuroraMAX strict GO-Canada",
+      "selected_instruments": [
+        "AuroraMAX"
+      ],
+      "year_range": [
+        2023,
+        2026
+      ],
+      "notes": "Use 2010-2026 only for a broader CSA-supported AuroraMAX set."
+    },
+    {
+      "name": "REGO",
+      "selected_instruments": [
+        "REGO"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "Single-beam riometers",
+      "selected_instruments": [
+        "Single Beam Riometer"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "SWAN HSR",
+      "selected_instruments": [
+        "SWAN HSR"
+      ],
+      "year_range": [
+        2022,
+        2026
+      ]
+    },
+    {
+      "name": "THEMIS ASI",
+      "selected_instruments": [
+        "THEMIS ASI"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "TREx",
+      "selected_instruments": [
+        "TREx",
+        "TREx RGB",
+        "TREx Spectrograph"
+      ],
+      "year_range": [
+        2020,
+        2026
+      ]
+    },
+    {
+      "name": "H+Storm / GO-Storm optical instruments",
+      "selected_instruments": [
+        "FESO",
+        "GO STORM MSP"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "GO-RIO / riometer network",
+      "selected_instruments": [
+        "GO_RIO"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "ICEBEAR",
+      "selected_instruments": [
+        "ICEBEAR"
+      ],
+      "year_range": [
+        2020,
+        2026
+      ]
+    },
+    {
+      "name": "CHAIN",
+      "selected_instruments": [
+        "CHAIN"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "SuperDARN Canada",
+      "selected_instruments": [
+        "SuperDARN_CA"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "ABOVE",
+      "selected_instruments": [
+        "ABOVE"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "AUTUMNX",
+      "selected_instruments": [
+        "AUTUMNX"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "CARISMA",
+      "selected_instruments": [
+        "CARISMA"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "DNT",
+      "selected_instruments": [
+        "DNT"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "AGO catch-all",
+      "selected_instruments": [
+        "AGO"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "E-CHAIM / A-CHAIM model products",
+      "selected_instruments": [
+        "ECHAIM",
+        "ACHAIM"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ],
+      "notes": "Only include when the paper actually uses the model, not just mentions CHAIN."
+    },
+    {
+      "name": "SEC/OTHER",
+      "selected_instruments": [
+        "SEC/OTHER"
+      ],
+      "year_range": [
+        1977,
+        2026
+      ],
+      "notes": "Include every paper assigned to SEC/OTHER."
+    }
+  ],
+  "excluded_paper_ids": [],
+  "excluded_instruments": [],
+  "excluded_authors": [],
+  "excluded_publishers": [],
+  "excluded_journals": [],
+  "excluded_paper_types": [],
+  "excluded_verification_statuses": [],
+  "excluded_go_canada_statuses": [],
+  "excluded_sources": [],
+  "excluded_missing_metadata_mode": "Do not exclude by missing metadata",
+  "excluded_missing_metadata_fields": [],
+  "metadata_completeness": "All papers",
+  "selected_missing_metadata_fields": [],
+  "year_range": [
+    1977,
+    2026
+  ],
+  "remove_known_false_positives": false
+}
