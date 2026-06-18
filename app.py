@@ -4979,6 +4979,86 @@ def render_open_paper_button(selected_paper: pd.Series) -> None:
         st.caption("No DOI or paper URL is available for this paper.")
 
 
+def cross_database_matches_for_paper(
+    selected_paper: pd.Series,
+    current_database_id: str,
+    data_dir: str = "data",
+) -> pd.DataFrame:
+    """Return matching papers in other databases by DOI."""
+    doi_key = doi_match_key(selected_paper.get("DOI"))
+    columns = [
+        "database",
+        "paper_id",
+        "title",
+        "verification_status",
+        "components",
+        "component_statuses",
+    ]
+    if not doi_key:
+        return pd.DataFrame(columns=columns)
+
+    rows: list[dict[str, Any]] = []
+    current_database_id = normalize_database_id(current_database_id)
+    for database in DATABASES:
+        database_id = normalize_database_id(database["id"])
+        if database_id == current_database_id:
+            continue
+
+        other_view = load_paper_view(database_id, data_dir)
+        if other_view.empty or "DOI" not in other_view.columns:
+            continue
+
+        matches = other_view[other_view["DOI"].apply(doi_match_key) == doi_key]
+        for _, match in matches.iterrows():
+            rows.append(
+                {
+                    "database": database_label(database_id),
+                    "paper_id": clean_text(match.get("paper_id")),
+                    "title": clean_text(match.get("title")),
+                    "verification_status": clean_text(match.get("verification_status"))
+                    or "unchecked",
+                    "components": join_list(match.get("instruments", []))
+                    or "No components",
+                    "component_statuses": join_list(match.get("instrument_statuses", []))
+                    or "No component statuses",
+                }
+            )
+
+    return pd.DataFrame(rows, columns=columns)
+
+
+def render_cross_database_verification_context(
+    selected_paper: pd.Series,
+    current_database_id: str,
+) -> None:
+    """Show where the selected paper appears in other databases."""
+    matches = cross_database_matches_for_paper(
+        selected_paper,
+        current_database_id,
+        str(DATA_DIR),
+    )
+
+    st.markdown("#### Other Database Matches")
+    if matches.empty:
+        st.caption("No matching DOI found in the other databases.")
+        return
+
+    st.dataframe(
+        matches.rename(
+            columns={
+                "database": "Database",
+                "paper_id": "Paper ID",
+                "title": "Title",
+                "verification_status": "Verification status",
+                "components": "Components",
+                "component_statuses": "Component statuses",
+            }
+        ),
+        hide_index=True,
+        use_container_width=True,
+    )
+
+
 def set_random_paper_selection(
     paper_view: pd.DataFrame,
     *,
@@ -5746,6 +5826,7 @@ def render_verification_editor(
     st.write(f"**Current paper status:** {clean_text(selected_paper['verification_status'])}")
     st.write(f"**GO Canada status:** {clean_text(selected_paper.get('go_canada_status')) or 'unknown'}")
     render_open_paper_button(selected_paper)
+    render_cross_database_verification_context(selected_paper, database_id)
     verification_tables = tables or load_verification_context(
         database_id,
         selected_paper_id,
