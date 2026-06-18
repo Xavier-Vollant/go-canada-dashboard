@@ -3644,7 +3644,11 @@ def load_comparison_frames(database_ids: list[str]) -> dict[str, pd.DataFrame]:
     return frames
 
 
-def compare_preset_filters(preset: dict[str, Any]) -> dict[str, Any]:
+def compare_preset_filters(
+    preset: dict[str, Any],
+    *,
+    drop_stored_paper_ids: bool = False,
+) -> dict[str, Any]:
     """Return dashboard preset filters normalized for cross-database comparison."""
     filters = {
         key: preset.get(key)
@@ -3697,7 +3701,7 @@ def compare_preset_filters(preset: dict[str, Any]) -> dict[str, Any]:
         sanitized = {
             key: value
             for key, value in group.items()
-            if key not in {"paper_ids", "paper_count"}
+            if not (drop_stored_paper_ids and key in {"paper_ids", "paper_count"})
         }
         if sanitized:
             sanitized_groups.append(sanitized)
@@ -3710,14 +3714,42 @@ def compare_preset_filters(preset: dict[str, Any]) -> dict[str, Any]:
 def apply_compare_preset_to_frames(
     frames: dict[str, pd.DataFrame],
     preset: dict[str, Any],
-) -> dict[str, pd.DataFrame]:
-    """Apply one shared dashboard preset independently to each comparison frame."""
+) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
+    """Use a preset-selected Main set as the reference for all comparison frames."""
     filters = compare_preset_filters(preset)
+    main_source = frames.get(DEFAULT_DATABASE_ID)
+    if main_source is None:
+        main_source = prepare_comparison_frame(
+            DEFAULT_DATABASE_ID,
+            load_paper_view(DEFAULT_DATABASE_ID, str(DATA_DIR)),
+        )
+    main_reference = prepare_comparison_frame(
+        DEFAULT_DATABASE_ID,
+        apply_filters(main_source, filters),
+    )
+    main_reference.attrs["source_count"] = len(main_source)
+    reference_paper_ids = set(main_reference["paper_id"].astype(str))
+    reference_doi_keys = set(main_reference.loc[main_reference["doi_key"] != "", "doi_key"])
+    reference_title_keys = set(
+        main_reference.loc[
+            (main_reference["doi_key"] == "") & (main_reference["title_key"] != ""),
+            "title_key",
+        ]
+    )
+
     filtered_frames = {}
     for database_id, df in frames.items():
-        filtered = apply_filters(df, filters)
+        if database_id == DEFAULT_DATABASE_ID:
+            filtered = df[df["paper_id"].astype(str).isin(reference_paper_ids)].copy()
+        else:
+            match_mask = pd.Series(False, index=df.index)
+            if reference_doi_keys:
+                match_mask = match_mask | df["doi_key"].isin(reference_doi_keys)
+            if reference_title_keys:
+                match_mask = match_mask | df["title_key"].isin(reference_title_keys)
+            filtered = df[match_mask].copy()
         filtered_frames[database_id] = prepare_comparison_frame(database_id, filtered)
-    return filtered_frames
+    return filtered_frames, main_reference
 
 
 def compare_preset_summary(preset: dict[str, Any]) -> str:
@@ -5110,18 +5142,38 @@ def render_compare_databases_page(active_db: str) -> None:
     )
     if selected_compare_preset != "No preset":
         preset = presets.get(selected_compare_preset, {})
-        st.caption(compare_preset_summary(preset))
-        frames = apply_compare_preset_to_frames(frames, preset)
+        st.caption(f"Main reference preset: {compare_preset_summary(preset)}")
+        frames, main_reference = apply_compare_preset_to_frames(frames, preset)
         preset_counts = pd.DataFrame(
             [
                 {
                     "database": database_label(database_id),
+                    "role": "Main preset reference"
+                    if database_id == DEFAULT_DATABASE_ID
+                    else "Matched to Main preset papers",
                     "before_preset": unfiltered_counts.get(database_id, 0),
                     "after_preset": len(frames.get(database_id, pd.DataFrame())),
                 }
                 for database_id in selected_ids
             ]
         )
+        if DEFAULT_DATABASE_ID not in selected_ids:
+            preset_counts = pd.concat(
+                [
+                    pd.DataFrame(
+                        [
+                            {
+                                "database": database_label(DEFAULT_DATABASE_ID),
+                                "role": "Main preset reference",
+                                "before_preset": int(main_reference.attrs.get("source_count", 0)),
+                                "after_preset": len(main_reference),
+                            }
+                        ]
+                    ),
+                    preset_counts,
+                ],
+                ignore_index=True,
+            )
         st.dataframe(preset_counts, use_container_width=True, hide_index=True)
     elif not preset_names:
         st.caption("No shared dashboard presets are available yet.")
