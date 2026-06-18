@@ -3930,109 +3930,6 @@ def shared_doi_component_difference_table(combined: pd.DataFrame) -> pd.DataFram
     return pd.DataFrame(rows)
 
 
-def comparison_false_negative_estimate(
-    frames: dict[str, pd.DataFrame],
-    reference_database_id: str,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Estimate missed verified-true DOI overlap against one reference database."""
-    reference = frames.get(reference_database_id, pd.DataFrame())
-    if reference.empty:
-        return pd.DataFrame(), pd.DataFrame()
-
-    reference_true = reference[
-        (reference["doi_key"] != "")
-        & (reference["verification_status"].apply(normalize_status) == "verified_true")
-    ].copy()
-    if reference_true.empty:
-        return pd.DataFrame(), pd.DataFrame()
-
-    reference_by_doi = {
-        doi_key: rows.iloc[0]
-        for doi_key, rows in reference_true.groupby("doi_key")
-    }
-    reference_true_dois = set(reference_by_doi)
-    summary_rows = []
-    candidate_rows = []
-
-    for database_id, target in frames.items():
-        if database_id == reference_database_id:
-            continue
-        target_with_doi = target[target["doi_key"] != ""].copy()
-        target_dois = set(target_with_doi["doi_key"])
-        shared_dois = reference_true_dois & target_dois
-        missing_dois = reference_true_dois - target_dois
-
-        status_counts = {"verified_true": 0, "verified_false": 0, "unsure": 0, "unchecked": 0}
-        for doi_key in shared_dois:
-            target_rows = target_with_doi[target_with_doi["doi_key"] == doi_key]
-            target_status = comparison_status_label(target_rows["verification_status"])
-            status_counts[target_status] = status_counts.get(target_status, 0) + 1
-            if target_status in {"verified_false", "unchecked"}:
-                reference_row = reference_by_doi[doi_key]
-                candidate_rows.append(
-                    {
-                        "reference_database": database_label(reference_database_id),
-                        "target_database": database_label(database_id),
-                        "DOI": reference_row["DOI"],
-                        "title": reference_row["title"],
-                        "year": reference_row["year"],
-                        "target_status": target_status,
-                        "reason": "Target marks the shared DOI as " + target_status,
-                        "reference_components": join_list(reference_row.get("instruments", [])),
-                        "target_components": join_list(
-                            unique_preserve_order(
-                                component
-                                for values in target_rows["instruments"]
-                                for component in values
-                            )
-                        ),
-                    }
-                )
-
-        for doi_key in missing_dois:
-            reference_row = reference_by_doi[doi_key]
-            candidate_rows.append(
-                {
-                    "reference_database": database_label(reference_database_id),
-                    "target_database": database_label(database_id),
-                    "DOI": reference_row["DOI"],
-                    "title": reference_row["title"],
-                    "year": reference_row["year"],
-                    "target_status": "not_in_database",
-                    "reason": "Reference verified true DOI is not present in target database",
-                    "reference_components": join_list(reference_row.get("instruments", [])),
-                    "target_components": "",
-                }
-            )
-
-        shared_potential_false_negatives = status_counts["verified_false"] + status_counts["unchecked"]
-        potential_false_negatives = len(missing_dois) + shared_potential_false_negatives
-        denominator = len(reference_true_dois)
-        summary_rows.append(
-            {
-                "reference_database": database_label(reference_database_id),
-                "target_database": database_label(database_id),
-                "reference_verified_true_dois": denominator,
-                "shared_reference_true_dois": len(shared_dois),
-                "missing_from_target": len(missing_dois),
-                "target_verified_true": status_counts["verified_true"],
-                "target_verified_false": status_counts["verified_false"],
-                "target_unsure": status_counts["unsure"],
-                "target_unchecked": status_counts["unchecked"],
-                "shared_potential_false_negatives": shared_potential_false_negatives,
-                "potential_false_negatives": potential_false_negatives,
-                "overlap_false_negative_rate": shared_potential_false_negatives / len(shared_dois)
-                if shared_dois
-                else 0.0,
-                "estimated_false_negative_rate": potential_false_negatives / denominator
-                if denominator
-                else 0.0,
-            }
-        )
-
-    return pd.DataFrame(summary_rows), pd.DataFrame(candidate_rows)
-
-
 def missing_metadata_comparison(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Return missing metadata counts by database and field."""
     rows = []
@@ -4095,6 +3992,113 @@ def comparison_category_counts(
         .index
     )
     return counts[counts["category"].isin(top_categories)].sort_values(["category", "database"])
+
+
+def comparison_overlap_combinations(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Return exact DOI overlap combinations across selected databases."""
+    doi_databases: dict[str, set[str]] = {}
+    doi_examples: dict[str, str] = {}
+    for database_id, df in frames.items():
+        with_doi = df[df["doi_key"] != ""]
+        for row in with_doi.itertuples(index=False):
+            doi_databases.setdefault(row.doi_key, set()).add(database_label(database_id))
+            doi_examples.setdefault(row.doi_key, row.DOI)
+
+    rows = []
+    for doi_key, databases in doi_databases.items():
+        labels = sorted(databases)
+        rows.append(
+            {
+                "DOI": doi_examples.get(doi_key, doi_key),
+                "database_count": len(labels),
+                "combination": " + ".join(labels),
+            }
+        )
+    if not rows:
+        return pd.DataFrame(columns=["combination", "database_count", "unique_dois"])
+
+    return (
+        pd.DataFrame(rows)
+        .groupby(["combination", "database_count"])["DOI"]
+        .nunique()
+        .reset_index(name="unique_dois")
+        .sort_values(["database_count", "unique_dois", "combination"], ascending=[False, False, True])
+    )
+
+
+def comparison_error_rate_by_category(
+    combined: pd.DataFrame,
+    field: str,
+    *,
+    top_n: int = 20,
+) -> pd.DataFrame:
+    """Return false-positive/error rates by database and category."""
+    if field in {"authors", "instruments", "sources"}:
+        out = combined.explode(field).rename(columns={field: "category"})
+        out = out[out["category"].notna() & (out["category"] != "")]
+    else:
+        out = combined.rename(columns={field: "category"}).copy()
+        out["category"] = out["category"].fillna("").astype(str).replace("", "Unknown")
+    if out.empty:
+        return pd.DataFrame(
+            columns=[
+                "database",
+                "category",
+                "checked_decisive",
+                "verified_true",
+                "verified_false",
+                "false_positive_rate",
+            ]
+        )
+
+    out["normalized_status"] = out["verification_status"].apply(normalize_status)
+    decisive = out[out["normalized_status"].isin(["verified_true", "verified_false"])].copy()
+    if decisive.empty:
+        return pd.DataFrame(
+            columns=[
+                "database",
+                "category",
+                "checked_decisive",
+                "verified_true",
+                "verified_false",
+                "false_positive_rate",
+            ]
+        )
+
+    grouped = (
+        decisive.groupby(["database", "category", "normalized_status"])["paper_id"]
+        .nunique()
+        .reset_index(name="papers")
+    )
+    pivot = (
+        grouped.pivot_table(
+            index=["database", "category"],
+            columns="normalized_status",
+            values="papers",
+            fill_value=0,
+            aggfunc="sum",
+        )
+        .reset_index()
+        .rename_axis(None, axis=1)
+    )
+    for status in ["verified_true", "verified_false"]:
+        if status not in pivot.columns:
+            pivot[status] = 0
+    pivot["checked_decisive"] = pivot["verified_true"] + pivot["verified_false"]
+    pivot["false_positive_rate"] = pivot["verified_false"] / pivot["checked_decisive"].replace(0, pd.NA)
+    pivot["false_positive_rate"] = pivot["false_positive_rate"].fillna(0.0)
+
+    top_categories = (
+        pivot.groupby("category")["checked_decisive"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(top_n)
+        .index
+    )
+    return pivot[pivot["category"].isin(top_categories)].sort_values(
+        ["false_positive_rate", "checked_decisive"],
+        ascending=[False, False],
+    )
 
 
 def download_dataframe_button(df: pd.DataFrame, label: str, file_name: str) -> None:
@@ -4989,6 +4993,98 @@ def plot_timeline_by_variable(
     st.plotly_chart(fig, use_container_width=True)
 
 
+def plot_database_overlap_venn_style(frames: dict[str, pd.DataFrame]) -> None:
+    """Plot a Venn-style DOI overlap summary for two or three databases."""
+    database_ids = list(frames)
+    if len(database_ids) not in {2, 3}:
+        st.info("The Venn-style overlap graph works with exactly two or three selected databases.")
+        return
+
+    doi_sets = {
+        database_id: set(df.loc[df["doi_key"] != "", "doi_key"])
+        for database_id, df in frames.items()
+    }
+    if not any(doi_sets.values()):
+        st.info("No DOI data available for the selected databases.")
+        return
+
+    if len(database_ids) == 2:
+        left_id, right_id = database_ids
+        left = doi_sets[left_id]
+        right = doi_sets[right_id]
+        regions = [
+            (database_label(left_id), len(left - right), 0.22, 0.55),
+            (f"{database_label(left_id)} + {database_label(right_id)}", len(left & right), 0.50, 0.55),
+            (database_label(right_id), len(right - left), 0.78, 0.55),
+        ]
+    else:
+        first_id, second_id, third_id = database_ids
+        first = doi_sets[first_id]
+        second = doi_sets[second_id]
+        third = doi_sets[third_id]
+        regions = [
+            (database_label(first_id), len(first - second - third), 0.20, 0.70),
+            (database_label(second_id), len(second - first - third), 0.80, 0.70),
+            (database_label(third_id), len(third - first - second), 0.50, 0.22),
+            (
+                f"{database_label(first_id)} + {database_label(second_id)}",
+                len((first & second) - third),
+                0.50,
+                0.78,
+            ),
+            (
+                f"{database_label(first_id)} + {database_label(third_id)}",
+                len((first & third) - second),
+                0.33,
+                0.42,
+            ),
+            (
+                f"{database_label(second_id)} + {database_label(third_id)}",
+                len((second & third) - first),
+                0.67,
+                0.42,
+            ),
+            (
+                "All selected databases",
+                len(first & second & third),
+                0.50,
+                0.52,
+            ),
+        ]
+
+    max_count = max(count for _, count, _, _ in regions) or 1
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=[x for _, _, x, _ in regions],
+            y=[y for _, _, _, y in regions],
+            mode="markers+text",
+            text=[f"{label}<br>{count:,}" for label, count, _, _ in regions],
+            textposition="middle center",
+            hovertext=[f"{label}<br>{count:,} unique DOIs" for label, count, _, _ in regions],
+            hoverinfo="text",
+            marker=dict(
+                size=[28 + (count / max_count) * 70 for _, count, _, _ in regions],
+                color=[count for _, count, _, _ in regions],
+                colorscale="Viridis",
+                opacity=0.72,
+                line=dict(color="#2f343d", width=1),
+                showscale=True,
+                colorbar=dict(title="DOIs"),
+            ),
+            showlegend=False,
+        )
+    )
+    fig.update_layout(
+        title="Venn-style DOI overlap regions",
+        xaxis=dict(visible=False, range=[0, 1]),
+        yaxis=dict(visible=False, range=[0, 1]),
+        height=560,
+        margin=dict(l=10, r=10, t=55, b=10),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
 def plot_preset_graph(
     df: pd.DataFrame,
     preset: str,
@@ -5459,85 +5555,364 @@ def render_compare_databases_page(active_db: str) -> None:
             st.plotly_chart(fig, use_container_width=True)
 
     with tabs[1]:
-        st.subheader("Timeline")
-        year_counts = comparison_year_counts(combined)
-        if year_counts.empty:
-            st.info("No year data available for the selected databases.")
-        else:
-            timeline_mode = st.radio(
-                "Timeline chart",
-                ["Line", "Stacked bar"],
-                horizontal=True,
-                key="comparison_timeline_mode",
+        st.subheader("Comparison Graph Builder")
+        graph_type = st.selectbox(
+            "Graph type",
+            [
+                "Papers over time",
+                "Category counts",
+                "Verification status counts",
+                "Error rates by database",
+                "Error rates by category",
+                "Pairwise DOI overlap heatmap",
+                "Venn-style DOI overlap",
+                "Exact DOI overlap combinations",
+                "Component coverage",
+                "Metadata missingness",
+            ],
+            key="comparison_graph_type",
+        )
+        category_options = {
+            "Paper type": "paper_type",
+            "GO Canada status": "go_canada_status",
+            "Verification status": "verification_status",
+            "Publisher": "publisher",
+            "Journal": "journal",
+            "Author": "authors",
+            "Instrument/component": "instruments",
+            "Source": "sources",
+        }
+
+        if graph_type == "Papers over time":
+            year_counts = comparison_year_counts(combined)
+            if year_counts.empty:
+                st.info("No year data available for the selected databases.")
+            else:
+                chart_mode = st.radio(
+                    "Chart style",
+                    ["Line", "Grouped bar", "Stacked bar", "Area"],
+                    horizontal=True,
+                    key="comparison_timeline_mode",
+                )
+                if chart_mode == "Line":
+                    fig = px.line(
+                        year_counts,
+                        x="year",
+                        y="papers",
+                        color="database",
+                        markers=True,
+                        title="Papers per year by database",
+                    )
+                elif chart_mode == "Area":
+                    fig = px.area(
+                        year_counts,
+                        x="year",
+                        y="papers",
+                        color="database",
+                        title="Papers per year by database",
+                    )
+                else:
+                    fig = px.bar(
+                        year_counts,
+                        x="year",
+                        y="papers",
+                        color="database",
+                        barmode="group" if chart_mode == "Grouped bar" else "stack",
+                        title="Papers per year by database",
+                    )
+                st.plotly_chart(fig, use_container_width=True)
+
+        elif graph_type == "Category counts":
+            c1, c2, c3 = st.columns([2, 1, 1])
+            with c1:
+                category_label = st.selectbox(
+                    "Compare by",
+                    list(category_options),
+                    key="comparison_category_field",
+                )
+            with c2:
+                top_n = st.number_input(
+                    "Top N",
+                    min_value=3,
+                    max_value=100,
+                    value=20,
+                    key="comparison_top_n",
+                )
+            with c3:
+                chart_mode = st.selectbox(
+                    "Chart style",
+                    ["Grouped bar", "Stacked bar", "Line"],
+                    key="comparison_category_chart_mode",
+                )
+            category_counts = comparison_category_counts(
+                combined,
+                category_options[category_label],
+                top_n=int(top_n),
             )
-            if timeline_mode == "Line":
+            if category_counts.empty:
+                st.info("No category data available for the selected databases.")
+            elif chart_mode == "Line":
                 fig = px.line(
-                    year_counts,
-                    x="year",
+                    category_counts,
+                    x="category",
                     y="papers",
                     color="database",
                     markers=True,
-                    title="Papers per year by database",
+                    title="Papers by category and database",
                 )
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 fig = px.bar(
-                    year_counts,
-                    x="year",
+                    category_counts,
+                    x="category",
                     y="papers",
                     color="database",
-                    title="Papers per year by database",
+                    barmode="group" if chart_mode == "Grouped bar" else "stack",
+                    title="Papers by category and database",
                 )
-            st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True)
+            if not category_counts.empty:
+                st.dataframe(category_counts, use_container_width=True, hide_index=True)
 
-        st.subheader("Category Comparison")
-        c1, c2 = st.columns([2, 1])
-        with c1:
-            category_field = st.selectbox(
-                "Compare by",
-                [
-                    "paper_type",
-                    "go_canada_status",
-                    "verification_status",
-                    "publisher",
-                    "journal",
-                    "authors",
-                    "instruments",
-                    "sources",
-                ],
-                format_func=lambda value: {
-                    "paper_type": "Paper type",
-                    "go_canada_status": "GO Canada status",
-                    "verification_status": "Verification status",
-                    "publisher": "Publisher",
-                    "journal": "Journal",
-                    "authors": "Author",
-                    "instruments": "Instrument/component",
-                    "sources": "Source",
-                }.get(value, value),
-                key="comparison_category_field",
+        elif graph_type == "Verification status counts":
+            if verification_summary.empty:
+                st.info("No verification data available for the selected databases.")
+            else:
+                status_counts = verification_summary.melt(
+                    id_vars=["database"],
+                    value_vars=["verified_true", "verified_false", "unsure", "unchecked_papers"],
+                    var_name="status",
+                    value_name="papers",
+                )
+                status_counts["status"] = status_counts["status"].replace(
+                    {"unchecked_papers": "unchecked"}
+                )
+                chart_mode = st.radio(
+                    "Chart style",
+                    ["Stacked bar", "Grouped bar", "Donut by database"],
+                    horizontal=True,
+                    key="comparison_verification_chart_mode",
+                )
+                if chart_mode == "Donut by database":
+                    selected_database = st.selectbox(
+                        "Database",
+                        sorted(status_counts["database"].unique()),
+                        key="comparison_verification_donut_database",
+                    )
+                    donut_data = status_counts[status_counts["database"] == selected_database]
+                    fig = px.pie(
+                        donut_data,
+                        names="status",
+                        values="papers",
+                        hole=0.45,
+                        title=f"Verification status mix: {selected_database}",
+                    )
+                else:
+                    fig = px.bar(
+                        status_counts,
+                        x="database",
+                        y="papers",
+                        color="status",
+                        barmode="stack" if chart_mode == "Stacked bar" else "group",
+                        title="Verification status counts by database",
+                    )
+                st.plotly_chart(fig, use_container_width=True)
+                st.dataframe(status_counts, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Error rates by database":
+            if verification_summary.empty:
+                st.info("No verification data available for the selected databases.")
+            else:
+                rate_options = {
+                    "False-positive rate among decisive checked papers": "false_positive_rate",
+                    "Checked-paper rate": "checked_rate",
+                    "Unsure rate among checked papers": "unsure_rate_checked",
+                }
+                rate_label = st.selectbox(
+                    "Rate",
+                    list(rate_options),
+                    key="comparison_error_rate_metric",
+                )
+                metric = rate_options[rate_label]
+                fig = px.bar(
+                    verification_summary,
+                    x="database",
+                    y=metric,
+                    hover_data=["papers", "checked_papers", "verified_true", "verified_false", "unsure"],
+                    title=rate_label,
+                )
+                fig.update_yaxes(tickformat=".0%")
+                st.plotly_chart(fig, use_container_width=True)
+                rate_display = verification_summary[
+                    ["database", "papers", "checked_papers", "verified_true", "verified_false", "unsure", metric]
+                ].copy()
+                rate_display[metric] = rate_display[metric].map(lambda value: f"{value:.1%}")
+                st.dataframe(rate_display, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Error rates by category":
+            c1, c2, c3 = st.columns([2, 1, 1])
+            with c1:
+                category_label = st.selectbox(
+                    "Group by",
+                    list(category_options),
+                    index=list(category_options).index("Instrument/component"),
+                    key="comparison_error_category_field",
+                )
+            with c2:
+                top_n = st.number_input(
+                    "Top N",
+                    min_value=3,
+                    max_value=100,
+                    value=20,
+                    key="comparison_error_top_n",
+                )
+            with c3:
+                min_checked = st.number_input(
+                    "Min decisive checked",
+                    min_value=1,
+                    max_value=500,
+                    value=1,
+                    key="comparison_error_min_checked",
+                )
+            error_rates = comparison_error_rate_by_category(
+                combined,
+                category_options[category_label],
+                top_n=int(top_n),
             )
-        with c2:
-            top_n = st.number_input(
-                "Top N",
-                min_value=3,
-                max_value=100,
-                value=20,
-                key="comparison_top_n",
-            )
-        category_counts = comparison_category_counts(combined, category_field, top_n=int(top_n))
-        if category_counts.empty:
-            st.info("No category data available for the selected databases.")
-        else:
-            fig = px.bar(
-                category_counts,
-                x="category",
-                y="papers",
-                color="database",
-                barmode="group",
-                title="Papers by category and database",
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            st.dataframe(category_counts, use_container_width=True, hide_index=True)
+            error_rates = error_rates[error_rates["checked_decisive"] >= int(min_checked)]
+            if error_rates.empty:
+                st.info("No decisive checked verification data available for this graph.")
+            else:
+                fig = px.bar(
+                    error_rates,
+                    x="category",
+                    y="false_positive_rate",
+                    color="database",
+                    barmode="group",
+                    hover_data=["checked_decisive", "verified_true", "verified_false"],
+                    title=f"False-positive rate by {category_label.lower()}",
+                )
+                fig.update_yaxes(tickformat=".0%")
+                st.plotly_chart(fig, use_container_width=True)
+                error_display = error_rates.copy()
+                error_display["false_positive_rate"] = error_display["false_positive_rate"].map(
+                    lambda value: f"{value:.1%}"
+                )
+                st.dataframe(error_display, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Pairwise DOI overlap heatmap":
+            overlap = comparison_overlap_matrix(frames)
+            if overlap.empty or len(overlap) <= 1:
+                st.info("Select at least two databases with DOI data for an overlap heatmap.")
+            else:
+                heatmap_data = overlap.set_index("database")
+                fig = px.imshow(
+                    heatmap_data,
+                    text_auto=True,
+                    aspect="auto",
+                    title="Shared DOI count by database pair",
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                st.dataframe(overlap, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Venn-style DOI overlap":
+            plot_database_overlap_venn_style(frames)
+
+        elif graph_type == "Exact DOI overlap combinations":
+            overlap_combinations = comparison_overlap_combinations(frames)
+            if overlap_combinations.empty:
+                st.info("No DOI overlap data available for the selected databases.")
+            else:
+                top_n = st.number_input(
+                    "Top N combinations",
+                    min_value=3,
+                    max_value=100,
+                    value=20,
+                    key="comparison_overlap_combination_top_n",
+                )
+                plot_data = overlap_combinations.head(int(top_n))
+                fig = px.bar(
+                    plot_data,
+                    x="unique_dois",
+                    y="combination",
+                    color="database_count",
+                    orientation="h",
+                    title="Exact DOI overlap combinations",
+                    labels={"unique_dois": "Unique DOIs", "combination": "Database combination"},
+                )
+                fig.update_layout(yaxis=dict(autorange="reversed"), height=max(420, 30 * len(plot_data)))
+                st.plotly_chart(fig, use_container_width=True)
+                st.dataframe(overlap_combinations, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Component coverage":
+            if component_summary.empty:
+                st.info("No component data available for the selected databases.")
+            else:
+                chart_mode = st.radio(
+                    "Chart style",
+                    ["Coverage counts", "Coverage rate", "Component links"],
+                    horizontal=True,
+                    key="comparison_component_chart_mode",
+                )
+                plot_data = component_summary.copy()
+                if chart_mode == "Coverage rate":
+                    plot_data["component_coverage_rate"] = (
+                        plot_data["papers_with_components"] / plot_data["papers"].replace(0, pd.NA)
+                    ).fillna(0.0)
+                    fig = px.bar(
+                        plot_data,
+                        x="database",
+                        y="component_coverage_rate",
+                        title="Component coverage rate by database",
+                    )
+                    fig.update_yaxes(tickformat=".0%")
+                elif chart_mode == "Component links":
+                    fig = px.bar(
+                        plot_data,
+                        x="database",
+                        y=["component_links", "unique_components"],
+                        barmode="group",
+                        title="Component links and unique components by database",
+                    )
+                else:
+                    fig = px.bar(
+                        plot_data,
+                        x="database",
+                        y=["papers_with_components", "papers_without_components"],
+                        barmode="stack",
+                        title="Papers with and without components by database",
+                    )
+                st.plotly_chart(fig, use_container_width=True)
+                st.dataframe(component_summary, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Metadata missingness":
+            missing = missing_metadata_comparison(frames)
+            if missing.empty:
+                st.info("No metadata quality data available.")
+            else:
+                metric = st.radio(
+                    "Metric",
+                    ["Missing papers", "Missing percent"],
+                    horizontal=True,
+                    key="comparison_missingness_metric",
+                )
+                y_column = "missing_percent" if metric == "Missing percent" else "missing_papers"
+                fig = px.bar(
+                    missing,
+                    x="field",
+                    y=y_column,
+                    color="database",
+                    barmode="group",
+                    title=f"{metric} by metadata field and database",
+                )
+                if y_column == "missing_percent":
+                    fig.update_yaxes(tickformat=".0%")
+                st.plotly_chart(fig, use_container_width=True)
+                missing_display = missing.copy()
+                missing_display["missing_percent"] = missing_display["missing_percent"].map(
+                    lambda value: f"{value:.1%}"
+                )
+                st.dataframe(missing_display, use_container_width=True, hide_index=True)
 
     with tabs[2]:
         st.subheader("Shared DOIs")
@@ -5633,85 +6008,6 @@ def render_compare_databases_page(active_db: str) -> None:
             )
             rate_fig.update_yaxes(tickformat=".0%")
             st.plotly_chart(rate_fig, use_container_width=True)
-
-        st.subheader("Overlap-Based False Negative Estimate")
-        verified_reference_options = [
-            database_id
-            for database_id, df in frames.items()
-            if not df.empty
-            and (
-                df["verification_status"].apply(normalize_status) == "verified_true"
-            ).any()
-        ]
-        if len(selected_ids) < 2:
-            st.info("Select at least two databases to estimate cross-database false negatives.")
-        elif not verified_reference_options:
-            st.info("No selected database has verified true DOI rows to use as a reference.")
-        else:
-            default_reference = active_db if active_db in verified_reference_options else verified_reference_options[0]
-            reference_database_id = st.selectbox(
-                "Reference database",
-                verified_reference_options,
-                index=verified_reference_options.index(default_reference),
-                format_func=database_label,
-                key="comparison_false_negative_reference",
-            )
-            st.caption(
-                "This estimates possible false negatives by asking whether DOIs marked verified true "
-                "in the reference database are missing, unchecked, or verified false in another selected database."
-            )
-            false_negative_summary, false_negative_candidates = comparison_false_negative_estimate(
-                frames,
-                reference_database_id,
-            )
-            if false_negative_summary.empty:
-                st.info("No false-negative estimate could be calculated for this reference.")
-            else:
-                estimate_display = false_negative_summary.copy()
-                for field in ["overlap_false_negative_rate", "estimated_false_negative_rate"]:
-                    estimate_display[field] = estimate_display[field].map(lambda value: f"{value:.1%}")
-                st.dataframe(estimate_display, use_container_width=True, hide_index=True)
-                download_dataframe_button(
-                    false_negative_summary,
-                    "Download false-negative estimate",
-                    "database_false_negative_estimate.csv",
-                )
-
-                fn_fig = px.bar(
-                    false_negative_summary,
-                    x="target_database",
-                    y=[
-                        "missing_from_target",
-                        "target_verified_false",
-                        "target_unchecked",
-                        "target_unsure",
-                    ],
-                    title="Reference verified-true DOI outcomes by target database",
-                    barmode="stack",
-                )
-                st.plotly_chart(fn_fig, use_container_width=True)
-
-            st.subheader("Potential False Negative DOI Candidates")
-            if false_negative_candidates.empty:
-                st.info("No potential false-negative DOI candidates found for this reference.")
-            else:
-                target_options = ["All"] + sorted(false_negative_candidates["target_database"].unique().tolist())
-                selected_target = st.selectbox(
-                    "Target database",
-                    target_options,
-                    key="comparison_false_negative_target",
-                )
-                candidate_display = false_negative_candidates
-                if selected_target != "All":
-                    candidate_display = false_negative_candidates[
-                        false_negative_candidates["target_database"] == selected_target
-                    ]
-                st.dataframe(candidate_display, use_container_width=True, hide_index=True)
-                download_dataframe_button(
-                    candidate_display,
-                    "Download potential false-negative candidates",
-                    "database_false_negative_candidates.csv",
-                )
 
         st.subheader("Verification Differences on Shared DOIs")
         if verification_differences.empty:
