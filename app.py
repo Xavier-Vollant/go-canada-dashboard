@@ -3266,6 +3266,15 @@ def apply_filters(
             )
         else:
             out = df.iloc[0:0].copy()
+        # Apply top-level sidebar filters as an additional AND pass on the combined result
+        # so that filters set after loading a preset (instrument, author, year, search, etc.)
+        # still narrow the results. Without this, positive filters are silently bypassed
+        # in combined stored lists mode.
+        out = apply_positive_filter_set(
+            out,
+            filters,
+            apply_verification_filter=apply_verification_filter,
+        )
     else:
         out = apply_positive_filter_set(
             df,
