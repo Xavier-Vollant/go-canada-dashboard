@@ -2538,6 +2538,47 @@ def restore_supabase_verification_from_repository_csv(
     return len(verification)
 
 
+def restore_main_supabase_relationships_from_repository_csv() -> dict[str, int]:
+    """Restore Main relationship metadata from bundled CSVs without changing verification."""
+    config = supabase_config()
+    if not config:
+        raise RuntimeError("Supabase is not configured.")
+
+    database_id = DEFAULT_DATABASE_ID
+    csv_tables = load_csv_database(str(database_data_dir(database_id)))
+    validate_database_relationships(csv_tables)
+
+    url, key = config
+    scoped = require_supabase_database_scoping(url, key, database_id)
+    for table_name in ["authors", "instruments", "sources"]:
+        upsert_supabase_table(
+            table_name,
+            csv_tables[table_name],
+            REQUIRED_COLUMNS[table_name],
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
+
+    restored_counts: dict[str, int] = {}
+    for table_name in ["paper_authors", "paper_instruments", "paper_sources"]:
+        rows = csv_tables[table_name]
+        upsert_supabase_table(
+            table_name,
+            rows,
+            REQUIRED_COLUMNS[table_name],
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
+        restored_counts[table_name] = len(rows)
+
+    clear_database_caches()
+    return restored_counts
+
+
 def normalize_import_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize uploaded CSV column names to the import schema."""
     aliases = {
@@ -6292,6 +6333,44 @@ def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
                 st.rerun()
             except Exception as exc:
                 st.error(f"Could not restore verification rows: {exc}")
+
+    with st.expander("Repair Main metadata relationships", expanded=False):
+        csv_tables = load_csv_database(str(database_data_dir(DEFAULT_DATABASE_ID)))
+        relationship_counts = {
+            "paper_authors": len(csv_tables["paper_authors"]),
+            "paper_instruments": len(csv_tables["paper_instruments"]),
+            "paper_sources": len(csv_tables["paper_sources"]),
+        }
+        st.write(
+            "Repository CSV rows for Main: "
+            f"**{relationship_counts['paper_authors']}** author links, "
+            f"**{relationship_counts['paper_instruments']}** component links, "
+            f"**{relationship_counts['paper_sources']}** source links."
+        )
+        st.caption(
+            "This upserts Main relationship metadata from repository CSVs. "
+            "It does not touch Library, John, papers, or verification rows."
+        )
+        confirm_relationship_restore = st.checkbox(
+            "Restore Main relationship metadata from repository CSVs",
+            key="restore_main_relationships_confirm",
+        )
+        if st.button(
+            "Restore Main relationships",
+            disabled=not confirm_relationship_restore,
+            key="restore_main_relationships_button",
+        ):
+            try:
+                restored_counts = restore_main_supabase_relationships_from_repository_csv()
+                st.success(
+                    "Restored Main relationship rows: "
+                    f"{restored_counts['paper_authors']} author links, "
+                    f"{restored_counts['paper_instruments']} component links, "
+                    f"{restored_counts['paper_sources']} source links."
+                )
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Could not restore Main relationships: {exc}")
 
     st.download_button(
         label="Download current papers table",
