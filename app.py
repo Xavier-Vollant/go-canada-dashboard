@@ -49,12 +49,12 @@ DATABASES = [
     {
         "id": "library",
         "label": "Library database",
-        "description": "Empty database reserved for library records.",
+        "description": "GO-Canada library records and query-derived publication metadata.",
     },
     {
         "id": "john",
         "label": "John database",
-        "description": "Empty database reserved for John's records.",
+        "description": "John database records with GO-Canada author verification.",
     },
 ]
 DATABASE_LABELS = {database["id"]: database["label"] for database in DATABASES}
