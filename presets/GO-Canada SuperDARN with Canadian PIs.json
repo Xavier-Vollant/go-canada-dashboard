@@ -115,9 +115,18 @@
       ]
     },
     {
-      "name": "SuperDARN with Canadian GO-Canada PI",
+      "name": "SuperDARN Canada",
       "selected_instruments": [
-        "SuperDARN_CA",
+        "SuperDARN_CA"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "SuperDARN global with Canadian GO-Canada PI",
+      "selected_instruments": [
         "SuperDARN"
       ],
       "selected_authors": [
@@ -179,7 +188,7 @@
         2013,
         2026
       ],
-      "notes": "SuperDARN papers (confirmed Canadian or global) filtered to those with at least one Canadian GO-Canada PI as author. Covers PIs from all GO-Canada components."
+      "notes": "Global SuperDARN papers filtered to those with at least one Canadian GO-Canada PI as author. SuperDARN_CA papers are already captured unconditionally in the group above."
     },
     {
       "name": "ABOVE",
