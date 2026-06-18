@@ -4015,6 +4015,50 @@ def comparison_rates_over_time(combined: pd.DataFrame) -> pd.DataFrame:
     return comparison_rate_columns(pivot).sort_values(["year", "database"])
 
 
+def comparison_adjusted_year_ranges(
+    combined: pd.DataFrame,
+    verification_summary: pd.DataFrame,
+    *,
+    rate_source: str = "overall",
+    min_decisive_checked: int = 3,
+) -> pd.DataFrame:
+    """Return yearly raw and false-positive-adjusted paper ranges."""
+    counts = comparison_year_counts(combined)
+    if counts.empty:
+        return pd.DataFrame()
+
+    overall_rates = {
+        row.database: float(row.false_positive_rate)
+        for row in verification_summary.itertuples(index=False)
+    }
+    yearly_rates = comparison_rates_over_time(combined)
+    if not yearly_rates.empty:
+        yearly_rates = yearly_rates[
+            ["database", "year", "false_positive_rate", "checked_decisive"]
+        ].rename(columns={"false_positive_rate": "year_false_positive_rate"})
+    out = counts.merge(yearly_rates, on=["database", "year"], how="left") if not yearly_rates.empty else counts
+    if "year_false_positive_rate" not in out.columns:
+        out["year_false_positive_rate"] = pd.NA
+    if "checked_decisive" not in out.columns:
+        out["checked_decisive"] = 0
+
+    out["overall_false_positive_rate"] = out["database"].map(overall_rates).fillna(0.0)
+    use_yearly = out["checked_decisive"].fillna(0).astype(int) >= int(min_decisive_checked)
+    if rate_source != "year_specific":
+        use_yearly = pd.Series(False, index=out.index)
+    out["false_positive_rate_used"] = out["overall_false_positive_rate"]
+    out.loc[use_yearly, "false_positive_rate_used"] = out.loc[use_yearly, "year_false_positive_rate"]
+    out["false_positive_rate_used"] = pd.to_numeric(
+        out["false_positive_rate_used"],
+        errors="coerce",
+    ).fillna(0.0)
+    out["estimated_false_positive_papers"] = out["papers"] * out["false_positive_rate_used"]
+    out["estimated_clean_papers"] = out["papers"] - out["estimated_false_positive_papers"]
+    out["rate_source"] = "overall database rate"
+    out.loc[use_yearly, "rate_source"] = "year-specific rate"
+    return out.sort_values(["database", "year"])
+
+
 def comparison_category_counts(
     combined: pd.DataFrame,
     field: str,
@@ -5137,6 +5181,84 @@ def plot_database_overlap_venn_style(frames: dict[str, pd.DataFrame]) -> None:
     st.plotly_chart(fig, use_container_width=True)
 
 
+def plot_false_positive_adjusted_timeline(adjusted: pd.DataFrame) -> None:
+    """Plot yearly raw paper counts with a shaded estimated false-positive band."""
+    if adjusted.empty:
+        st.info("No year data available for this adjusted timeline.")
+        return
+
+    colors = [
+        "#2563eb",
+        "#dc2626",
+        "#059669",
+        "#7c3aed",
+        "#ea580c",
+        "#0891b2",
+    ]
+    fig = go.Figure()
+    for index, database in enumerate(sorted(adjusted["database"].dropna().unique())):
+        db_rows = adjusted[adjusted["database"] == database].sort_values("year")
+        color = colors[index % len(colors)]
+        fill_color = color.replace("#", "")
+        red = int(fill_color[0:2], 16)
+        green = int(fill_color[2:4], 16)
+        blue = int(fill_color[4:6], 16)
+        rgba = f"rgba({red}, {green}, {blue}, 0.18)"
+
+        fig.add_trace(
+            go.Scatter(
+                x=db_rows["year"],
+                y=db_rows["estimated_clean_papers"],
+                mode="lines",
+                line=dict(color=color, width=0),
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=db_rows["year"],
+                y=db_rows["papers"],
+                mode="lines+markers",
+                fill="tonexty",
+                fillcolor=rgba,
+                line=dict(color=color, width=3),
+                marker=dict(size=6),
+                name=f"{database} raw range",
+                customdata=db_rows[
+                    [
+                        "estimated_clean_papers",
+                        "estimated_false_positive_papers",
+                        "false_positive_rate_used",
+                        "rate_source",
+                        "checked_decisive",
+                    ]
+                ],
+                hovertemplate=(
+                    "<b>%{fullData.name}</b><br>"
+                    "Year: %{x}<br>"
+                    "Raw papers: %{y:.0f}<br>"
+                    "Estimated clean lower bound: %{customdata[0]:.1f}<br>"
+                    "Estimated false positives: %{customdata[1]:.1f}<br>"
+                    "False-positive rate used: %{customdata[2]:.1%}<br>"
+                    "Rate source: %{customdata[3]}<br>"
+                    "Decisive checked in year: %{customdata[4]:.0f}"
+                    "<extra></extra>"
+                ),
+            )
+        )
+
+    fig.update_layout(
+        title="Paper counts over time with false-positive-adjusted range",
+        hovermode="x unified",
+        yaxis_title="Papers",
+        xaxis_title="Year",
+        legend=dict(orientation="h", yanchor="bottom", y=-0.28, xanchor="left", x=0),
+        margin=dict(l=10, r=10, t=55, b=105),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
 def plot_count_graph_with_rate_overlay(
     counts: pd.DataFrame,
     rates: pd.DataFrame,
@@ -5696,6 +5818,8 @@ def render_compare_databases_page(active_db: str) -> None:
         graph_type = st.selectbox(
             "Graph type",
             [
+                "False-positive adjusted papers over time",
+                "Raw vs adjusted paper totals",
                 "Papers over time",
                 "Category counts",
                 "Verification status counts",
@@ -5726,7 +5850,95 @@ def render_compare_databases_page(active_db: str) -> None:
             "Unsure rate": "unsure_rate_checked",
         }
 
-        if graph_type == "Papers over time":
+        if graph_type == "False-positive adjusted papers over time":
+            year_counts = comparison_year_counts(combined)
+            if year_counts.empty:
+                st.info("No year data available for the selected databases.")
+            else:
+                c1, c2 = st.columns([2, 1])
+                with c1:
+                    rate_source_label = st.selectbox(
+                        "False-positive rate source",
+                        [
+                            "Overall database rate",
+                            "Year-specific rate when enough checks exist",
+                        ],
+                        key="comparison_adjusted_timeline_rate_source",
+                    )
+                with c2:
+                    min_decisive_checked = st.number_input(
+                        "Min checked for yearly rate",
+                        min_value=1,
+                        max_value=100,
+                        value=3,
+                        key="comparison_adjusted_timeline_min_checked",
+                        disabled=rate_source_label == "Overall database rate",
+                    )
+                adjusted = comparison_adjusted_year_ranges(
+                    combined,
+                    verification_summary,
+                    rate_source="year_specific"
+                    if rate_source_label == "Year-specific rate when enough checks exist"
+                    else "overall",
+                    min_decisive_checked=int(min_decisive_checked),
+                )
+                plot_false_positive_adjusted_timeline(adjusted)
+                adjusted_display = adjusted[
+                    [
+                        "database",
+                        "year",
+                        "papers",
+                        "estimated_clean_papers",
+                        "estimated_false_positive_papers",
+                        "false_positive_rate_used",
+                        "rate_source",
+                        "checked_decisive",
+                    ]
+                ].copy()
+                adjusted_display["false_positive_rate_used"] = adjusted_display[
+                    "false_positive_rate_used"
+                ].map(lambda value: f"{value:.1%}")
+                st.dataframe(adjusted_display, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Raw vs adjusted paper totals":
+            if verification_summary.empty:
+                st.info("No verification data available for the selected databases.")
+            else:
+                totals = verification_summary[
+                    ["database", "papers", "false_positive_rate", "checked_papers", "verified_false"]
+                ].copy()
+                totals["estimated_false_positive_papers"] = totals["papers"] * totals["false_positive_rate"]
+                totals["estimated_clean_papers"] = totals["papers"] - totals["estimated_false_positive_papers"]
+                plot_totals = totals.melt(
+                    id_vars=["database", "papers", "false_positive_rate", "checked_papers", "verified_false"],
+                    value_vars=["estimated_clean_papers", "estimated_false_positive_papers"],
+                    var_name="estimate_part",
+                    value_name="estimated_papers",
+                )
+                plot_totals["estimate_part"] = plot_totals["estimate_part"].replace(
+                    {
+                        "estimated_clean_papers": "Estimated clean papers",
+                        "estimated_false_positive_papers": "Estimated false positives",
+                    }
+                )
+                fig = px.bar(
+                    plot_totals,
+                    x="database",
+                    y="estimated_papers",
+                    color="estimate_part",
+                    barmode="stack",
+                    hover_data=["papers", "false_positive_rate", "checked_papers", "verified_false"],
+                    title="Raw paper totals split into estimated clean papers and false positives",
+                )
+                fig.update_yaxes(title_text="Papers")
+                st.plotly_chart(fig, use_container_width=True)
+                totals_display = totals.copy()
+                totals_display["false_positive_rate"] = totals_display["false_positive_rate"].map(
+                    lambda value: f"{value:.1%}"
+                )
+                st.dataframe(totals_display, use_container_width=True, hide_index=True)
+
+        elif graph_type == "Papers over time":
             year_counts = comparison_year_counts(combined)
             if year_counts.empty:
                 st.info("No year data available for the selected databases.")
