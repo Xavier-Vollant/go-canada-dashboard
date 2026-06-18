@@ -2317,10 +2317,10 @@ def save_paper_metadata_tables(
     database_id: str | None = None,
 ) -> None:
     """Persist one paper metadata edit without replacing the full Supabase database."""
-    validate_database_relationships(tables)
     database_id = normalize_database_id(database_id or active_database_id())
     paper_id = clean_text(paper_id)
     if not supabase_config():
+        validate_database_relationships(tables)
         save_database_tables(tables, database_id)
         return
 
@@ -2358,6 +2358,18 @@ def save_paper_metadata_tables(
     sources = tables["sources"][
         tables["sources"]["source_id"].fillna("").astype(str).isin(source_ids)
     ].copy()
+    validate_database_relationships(
+        {
+            "papers": paper_row,
+            "authors": authors,
+            "paper_authors": paper_authors,
+            "instruments": instruments,
+            "paper_instruments": paper_instruments,
+            "verification": verification,
+            "sources": sources,
+            "paper_sources": paper_sources,
+        }
+    )
 
     # Parents must exist before relationship rows, or Postgres rejects the save.
     upsert_supabase_table(
@@ -2446,6 +2458,63 @@ def save_paper_metadata_tables(
         "verification",
         verification,
         REQUIRED_COLUMNS["verification"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    clear_database_caches()
+
+
+def save_paper_instrument_assignment_tables(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    instrument_id: str,
+    database_id: str | None = None,
+) -> None:
+    """Persist one paper-instrument assignment without saving the full database."""
+    database_id = normalize_database_id(database_id or active_database_id())
+    paper_id = clean_text(paper_id)
+    instrument_id = clean_text(instrument_id)
+    if not paper_id or not instrument_id:
+        return
+
+    if not supabase_config():
+        write_csv_table("instruments", tables["instruments"], database_id)
+        write_csv_table("paper_instruments", tables["paper_instruments"], database_id)
+        clear_database_caches()
+        return
+
+    config = supabase_config()
+    if not config:
+        return
+    url, key = config
+    scoped = require_supabase_database_scoping(url, key, database_id)
+    instruments = tables["instruments"]
+    paper_instruments = tables["paper_instruments"]
+    instrument_row = instruments[
+        instruments["instrument_id"].fillna("").astype(str) == instrument_id
+    ].copy()
+    paper_instrument_row = paper_instruments[
+        (paper_instruments["paper_id"].fillna("").astype(str) == paper_id)
+        & (paper_instruments["instrument_id"].fillna("").astype(str) == instrument_id)
+    ].copy()
+    if instrument_row.empty or paper_instrument_row.empty:
+        raise RuntimeError("Instrument assignment was not created in the local edit.")
+
+    upsert_supabase_table(
+        "instruments",
+        instrument_row,
+        REQUIRED_COLUMNS["instruments"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    upsert_supabase_table(
+        "paper_instruments",
+        paper_instrument_row,
+        REQUIRED_COLUMNS["paper_instruments"],
         url,
         key,
         database_id,
@@ -6492,13 +6561,38 @@ def add_instrument_assignment_to_paper(
     paper_id: str,
     instrument_name: str,
     instrument_status: str = "uses",
+    database_id: str | None = None,
 ) -> tuple[bool, str]:
     """Add one instrument assignment to a paper."""
+    database_id = normalize_database_id(database_id or active_database_id())
     instrument_name = clean_text(instrument_name)
     if not instrument_name:
         return False, "Choose or type an instrument name."
 
     working_tables = {name: table.copy() for name, table in tables.items()}
+    config = supabase_config()
+    if config:
+        url, key = config
+        scoped = require_supabase_database_scoping(url, key, database_id)
+        filters = {"paper_id": f"eq.{paper_id}"}
+        if scoped:
+            filters[DATABASE_ID_COLUMN] = f"eq.{database_id}"
+        working_tables["instruments"] = fetch_supabase_table(
+            "instruments",
+            REQUIRED_COLUMNS["instruments"],
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
+        working_tables["paper_instruments"] = fetch_supabase_filtered_table(
+            "paper_instruments",
+            REQUIRED_COLUMNS["paper_instruments"],
+            url,
+            key,
+            filters,
+        )
+
     instrument_id = get_or_create_instrument_id(working_tables, instrument_name)
     paper_instruments = working_tables["paper_instruments"].copy()
     existing_mask = (
@@ -6517,7 +6611,12 @@ def add_instrument_assignment_to_paper(
         },
         REQUIRED_COLUMNS["paper_instruments"],
     )
-    save_database_tables(working_tables)
+    save_paper_instrument_assignment_tables(
+        working_tables,
+        paper_id,
+        instrument_id,
+        database_id,
+    )
     return True, instrument_name
 
 
@@ -6691,6 +6790,7 @@ def render_paper_verification_controls(
                     selected_paper_id,
                     new_instrument,
                     new_instrument_status,
+                    database_id,
                 )
                 if ok:
                     st.success(f"Added instrument: {message}")
