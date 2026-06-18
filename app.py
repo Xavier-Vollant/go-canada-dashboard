@@ -1118,6 +1118,72 @@ def insert_supabase_table(
         insert_response.raise_for_status()
 
 
+def upsert_supabase_table(
+    table_name: str,
+    df: pd.DataFrame,
+    columns: list[str],
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
+) -> None:
+    """Upsert rows into one Supabase table using that table's primary key."""
+    headers = {
+        **supabase_headers(key),
+        "Prefer": "resolution=merge-duplicates,return=minimal",
+    }
+    storage_columns = [DATABASE_ID_COLUMN] + columns if scoped else columns
+    out = df.copy()
+    if scoped:
+        out[DATABASE_ID_COLUMN] = database_id
+    out = dataframe_for_storage(out, storage_columns)
+    primary_key_columns = (
+        SUPABASE_SCOPED_PRIMARY_KEY_COLUMNS.get(table_name, [])
+        if scoped
+        else TABLE_PRIMARY_KEY_COLUMNS.get(table_name, [])
+    )
+    if primary_key_columns:
+        out = out.drop_duplicates(subset=primary_key_columns, keep="last")
+    records = out.to_dict("records")
+    for start in range(0, len(records), SUPABASE_INSERT_CHUNK_SIZE):
+        chunk = records[start : start + SUPABASE_INSERT_CHUNK_SIZE]
+        if not chunk:
+            continue
+        upsert_response = requests.post(
+            f"{url}/rest/v1/{table_name}",
+            params={"on_conflict": ",".join(primary_key_columns)}
+            if primary_key_columns
+            else {},
+            json=chunk,
+            headers=headers,
+            timeout=60,
+        )
+        upsert_response.raise_for_status()
+
+
+def delete_supabase_paper_related_rows(
+    table_name: str,
+    paper_id: str,
+    url: str,
+    key: str,
+    database_id: str = DEFAULT_DATABASE_ID,
+    *,
+    scoped: bool = False,
+) -> None:
+    """Delete rows for one paper from a relationship table."""
+    params = {"paper_id": f"eq.{paper_id}"}
+    if scoped:
+        params[DATABASE_ID_COLUMN] = f"eq.{database_id}"
+    delete_response = requests.delete(
+        f"{url}/rest/v1/{table_name}",
+        params=params,
+        headers=supabase_headers(key),
+        timeout=30,
+    )
+    delete_response.raise_for_status()
+
+
 def delete_supabase_verification_row(
     paper_id: str,
     instrument_id: str,
@@ -2220,6 +2286,148 @@ def save_database_tables(
 
     for name in REQUIRED_COLUMNS:
         write_csv_table(name, tables[name], database_id)
+    clear_database_caches()
+
+
+def save_paper_metadata_tables(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    database_id: str | None = None,
+) -> None:
+    """Persist one paper metadata edit without replacing the full Supabase database."""
+    database_id = normalize_database_id(database_id or active_database_id())
+    paper_id = clean_text(paper_id)
+    if not supabase_config():
+        save_database_tables(tables, database_id)
+        return
+
+    config = supabase_config()
+    if not config:
+        return
+    url, key = config
+    scoped = require_supabase_database_scoping(url, key, database_id)
+
+    def paper_rows(table_name: str) -> pd.DataFrame:
+        table = tables[table_name].copy()
+        if "paper_id" not in table.columns:
+            return pd.DataFrame(columns=REQUIRED_COLUMNS[table_name])
+        return table[table["paper_id"].fillna("").astype(str) == paper_id].copy()
+
+    paper_row = paper_rows("papers")
+    if paper_row.empty:
+        raise RuntimeError(f"Paper {paper_id} no longer exists.")
+
+    paper_authors = paper_rows("paper_authors")
+    paper_instruments = paper_rows("paper_instruments")
+    paper_sources = paper_rows("paper_sources")
+    verification = paper_rows("verification")
+
+    author_ids = set(paper_authors["author_id"].fillna("").astype(str))
+    instrument_ids = set(paper_instruments["instrument_id"].fillna("").astype(str))
+    source_ids = set(paper_sources["source_id"].fillna("").astype(str))
+
+    authors = tables["authors"][
+        tables["authors"]["author_id"].fillna("").astype(str).isin(author_ids)
+    ].copy()
+    instruments = tables["instruments"][
+        tables["instruments"]["instrument_id"].fillna("").astype(str).isin(instrument_ids)
+    ].copy()
+    sources = tables["sources"][
+        tables["sources"]["source_id"].fillna("").astype(str).isin(source_ids)
+    ].copy()
+
+    # Parents must exist before relationship rows, or Postgres rejects the save.
+    upsert_supabase_table(
+        "papers",
+        paper_row,
+        REQUIRED_COLUMNS["papers"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    upsert_supabase_table(
+        "authors",
+        authors,
+        REQUIRED_COLUMNS["authors"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    upsert_supabase_table(
+        "instruments",
+        instruments,
+        REQUIRED_COLUMNS["instruments"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    upsert_supabase_table(
+        "sources",
+        sources,
+        REQUIRED_COLUMNS["sources"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+
+    delete_supabase_paper_related_rows(
+        "verification",
+        paper_id,
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    for table_name in ["paper_authors", "paper_instruments", "paper_sources"]:
+        delete_supabase_paper_related_rows(
+            table_name,
+            paper_id,
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
+
+    insert_supabase_table(
+        "paper_authors",
+        paper_authors,
+        REQUIRED_COLUMNS["paper_authors"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    insert_supabase_table(
+        "paper_instruments",
+        paper_instruments,
+        REQUIRED_COLUMNS["paper_instruments"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    insert_supabase_table(
+        "paper_sources",
+        paper_sources,
+        REQUIRED_COLUMNS["paper_sources"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    insert_supabase_table(
+        "verification",
+        verification,
+        REQUIRED_COLUMNS["verification"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
     clear_database_caches()
 
 
@@ -5808,7 +6016,11 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
         )
         if ok:
             try:
-                save_database_tables(working_tables)
+                save_paper_metadata_tables(
+                    working_tables,
+                    selected_paper_id,
+                    active_database_id(),
+                )
                 st.success("Paper metadata saved.")
                 st.rerun()
             except requests.HTTPError as exc:
