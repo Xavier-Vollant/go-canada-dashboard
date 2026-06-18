@@ -1,0 +1,276 @@
+{
+  "selected_instruments": [],
+  "selected_authors": [],
+  "selected_publishers": [],
+  "selected_journals": [],
+  "selected_paper_types": [],
+  "selected_verification_statuses": [],
+  "selected_go_canada_statuses": [],
+  "selected_sources": [],
+  "paper_search_query": "",
+  "combined_filter_result_mode": "Combined stored lists",
+  "combined_filter_groups": [
+    {
+      "name": "AuroraMAX strict GO-Canada",
+      "selected_instruments": [
+        "AuroraMAX"
+      ],
+      "year_range": [
+        2023,
+        2026
+      ],
+      "notes": "Use 2010-2026 only for a broader CSA-supported AuroraMAX set."
+    },
+    {
+      "name": "REGO",
+      "selected_instruments": [
+        "REGO"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "Single-beam riometers",
+      "selected_instruments": [
+        "Single Beam Riometer"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "SWAN HSR",
+      "selected_instruments": [
+        "SWAN HSR"
+      ],
+      "year_range": [
+        2022,
+        2026
+      ]
+    },
+    {
+      "name": "THEMIS ASI",
+      "selected_instruments": [
+        "THEMIS ASI"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "TREx",
+      "selected_instruments": [
+        "TREx",
+        "TREx RGB",
+        "TREx Spectrograph"
+      ],
+      "year_range": [
+        2020,
+        2026
+      ]
+    },
+    {
+      "name": "H+Storm / GO-Storm optical instruments",
+      "selected_instruments": [
+        "FESO",
+        "GO STORM MSP"
+      ],
+      "year_range": [
+        2013,
+        2021
+      ]
+    },
+    {
+      "name": "GO-RIO / riometer network",
+      "selected_instruments": [
+        "GO_RIO"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ]
+    },
+    {
+      "name": "ICEBEAR",
+      "selected_instruments": [
+        "ICEBEAR"
+      ],
+      "year_range": [
+        2020,
+        2024
+      ]
+    },
+    {
+      "name": "CHAIN",
+      "selected_instruments": [
+        "CHAIN"
+      ],
+      "year_range": [
+        2013,
+        2024
+      ]
+    },
+    {
+      "name": "SuperDARN with Canadian GO-Canada PI",
+      "selected_instruments": [
+        "SuperDARN_CA",
+        "SuperDARN"
+      ],
+      "selected_authors": [
+        "Eric F. Donovan",
+        "Eric Donovan",
+        "Emma Spanswick",
+        "Emma L. Spanswick",
+        "Brian Jackel",
+        "Brian J. Jackel",
+        "Christopher M. Cully",
+        "Christopher Cully",
+        "D. Megan Gillies",
+        "Megan D. Gillies",
+        "M. Gillies",
+        "Jonathan Burchill",
+        "Johnathan K. Burchill",
+        "David Knudsen",
+        "David J. Knudsen",
+        "Jade A. Reidy",
+        "Glenn C. Hussey",
+        "Glenn Hussey",
+        "Kathryn A. McWilliams",
+        "Kathryn McWilliams",
+        "J. P. St-Maurice",
+        "Jean-Pierre St-Maurice",
+        "J.-P. St-Maurice",
+        "Pavlo V. Ponomarenko",
+        "Frances R. Fenrich",
+        "Frances Fenrich",
+        "Robert G. Gillies",
+        "Robert Gillies",
+        "Ian. R. Mann",
+        "I. Mann",
+        "Ian Mann",
+        "David K. Milling",
+        "Andy Kale",
+        "David M. Miles",
+        "David Miles",
+        "Gareth William Perry",
+        "Gareth Perry",
+        "Robert Rankin",
+        "Periyadan T. Jayachandran",
+        "Jayachandran P. Thayyil",
+        "Richard B. Langley",
+        "Benjamin Reid",
+        "Ben Reid",
+        "David Russel Themens",
+        "Devin Ray Huyghebaert",
+        "Devin Huyghebaert",
+        "Martin Connors",
+        "Martin G. Connors",
+        "Susan Skone",
+        "S. H. Skone",
+        "Robyn A. D. Fiori",
+        "Robyn Fiori",
+        "Robyn A. Fiori"
+      ],
+      "year_range": [
+        2013,
+        2026
+      ],
+      "notes": "SuperDARN papers (confirmed Canadian or global) filtered to those with at least one Canadian GO-Canada PI as author. Covers PIs from all GO-Canada components."
+    },
+    {
+      "name": "ABOVE",
+      "selected_instruments": [
+        "ABOVE"
+      ],
+      "year_range": [
+        2013,
+        2022
+      ]
+    },
+    {
+      "name": "AUTUMNX",
+      "selected_instruments": [
+        "AUTUMNX"
+      ],
+      "year_range": [
+        2013,
+        2023
+      ]
+    },
+    {
+      "name": "CARISMA",
+      "selected_instruments": [
+        "CARISMA"
+      ],
+      "year_range": [
+        2013,
+        2023
+      ]
+    },
+    {
+      "name": "DNT",
+      "selected_instruments": [
+        "DNT"
+      ],
+      "year_range": [
+        2013,
+        2021
+      ]
+    },
+    {
+      "name": "AGO catch-all",
+      "selected_instruments": [
+        "AGO"
+      ],
+      "year_range": [
+        2013,
+        2020
+      ]
+    },
+    {
+      "name": "E-CHAIM / A-CHAIM model products",
+      "selected_instruments": [
+        "ECHAIM",
+        "ACHAIM"
+      ],
+      "year_range": [
+        2013,
+        2024
+      ],
+      "notes": "Only include when the paper actually uses the model, not just mentions CHAIN."
+    },
+    {
+      "name": "SEC/OTHER",
+      "selected_instruments": [
+        "SEC/OTHER"
+      ],
+      "year_range": [
+        1977,
+        2026
+      ],
+      "notes": "Include every paper assigned to SEC/OTHER."
+    }
+  ],
+  "excluded_paper_ids": [],
+  "excluded_instruments": [],
+  "excluded_authors": [],
+  "excluded_publishers": [],
+  "excluded_journals": [],
+  "excluded_paper_types": [],
+  "excluded_verification_statuses": [],
+  "excluded_go_canada_statuses": [],
+  "excluded_sources": [],
+  "excluded_missing_metadata_mode": "Do not exclude by missing metadata",
+  "excluded_missing_metadata_fields": [],
+  "metadata_completeness": "All papers",
+  "selected_missing_metadata_fields": [],
+  "year_range": [
+    1977,
+    2026
+  ],
+  "remove_known_false_positives": false
+}
