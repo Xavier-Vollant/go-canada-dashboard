@@ -1118,6 +1118,54 @@ def insert_supabase_table(
         insert_response.raise_for_status()
 
 
+def missing_reference_values(
+    child: pd.DataFrame,
+    child_column: str,
+    parent: pd.DataFrame,
+    parent_column: str,
+) -> list[str]:
+    """Return child values that are not present in the parent table."""
+    if child.empty or child_column not in child.columns:
+        return []
+    if parent.empty or parent_column not in parent.columns:
+        parent_values: set[str] = set()
+    else:
+        parent_values = set(parent[parent_column].fillna("").astype(str))
+    child_values = set(child[child_column].fillna("").astype(str))
+    return sorted(value for value in child_values if value and value not in parent_values)
+
+
+def validate_database_relationships(tables: dict[str, pd.DataFrame]) -> None:
+    """Raise before a destructive sync if relationship rows have missing parents."""
+    checks = [
+        ("paper_authors", "paper_id", "papers", "paper_id"),
+        ("paper_authors", "author_id", "authors", "author_id"),
+        ("paper_instruments", "paper_id", "papers", "paper_id"),
+        ("paper_instruments", "instrument_id", "instruments", "instrument_id"),
+        ("paper_sources", "paper_id", "papers", "paper_id"),
+        ("paper_sources", "source_id", "sources", "source_id"),
+        ("verification", "paper_id", "papers", "paper_id"),
+        ("verification", "instrument_id", "instruments", "instrument_id"),
+    ]
+    errors = []
+    for child_name, child_column, parent_name, parent_column in checks:
+        missing_values = missing_reference_values(
+            tables.get(child_name, pd.DataFrame()),
+            child_column,
+            tables.get(parent_name, pd.DataFrame()),
+            parent_column,
+        )
+        if missing_values:
+            sample = ", ".join(missing_values[:5])
+            more = f" and {len(missing_values) - 5} more" if len(missing_values) > 5 else ""
+            errors.append(
+                f"{child_name}.{child_column} references missing "
+                f"{parent_name}.{parent_column}: {sample}{more}"
+            )
+    if errors:
+        raise RuntimeError("Cannot save database with broken links: " + " | ".join(errors))
+
+
 def upsert_supabase_table(
     table_name: str,
     df: pd.DataFrame,
@@ -1319,6 +1367,7 @@ def replace_supabase_database(
     database_id: str = DEFAULT_DATABASE_ID,
 ) -> None:
     """Replace one Supabase normalized database with current app tables."""
+    validate_database_relationships(tables)
     config = supabase_config()
     if not config:
         raise RuntimeError("Supabase is not configured.")
@@ -2279,6 +2328,7 @@ def save_database_tables(
     database_id: str | None = None,
 ) -> None:
     """Persist all normalized tables to Supabase or local CSV files."""
+    validate_database_relationships(tables)
     database_id = normalize_database_id(database_id or active_database_id())
     if supabase_config():
         replace_supabase_database(tables, database_id)
@@ -2295,6 +2345,7 @@ def save_paper_metadata_tables(
     database_id: str | None = None,
 ) -> None:
     """Persist one paper metadata edit without replacing the full Supabase database."""
+    validate_database_relationships(tables)
     database_id = normalize_database_id(database_id or active_database_id())
     paper_id = clean_text(paper_id)
     if not supabase_config():
@@ -2429,6 +2480,62 @@ def save_paper_metadata_tables(
         scoped=scoped,
     )
     clear_database_caches()
+
+
+def restore_supabase_verification_from_repository_csv(
+    database_id: str = DEFAULT_DATABASE_ID,
+) -> int:
+    """Replace only verification rows for one Supabase database from bundled CSVs."""
+    config = supabase_config()
+    if not config:
+        raise RuntimeError("Supabase is not configured.")
+
+    database_id = normalize_database_id(database_id)
+    csv_tables = load_csv_database(str(database_data_dir(database_id)))
+    validate_database_relationships(csv_tables)
+
+    verification = csv_tables["verification"].copy()
+    paper_ids = set(verification["paper_id"].fillna("").astype(str))
+    instrument_ids = set(verification["instrument_id"].fillna("").astype(str))
+    papers = csv_tables["papers"][
+        csv_tables["papers"]["paper_id"].fillna("").astype(str).isin(paper_ids)
+    ].copy()
+    instruments = csv_tables["instruments"][
+        csv_tables["instruments"]["instrument_id"].fillna("").astype(str).isin(instrument_ids)
+    ].copy()
+
+    url, key = config
+    scoped = require_supabase_database_scoping(url, key, database_id)
+    upsert_supabase_table(
+        "papers",
+        papers,
+        REQUIRED_COLUMNS["papers"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    upsert_supabase_table(
+        "instruments",
+        instruments,
+        REQUIRED_COLUMNS["instruments"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    delete_supabase_table("verification", url, key, database_id, scoped=scoped)
+    insert_supabase_table(
+        "verification",
+        verification,
+        REQUIRED_COLUMNS["verification"],
+        url,
+        key,
+        database_id,
+        scoped=scoped,
+    )
+    clear_database_caches()
+    return len(verification)
 
 
 def normalize_import_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -6149,6 +6256,42 @@ def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
             st.rerun()
         except Exception as exc:
             st.error(f"Could not seed {database_label(database_id)}: {exc}")
+
+    with st.expander("Repair verification statuses only", expanded=False):
+        try:
+            csv_verification = load_csv_database(str(database_data_dir(database_id)))[
+                "verification"
+            ]
+            csv_verification_count = len(csv_verification)
+        except Exception:
+            csv_verification_count = 0
+        st.write(
+            f"Repository CSV verification rows for {database_label(database_id)}: "
+            f"**{csv_verification_count}**"
+        )
+        st.caption(
+            "This replaces only the active database's Supabase verification rows. "
+            "It does not replace papers, authors, instruments, or sources."
+        )
+        confirm_restore = st.checkbox(
+            "Replace verification rows for the active database from repository CSVs",
+            key=f"restore_verification_confirm_{database_id}",
+        )
+        restore_disabled = not confirm_restore or csv_verification_count == 0
+        if st.button(
+            "Restore verification rows",
+            disabled=restore_disabled,
+            key=f"restore_verification_button_{database_id}",
+        ):
+            try:
+                restored_count = restore_supabase_verification_from_repository_csv(database_id)
+                st.success(
+                    f"Restored {restored_count} verification rows for "
+                    f"{database_label(database_id)}."
+                )
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Could not restore verification rows: {exc}")
 
     st.download_button(
         label="Download current papers table",
