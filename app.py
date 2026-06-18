@@ -3664,6 +3664,107 @@ def load_comparison_frames(database_ids: list[str]) -> dict[str, pd.DataFrame]:
     return frames
 
 
+def compare_preset_filters(preset: dict[str, Any]) -> dict[str, Any]:
+    """Return dashboard preset filters normalized for cross-database comparison."""
+    filters = {
+        key: preset.get(key)
+        for key in FILTER_WIDGET_KEYS
+        if key in preset
+    }
+    list_defaults = [
+        "selected_instruments",
+        "selected_authors",
+        "selected_publishers",
+        "selected_journals",
+        "selected_paper_types",
+        "selected_verification_statuses",
+        "selected_go_canada_statuses",
+        "selected_sources",
+        "excluded_paper_ids",
+        "excluded_instruments",
+        "excluded_authors",
+        "excluded_publishers",
+        "excluded_journals",
+        "excluded_paper_types",
+        "excluded_verification_statuses",
+        "excluded_go_canada_statuses",
+        "excluded_sources",
+        "excluded_missing_metadata_fields",
+        "selected_missing_metadata_fields",
+    ]
+    for key in list_defaults:
+        value = filters.get(key, [])
+        filters[key] = list(value) if isinstance(value, (list, tuple, set)) else []
+
+    filters["paper_search_query"] = clean_text(filters.get("paper_search_query"))
+    filters["excluded_missing_metadata_mode"] = clean_text(
+        filters.get("excluded_missing_metadata_mode")
+    ) or "Do not exclude by missing metadata"
+    filters["metadata_completeness"] = clean_text(
+        filters.get("metadata_completeness")
+    ) or "All papers"
+    filters["remove_known_false_positives"] = bool(
+        filters.get("remove_known_false_positives", False)
+    )
+    filters["combined_filter_result_mode"] = clean_text(
+        filters.get("combined_filter_result_mode")
+    ) or "Current filter preview"
+
+    sanitized_groups = []
+    for group in filters.get("combined_filter_groups") or []:
+        if not isinstance(group, dict):
+            continue
+        sanitized = {
+            key: value
+            for key, value in group.items()
+            if key not in {"paper_ids", "paper_count"}
+        }
+        if sanitized:
+            sanitized_groups.append(sanitized)
+    filters["combined_filter_groups"] = sanitized_groups
+    if not sanitized_groups:
+        filters["combined_filter_result_mode"] = "Current filter preview"
+    return filters
+
+
+def apply_compare_preset_to_frames(
+    frames: dict[str, pd.DataFrame],
+    preset: dict[str, Any],
+) -> dict[str, pd.DataFrame]:
+    """Apply one shared dashboard preset independently to each comparison frame."""
+    filters = compare_preset_filters(preset)
+    filtered_frames = {}
+    for database_id, df in frames.items():
+        filtered = apply_filters(df, filters)
+        filtered_frames[database_id] = prepare_comparison_frame(database_id, filtered)
+    return filtered_frames
+
+
+def compare_preset_summary(preset: dict[str, Any]) -> str:
+    """Describe the parts of a dashboard preset that Compare Databases can apply."""
+    filters = compare_preset_filters(preset)
+    parts = []
+    positive_group = current_filter_group(filters)
+    positive_summary = filter_group_summary(positive_group)
+    if positive_summary != "All papers":
+        parts.append(positive_summary)
+    if filters.get("metadata_completeness") != "All papers":
+        parts.append(f"Metadata: {filters['metadata_completeness']}")
+    if filters.get("selected_missing_metadata_fields"):
+        parts.append(
+            "Missing fields: "
+            + ", ".join(
+                MISSING_METADATA_FIELD_LABELS.get(field, field)
+                for field in filters["selected_missing_metadata_fields"]
+            )
+        )
+    if filters.get("remove_known_false_positives"):
+        parts.append("Known false positives removed")
+    if filters.get("combined_filter_groups"):
+        parts.append(f"{len(filters['combined_filter_groups'])} combined filter group(s)")
+    return " | ".join(parts) if parts else "All papers"
+
+
 def comparison_summary(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Return one summary row per selected database."""
     rows = []
@@ -5749,6 +5850,32 @@ def render_compare_databases_page(active_db: str) -> None:
         return
 
     frames = load_comparison_frames(selected_ids)
+    unfiltered_counts = {database_id: len(df) for database_id, df in frames.items()}
+    presets = load_shared_presets()
+    preset_names = sorted(presets, key=str.lower)
+    selected_compare_preset = st.selectbox(
+        "Apply main dashboard preset",
+        ["No preset"] + preset_names,
+        key="comparison_shared_preset",
+    )
+    if selected_compare_preset != "No preset":
+        preset = presets.get(selected_compare_preset, {})
+        st.caption(compare_preset_summary(preset))
+        frames = apply_compare_preset_to_frames(frames, preset)
+        preset_counts = pd.DataFrame(
+            [
+                {
+                    "database": database_label(database_id),
+                    "before_preset": unfiltered_counts.get(database_id, 0),
+                    "after_preset": len(frames.get(database_id, pd.DataFrame())),
+                }
+                for database_id in selected_ids
+            ]
+        )
+        st.dataframe(preset_counts, use_container_width=True, hide_index=True)
+    elif not preset_names:
+        st.caption("No shared dashboard presets are available yet.")
+
     combined = comparison_combined_frame(frames)
     presence = doi_presence_table(combined)
     shared = shared_doi_table(presence)
