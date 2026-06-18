@@ -468,6 +468,30 @@ def aggregate_status(statuses: Iterable[Any]) -> str:
     return "unchecked"
 
 
+def paper_level_verification_from_go_canada_status(value: Any) -> str:
+    """Map paper-level GO Canada labels to dashboard verification labels."""
+    status = clean_text(value).lower().replace("-", "_").replace(" ", "_")
+    if status in {"yes", "go_canada", "verified_true", "true", "confirmed"}:
+        return "verified_true"
+    if status in {"no", "not_go_canada", "verified_false", "false", "excluded"}:
+        return "verified_false"
+    if status in {"unsure", "maybe", "uncertain"}:
+        return "unsure"
+    return "unchecked"
+
+
+def go_canada_status_from_paper_level_verification(value: Any) -> str:
+    """Store paper-level verification in the existing GO Canada status field."""
+    status = normalize_status(value)
+    if status == "verified_true":
+        return "yes"
+    if status == "verified_false":
+        return "no"
+    if status == "unsure":
+        return "unsure"
+    return "unknown"
+
+
 def contains_any(items: list[str], selected: list[str]) -> bool:
     """Return True if a list field contains at least one selected value."""
     if not selected:
@@ -860,6 +884,14 @@ def normalize_paper_view_df(df: pd.DataFrame) -> pd.DataFrame:
     out["year"] = safe_year_series(out["year"])
     out["is_known_false_positive"] = out["is_known_false_positive"].apply(parse_bool)
     out["verification_status"] = out["verification_status"].apply(normalize_status)
+    no_instrument_mask = out["instruments"].apply(lambda values: len(values) == 0)
+    unchecked_mask = out["verification_status"].isin(["", "unchecked"])
+    paper_level_status = out["go_canada_status"].apply(
+        paper_level_verification_from_go_canada_status
+    )
+    out.loc[no_instrument_mask & unchecked_mask, "verification_status"] = paper_level_status[
+        no_instrument_mask & unchecked_mask
+    ]
 
     missing_author_display = out["display_authors"] == ""
     out.loc[missing_author_display, "display_authors"] = out.loc[
@@ -1673,6 +1705,14 @@ def build_paper_view(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
         df[col] = df[col].fillna("").astype(str)
 
     df["verification_status"] = df["verification_status"].replace("", "unchecked")
+    no_instrument_mask = df["instruments"].apply(lambda values: len(values) == 0)
+    unchecked_mask = df["verification_status"].isin(["", "unchecked"])
+    paper_level_status = df["go_canada_status"].apply(
+        paper_level_verification_from_go_canada_status
+    )
+    df.loc[no_instrument_mask & unchecked_mask, "verification_status"] = paper_level_status[
+        no_instrument_mask & unchecked_mask
+    ]
 
     # Human-readable display columns.
     df["display_authors"] = df["authors"].apply(join_list)
@@ -5203,6 +5243,19 @@ def save_paper_go_canada_status(
     clear_database_caches()
 
 
+def save_paper_level_verification_status(
+    tables: dict[str, pd.DataFrame],
+    paper_id: str,
+    verification_status: str,
+) -> None:
+    """Save paper-level verification for no-instrument databases."""
+    save_paper_go_canada_status(
+        tables,
+        paper_id,
+        go_canada_status_from_paper_level_verification(verification_status),
+    )
+
+
 def save_paper_verification_updates(
     tables: dict[str, pd.DataFrame],
     updates: list[dict[str, Any]],
@@ -5336,27 +5389,36 @@ def render_paper_verification_controls(
         if selected_paper is None:
             return
 
-        current_status = clean_text(selected_paper.get("go_canada_status")) or "unknown"
-        status_options = ["unknown", "yes", "no"]
+        current_status = normalize_status(selected_paper.get("verification_status"))
+        if current_status == "unchecked":
+            current_status = paper_level_verification_from_go_canada_status(
+                selected_paper.get("go_canada_status")
+            )
+        status_options = ["unchecked", "verified_true", "verified_false", "unsure"]
         default_index = status_options.index(current_status) if current_status in status_options else 0
         with st.form(f"{key_prefix}_paper_level_verification_form"):
-            go_canada_status = st.selectbox(
-                "Paper-level GO Canada status",
+            verification_status = st.selectbox(
+                "Paper-level verification status",
                 status_options,
                 index=default_index,
                 format_func={
-                    "unknown": "Unknown / not checked",
-                    "yes": "Yes, GO Canada",
-                    "no": "No, not GO Canada",
+                    "unchecked": "Unchecked",
+                    "verified_true": "Verified true",
+                    "verified_false": "Verified false",
+                    "unsure": "Unsure",
                 }.get,
-                key=f"{key_prefix}_paper_go_canada_status",
+                key=f"{key_prefix}_paper_verification_status",
             )
             submitted = st.form_submit_button("Save paper verification", type="primary")
 
         if submitted:
             try:
-                save_paper_go_canada_status(tables, selected_paper_id, go_canada_status)
-                st.success("Paper-level GO Canada status saved.")
+                save_paper_level_verification_status(
+                    tables,
+                    selected_paper_id,
+                    verification_status,
+                )
+                st.success("Paper-level verification status saved.")
             except requests.HTTPError as exc:
                 response = exc.response
                 detail = response.text if response is not None else str(exc)
