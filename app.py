@@ -4987,6 +4987,7 @@ def cross_database_matches_for_paper(
     """Return matching papers in other databases by DOI."""
     doi_key = doi_match_key(selected_paper.get("DOI"))
     columns = [
+        "database_id",
         "database",
         "paper_id",
         "title",
@@ -5013,6 +5014,7 @@ def cross_database_matches_for_paper(
             rows.append(
                 {
                     "database": database_label(database_id),
+                    "database_id": database_id,
                     "paper_id": clean_text(match.get("paper_id")),
                     "title": clean_text(match.get("title")),
                     "verification_status": clean_text(match.get("verification_status"))
@@ -5043,20 +5045,65 @@ def render_cross_database_verification_context(
         st.caption("No matching DOI found in the other databases.")
         return
 
+    display_matches = matches.rename(
+        columns={
+            "database": "Database",
+            "paper_id": "Paper ID",
+            "title": "Title",
+            "verification_status": "Verification status",
+            "components": "Components",
+            "component_statuses": "Component statuses",
+        }
+    )
     st.dataframe(
-        matches.rename(
-            columns={
-                "database": "Database",
-                "paper_id": "Paper ID",
-                "title": "Title",
-                "verification_status": "Verification status",
-                "components": "Components",
-                "component_statuses": "Component statuses",
-            }
-        ),
+        display_matches[
+            [
+                "Database",
+                "Paper ID",
+                "Title",
+                "Verification status",
+                "Components",
+                "Component statuses",
+            ]
+        ],
         hide_index=True,
         use_container_width=True,
     )
+
+    st.caption("Saving the selected paper does not update these matches unless you save one below.")
+    for _, match in matches.iterrows():
+        match_database_id = normalize_database_id(match.get("database_id"))
+        match_paper_id = clean_text(match.get("paper_id"))
+        if not match_paper_id:
+            continue
+        expander_label = (
+            f"Edit {database_label(match_database_id)} verification "
+            f"for {clean_text(match.get('title'))[:90] or match_paper_id}"
+        )
+        with st.expander(expander_label, expanded=False):
+            other_tables = load_verification_context(
+                match_database_id,
+                match_paper_id,
+                str(DATA_DIR),
+            )
+            other_view = load_paper_view(match_database_id, str(DATA_DIR))
+            other_match_rows = other_view[
+                other_view["paper_id"].fillna("").astype(str) == match_paper_id
+            ]
+            other_selected_paper = (
+                other_match_rows.iloc[0]
+                if not other_match_rows.empty
+                else pd.Series(match)
+            )
+            render_paper_verification_controls(
+                other_tables,
+                match_paper_id,
+                key_prefix=f"cross_verify_{match_database_id}_{match_paper_id}",
+                allow_instrument_editing=False,
+                selected_paper=other_selected_paper,
+                database_id=match_database_id,
+                section_title=f"{database_label(match_database_id)} Verification",
+            )
 
 
 def set_random_paper_selection(
@@ -5354,9 +5401,10 @@ def save_paper_go_canada_status(
     tables: dict[str, pd.DataFrame],
     paper_id: str,
     go_canada_status: str,
+    database_id: str | None = None,
 ) -> None:
     """Save paper-level GO Canada status without requiring instruments."""
-    database_id = active_database_id()
+    database_id = normalize_database_id(database_id or active_database_id())
     paper_id = clean_text(paper_id)
     go_canada_status = clean_text(go_canada_status) or "unknown"
     if not paper_id:
@@ -5391,21 +5439,24 @@ def save_paper_level_verification_status(
     tables: dict[str, pd.DataFrame],
     paper_id: str,
     verification_status: str,
+    database_id: str | None = None,
 ) -> None:
     """Save paper-level verification for no-instrument databases."""
     save_paper_go_canada_status(
         tables,
         paper_id,
         go_canada_status_from_paper_level_verification(verification_status),
+        database_id,
     )
 
 
 def save_paper_verification_updates(
     tables: dict[str, pd.DataFrame],
     updates: list[dict[str, Any]],
+    database_id: str | None = None,
 ) -> None:
     """Save multiple paper-instrument verification rows without replacing the database."""
-    database_id = active_database_id()
+    database_id = normalize_database_id(database_id or active_database_id())
     normalized_updates = []
     for update in updates:
         paper_id = clean_text(update.get("paper_id"))
@@ -5481,11 +5532,14 @@ def render_paper_verification_controls(
     key_prefix: str,
     allow_instrument_editing: bool = True,
     selected_paper: pd.Series | None = None,
+    database_id: str | None = None,
+    section_title: str = "Instrument Verification",
 ) -> None:
     """Render per-instrument verification controls for one selected paper."""
+    database_id = normalize_database_id(database_id or active_database_id())
     assignments = paper_instrument_assignments(tables, selected_paper_id)
 
-    st.markdown("#### Instrument Verification")
+    st.markdown(f"#### {section_title}")
     if allow_instrument_editing:
         metadata_options = admin_metadata_options(tables)
         with st.form(f"{key_prefix}_add_instrument_form"):
@@ -5561,6 +5615,7 @@ def render_paper_verification_controls(
                     tables,
                     selected_paper_id,
                     verification_status,
+                    database_id,
                 )
                 st.success("Paper-level verification status saved.")
             except requests.HTTPError as exc:
@@ -5626,7 +5681,7 @@ def render_paper_verification_controls(
 
     if submitted:
         try:
-            save_paper_verification_updates(tables, update_payloads)
+            save_paper_verification_updates(tables, update_payloads, database_id)
             st.success("Verification statuses saved.")
         except requests.HTTPError as exc:
             response = exc.response
@@ -5771,6 +5826,7 @@ def render_paper_metadata_editor(tables: dict[str, pd.DataFrame], paper_view: pd
         selected_paper_id,
         key_prefix=f"metadata_verify_{selected_paper_id}",
         selected_paper=selected_paper,
+        database_id=active_database_id(),
     )
 
     with st.expander("Delete this paper", expanded=False):
@@ -5838,6 +5894,7 @@ def render_verification_editor(
         key_prefix=f"verify_{selected_paper_id}",
         allow_instrument_editing=tables is not None,
         selected_paper=selected_paper,
+        database_id=database_id,
     )
 
 
