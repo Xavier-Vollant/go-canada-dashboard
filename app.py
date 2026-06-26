@@ -62,6 +62,11 @@ DATABASES = [
         "label": "John Extended database",
         "description": "John Extended Scopus CSV records with component tags from file names.",
     },
+    {
+        "id": "recommended",
+        "label": "Recommended database",
+        "description": "Recommended Scopus CSV records with component tags from file names.",
+    },
 ]
 DATABASE_LABELS = {database["id"]: database["label"] for database in DATABASES}
 VALID_DATABASE_IDS = {database["id"] for database in DATABASES}
@@ -707,7 +712,7 @@ def render_database_selector() -> str:
         "Show other databases",
         value=bool(st.session_state.get("show_other_databases", False)),
         key="show_other_databases",
-        help="Library, John, and John Extended databases are hidden until this is enabled.",
+        help="Library, John, John Extended, and Recommended databases are hidden until this is enabled.",
     )
 
     previous_database_id = active_database_id()

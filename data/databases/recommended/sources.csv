@@ -1,0 +1,2 @@
+source_id,source_name,source_type,notes
+S00001,Recommended database,scopus_query_csv,"Metadata filled from DOI post-processing, local dashboard DOI matches, and DOI APIs when available; components came from Recommended CSV file names."
