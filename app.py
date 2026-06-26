@@ -3672,8 +3672,9 @@ def prepare_comparison_frame(database_id: str, df: pd.DataFrame) -> pd.DataFrame
     return out
 
 
-def load_comparison_frames(database_ids: list[str]) -> dict[str, pd.DataFrame]:
-    """Load lightweight paper views for the selected databases."""
+@st.cache_data(show_spinner="Loading selected comparison databases...")
+def load_comparison_frames_cached(database_ids: tuple[str, ...]) -> dict[str, pd.DataFrame]:
+    """Load prepared paper views for the selected databases."""
     frames = {}
     for database_id in database_ids:
         frames[database_id] = prepare_comparison_frame(
@@ -3681,6 +3682,144 @@ def load_comparison_frames(database_ids: list[str]) -> dict[str, pd.DataFrame]:
             load_paper_view(database_id, str(DATA_DIR)),
         )
     return frames
+
+
+def load_comparison_frames(database_ids: list[str]) -> dict[str, pd.DataFrame]:
+    """Load lightweight paper views for the selected databases."""
+    normalized_ids = tuple(
+        unique_preserve_order(normalize_database_id(database_id) for database_id in database_ids)
+    )
+    return {
+        database_id: frame.copy()
+        for database_id, frame in load_comparison_frames_cached(normalized_ids).items()
+    }
+
+
+def default_comparison_database_ids(active_db: str, database_ids: list[str]) -> list[str]:
+    """Return a small default comparison set so the page opens quickly."""
+    active_db = normalize_database_id(active_db)
+    defaults = [active_db]
+    if active_db != DEFAULT_DATABASE_ID:
+        defaults.insert(0, DEFAULT_DATABASE_ID)
+    elif "recommended" in database_ids:
+        defaults.append("recommended")
+    elif "library" in database_ids:
+        defaults.append("library")
+    return [database_id for database_id in unique_preserve_order(defaults) if database_id in database_ids]
+
+
+def comparison_component_options(df: pd.DataFrame) -> list[str]:
+    """Return component options available in one comparison frame."""
+    if df.empty or "instruments" not in df.columns:
+        return []
+    return sorted_options(
+        component
+        for values in df["instruments"]
+        for component in (values if isinstance(values, list) else split_dashboard_list(values))
+    )
+
+
+def filter_comparison_frame_by_components(
+    df: pd.DataFrame,
+    selected_components: list[str],
+) -> pd.DataFrame:
+    """Keep papers that have at least one selected component."""
+    selected_components = [component for component in selected_components if clean_text(component)]
+    if not selected_components or df.empty:
+        return df.copy()
+    mask = df["instruments"].apply(lambda values: contains_any(values, selected_components))
+    return df.loc[mask.astype(bool)].copy()
+
+
+def apply_database_compare_preset(df: pd.DataFrame, preset: dict[str, Any]) -> pd.DataFrame:
+    """Apply a saved dashboard preset to one comparison frame."""
+    if not preset:
+        return df.copy()
+    filters = compare_preset_filters(preset, drop_stored_paper_ids=True)
+    return apply_filters(df, filters)
+
+
+def render_comparison_database_filters(
+    frames: dict[str, pd.DataFrame],
+    presets: dict[str, dict[str, Any]],
+) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
+    """Render per-database preset/component filters and return filtered frames."""
+    preset_names = sorted(presets, key=str.lower)
+    filtered_frames: dict[str, pd.DataFrame] = {}
+    rows: list[dict[str, Any]] = []
+
+    with st.expander("Per-database filters", expanded=True):
+        st.caption(
+            "Apply a saved preset or choose components separately for each database. "
+            "Component filters keep papers that match at least one selected component."
+        )
+        for database_id, df in frames.items():
+            st.markdown(f"**{database_label(database_id)}**")
+            c1, c2, c3 = st.columns([1.2, 2.2, 0.8])
+            preset_key = f"comparison_{database_id}_preset"
+            component_key = f"comparison_{database_id}_components"
+            component_options = comparison_component_options(df)
+            existing_components = [
+                component
+                for component in st.session_state.get(component_key, [])
+                if component in component_options
+            ]
+            if st.session_state.get(component_key, []) != existing_components:
+                st.session_state[component_key] = existing_components
+            if st.session_state.get(preset_key, "No preset") not in ["No preset"] + preset_names:
+                st.session_state[preset_key] = "No preset"
+
+            with c1:
+                selected_preset = st.selectbox(
+                    "Preset",
+                    ["No preset"] + preset_names,
+                    key=preset_key,
+                )
+            with c2:
+                selected_components = st.multiselect(
+                    "Components",
+                    component_options,
+                    default=existing_components,
+                    key=component_key,
+                    placeholder="All components",
+                )
+
+            filtered = df.copy()
+            if selected_preset != "No preset":
+                filtered = apply_database_compare_preset(filtered, presets.get(selected_preset, {}))
+            filtered = filter_comparison_frame_by_components(filtered, selected_components)
+            filtered = prepare_comparison_frame(database_id, filtered)
+            filtered_frames[database_id] = filtered
+
+            with c3:
+                st.metric("Rows", f"{len(filtered):,}", delta=f"{len(filtered) - len(df):,}")
+
+            rows.append(
+                {
+                    "database": database_label(database_id),
+                    "preset": "" if selected_preset == "No preset" else selected_preset,
+                    "components": join_list(selected_components),
+                    "before_filter": len(df),
+                    "after_filter": len(filtered),
+                }
+            )
+
+    return filtered_frames, pd.DataFrame(rows)
+
+
+def comparison_doi_metrics(combined: pd.DataFrame) -> dict[str, int]:
+    """Return quick DOI metrics without materializing the full presence table."""
+    if combined.empty or "doi_key" not in combined.columns:
+        return {"unique_dois": 0, "shared_dois": 0, "only_in_one_database": 0}
+    with_doi = combined[combined["doi_key"] != ""]
+    if with_doi.empty:
+        return {"unique_dois": 0, "shared_dois": 0, "only_in_one_database": 0}
+    database_counts = with_doi.groupby("doi_key")["database"].nunique()
+    return {
+        "unique_dois": int(len(database_counts)),
+        "shared_dois": int((database_counts > 1).sum()),
+        "only_in_one_database": int((database_counts == 1).sum()),
+    }
 
 
 def compare_preset_filters(
@@ -6129,7 +6268,7 @@ def render_compare_databases_page(active_db: str) -> None:
     st.header("Compare Databases")
 
     database_ids = [database["id"] for database in DATABASES]
-    default_ids = unique_preserve_order([active_db] + [db for db in database_ids if db != active_db])
+    default_ids = default_comparison_database_ids(active_db, database_ids)
     selected_ids = st.multiselect(
         "Databases",
         database_ids,
@@ -6143,80 +6282,38 @@ def render_compare_databases_page(active_db: str) -> None:
         st.info("Select at least one database.")
         return
 
-    frames = load_comparison_frames(selected_ids)
-    unfiltered_counts = {database_id: len(df) for database_id, df in frames.items()}
+    raw_frames = load_comparison_frames(selected_ids)
     presets = load_shared_presets()
-    preset_names = sorted(presets, key=str.lower)
-    selected_compare_preset = st.selectbox(
-        "Apply main dashboard preset",
-        ["No preset"] + preset_names,
-        key="comparison_shared_preset",
-    )
-    if selected_compare_preset != "No preset":
-        preset = presets.get(selected_compare_preset, {})
-        st.caption(f"Main reference preset: {compare_preset_summary(preset)}")
-        frames, main_reference = apply_compare_preset_to_frames(frames, preset)
-        preset_counts = pd.DataFrame(
-            [
-                {
-                    "database": database_label(database_id),
-                    "role": "Main preset reference"
-                    if database_id == DEFAULT_DATABASE_ID
-                    else "Matched to Main preset papers",
-                    "before_preset": unfiltered_counts.get(database_id, 0),
-                    "after_preset": len(frames.get(database_id, pd.DataFrame())),
-                }
-                for database_id in selected_ids
-            ]
-        )
-        if DEFAULT_DATABASE_ID not in selected_ids:
-            preset_counts = pd.concat(
-                [
-                    pd.DataFrame(
-                        [
-                            {
-                                "database": database_label(DEFAULT_DATABASE_ID),
-                                "role": "Main preset reference",
-                                "before_preset": int(main_reference.attrs.get("source_count", 0)),
-                                "after_preset": len(main_reference),
-                            }
-                        ]
-                    ),
-                    preset_counts,
-                ],
-                ignore_index=True,
-            )
-        st.dataframe(preset_counts, use_container_width=True, hide_index=True)
-    elif not preset_names:
+    if not presets:
         st.caption("No shared dashboard presets are available yet.")
+    frames, filter_summary = render_comparison_database_filters(raw_frames, presets)
+    if not filter_summary.empty:
+        with st.expander("Applied comparison filter summary", expanded=False):
+            st.dataframe(filter_summary, use_container_width=True, hide_index=True)
 
     combined = comparison_combined_frame(frames)
-    presence = doi_presence_table(combined)
-    shared = shared_doi_table(presence)
-    unique_only = doi_uniqueness_table(presence)
-    conflicts = metadata_conflict_table(combined)
+    doi_metrics = comparison_doi_metrics(combined)
     summary = comparison_summary(frames)
     verification_summary = comparison_verification_summary(frames)
-    verification_differences = shared_doi_verification_difference_table(combined)
     component_summary = comparison_component_summary(frames)
-    component_differences = shared_doi_component_difference_table(combined)
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Databases", f"{len(selected_ids):,}")
     c2.metric("Total paper rows", f"{len(combined):,}")
-    c3.metric("Unique DOIs", f"{presence['DOI'].nunique() if not presence.empty else 0:,}")
-    c4.metric("Shared DOI rows", f"{len(shared):,}")
+    c3.metric("Unique DOIs", f"{doi_metrics['unique_dois']:,}")
+    c4.metric("Shared DOIs", f"{doi_metrics['shared_dois']:,}")
 
     c5, c6, c7, c8 = st.columns(4)
-    c5.metric("Only in one database", f"{len(unique_only):,}")
-    c6.metric("Metadata conflict rows", f"{len(conflicts):,}")
+    c5.metric("Only in one database", f"{doi_metrics['only_in_one_database']:,}")
+    c6.metric("Filtered out rows", f"{sum(len(raw_frames[key]) - len(frames[key]) for key in frames):,}")
     c7.metric("Rows without DOI", f"{int((combined['doi_key'] == '').sum()) if not combined.empty else 0:,}")
     c8.metric(
         "Rows with authors",
         f"{int(combined['authors'].apply(bool).sum()) if not combined.empty else 0:,}",
     )
 
-    tabs = st.tabs(
+    comparison_section = st.radio(
+        "Comparison section",
         [
             "Overview",
             "Graphs",
@@ -6224,10 +6321,12 @@ def render_compare_databases_page(active_db: str) -> None:
             "Verification",
             "Components",
             "Metadata Quality",
-        ]
+        ],
+        horizontal=True,
+        key="comparison_section",
     )
 
-    with tabs[0]:
+    if comparison_section == "Overview":
         st.subheader("Database Summary")
         summary_display = summary.copy()
         if not summary_display.empty:
@@ -6254,7 +6353,7 @@ def render_compare_databases_page(active_db: str) -> None:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-    with tabs[1]:
+    elif comparison_section == "Graphs":
         st.subheader("Comparison Graph Builder")
         graph_type = st.selectbox(
             "Graph type",
@@ -6766,7 +6865,12 @@ def render_compare_databases_page(active_db: str) -> None:
                 )
                 st.dataframe(missing_display, use_container_width=True, hide_index=True)
 
-    with tabs[2]:
+    elif comparison_section == "Overlap":
+        presence = doi_presence_table(combined)
+        shared = shared_doi_table(presence)
+        unique_only = doi_uniqueness_table(presence)
+        conflicts = metadata_conflict_table(combined)
+
         st.subheader("Shared DOIs")
         if shared.empty:
             st.info("No shared DOIs among the selected databases.")
@@ -6828,7 +6932,9 @@ def render_compare_databases_page(active_db: str) -> None:
                 "database_metadata_conflicts.csv",
             )
 
-    with tabs[3]:
+    elif comparison_section == "Verification":
+        verification_differences = shared_doi_verification_difference_table(combined)
+
         st.subheader("Verification and Error Rates")
         if verification_summary.empty:
             st.info("No verification data available for the selected databases.")
@@ -6872,7 +6978,9 @@ def render_compare_databases_page(active_db: str) -> None:
                 "database_verification_differences.csv",
             )
 
-    with tabs[4]:
+    elif comparison_section == "Components":
+        component_differences = shared_doi_component_difference_table(combined)
+
         st.subheader("Component Coverage")
         if component_summary.empty:
             st.info("No component data available for the selected databases.")
@@ -6903,7 +7011,7 @@ def render_compare_databases_page(active_db: str) -> None:
                 "database_component_differences.csv",
             )
 
-    with tabs[5]:
+    elif comparison_section == "Metadata Quality":
         st.subheader("Missing Metadata by Database")
         missing = missing_metadata_comparison(frames)
         if missing.empty:
