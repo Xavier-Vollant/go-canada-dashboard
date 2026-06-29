@@ -71,6 +71,37 @@ DATABASES = [
 DATABASE_LABELS = {database["id"]: database["label"] for database in DATABASES}
 VALID_DATABASE_IDS = {database["id"] for database in DATABASES}
 
+MAIN_VERIFICATION_TRANSFER_MAPPING: dict[str, dict[str, str]] = {
+    "recommended": {
+        "ABOVE": "ABOVE",
+        "ACHAIM": "CHAIM",
+        "AGO": "AGO",
+        "AUTUMNX": "AUTUMNX",
+        "AuroraMAX": "AuroraMAX",
+        "CARISMA": "CARISMA",
+        "CHAIN": "CHAIN",
+        "DNT": "DNT",
+        "ECHAIM": "CHAIM",
+        "GO_RIO": "GO-RIO",
+        "ICEBEAR": "ICEBEAR",
+        "REGO": "REGO",
+        "SEC/OTHER": "OTHER",
+        "SWAN HSR": "Swan HSR",
+        "THEMIS ASI": "THEMIS ASI",
+        "TREx": "TREx",
+        "TREx RGB": "TREx",
+        "TREx Spectrograph": "TREx",
+    },
+    "library": {
+        "CHAIN": "CHAIN",
+        "DNT": "DNT Instruments",
+    },
+    "john-extended": {
+        "DNT": "DNT",
+    },
+}
+MAIN_VERIFICATION_TRANSFER_NOTE = "transferred_from_main_by_doi_and_instrument_mapping"
+
 
 def is_enabled_flag(value: Any) -> bool:
     """Parse an environment or secrets flag."""
@@ -612,6 +643,11 @@ def doi_match_key(value: Any) -> str:
     text = re.sub(r"^https?://(dx\.)?doi\.org/", "", text)
     text = re.sub(r"^doi:\s*", "", text)
     return text.strip()
+
+
+def normalized_text_key(value: Any) -> str:
+    """Normalize one text value for case-insensitive exact matching."""
+    return re.sub(r"\s+", " ", clean_text(value).lower()).strip()
 
 
 def paper_search_mask(df: pd.DataFrame, query: str) -> pd.Series:
@@ -2629,6 +2665,194 @@ def restore_main_supabase_relationships_from_repository_csv() -> dict[str, int]:
 
     clear_database_caches()
     return restored_counts
+
+
+def is_superdarn_instrument(value: Any) -> bool:
+    """Return whether an instrument label should be excluded from transfer."""
+    return "superdarn" in normalized_text_key(value)
+
+
+def fetch_supabase_transfer_tables(
+    database_id: str,
+    url: str,
+    key: str,
+    *,
+    scoped: bool,
+) -> dict[str, pd.DataFrame]:
+    """Fetch live Supabase tables needed for DOI + instrument transfer."""
+    return {
+        table_name: fetch_supabase_table(
+            table_name,
+            REQUIRED_COLUMNS[table_name],
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
+        for table_name in ["papers", "instruments", "paper_instruments", "verification"]
+    }
+
+
+def live_dataset_indexes(tables: dict[str, pd.DataFrame]) -> dict[str, Any]:
+    """Build lookup indexes from one live normalized database."""
+    papers = tables["papers"].copy()
+    instruments = tables["instruments"].copy()
+    paper_instruments = tables["paper_instruments"].copy()
+    verification = tables["verification"].copy()
+
+    papers_by_id = {
+        clean_text(row.get("paper_id")): row
+        for _, row in papers.iterrows()
+        if clean_text(row.get("paper_id"))
+    }
+    paper_id_by_doi = {
+        doi_match_key(row.get("DOI")): clean_text(row.get("paper_id"))
+        for _, row in papers.iterrows()
+        if doi_match_key(row.get("DOI")) and clean_text(row.get("paper_id"))
+    }
+    instrument_name_by_id = {
+        clean_text(row.get("instrument_id")): clean_text(row.get("instrument_name"))
+        for _, row in instruments.iterrows()
+        if clean_text(row.get("instrument_id"))
+    }
+    instrument_id_by_name = {
+        normalized_text_key(row.get("instrument_name")): clean_text(row.get("instrument_id"))
+        for _, row in instruments.iterrows()
+        if clean_text(row.get("instrument_name")) and clean_text(row.get("instrument_id"))
+    }
+    assigned_pairs = {
+        (clean_text(row.get("paper_id")), clean_text(row.get("instrument_id")))
+        for _, row in paper_instruments.iterrows()
+        if clean_text(row.get("paper_id")) and clean_text(row.get("instrument_id"))
+    }
+    verification_pairs = {
+        (clean_text(row.get("paper_id")), clean_text(row.get("instrument_id")))
+        for _, row in verification.iterrows()
+        if clean_text(row.get("paper_id")) and clean_text(row.get("instrument_id"))
+    }
+
+    return {
+        "papers_by_id": papers_by_id,
+        "paper_id_by_doi": paper_id_by_doi,
+        "instrument_name_by_id": instrument_name_by_id,
+        "instrument_id_by_name": instrument_id_by_name,
+        "assigned_pairs": assigned_pairs,
+        "verification_pairs": verification_pairs,
+        "verification": verification,
+    }
+
+
+def transfer_main_verification_to_live_supabase() -> dict[str, dict[str, int]]:
+    """
+    Insert missing verification rows into sibling Supabase databases.
+
+    This reads the current live Supabase data. It does not seed or replace any
+    table from repository CSVs, and it never overwrites existing verification.
+    """
+    config = supabase_config()
+    if not config:
+        raise RuntimeError("Supabase is not configured.")
+
+    url, key = config
+    scoped = require_supabase_database_scoping(url, key, DEFAULT_DATABASE_ID)
+    main_tables = fetch_supabase_transfer_tables(DEFAULT_DATABASE_ID, url, key, scoped=scoped)
+    main_index = live_dataset_indexes(main_tables)
+    main_verification = main_index["verification"]
+
+    results: dict[str, dict[str, int]] = {}
+    for database_id, mapping in MAIN_VERIFICATION_TRANSFER_MAPPING.items():
+        normalized_mapping = {
+            normalized_text_key(source_name): target_name
+            for source_name, target_name in mapping.items()
+        }
+        require_supabase_database_scoping(url, key, database_id)
+        target_tables = fetch_supabase_transfer_tables(database_id, url, key, scoped=scoped)
+        target_index = live_dataset_indexes(target_tables)
+        existing_verification_pairs = set(target_index["verification_pairs"])
+        rows_to_insert: list[dict[str, Any]] = []
+        stats = {
+            "added": 0,
+            "already_had_status": 0,
+            "unmapped_instrument": 0,
+            "superdarn_skipped": 0,
+            "missing_main_paper": 0,
+            "missing_target_paper": 0,
+            "missing_target_instrument": 0,
+            "missing_target_assignment": 0,
+        }
+
+        for _, source in main_verification.iterrows():
+            main_paper_id = clean_text(source.get("paper_id"))
+            main_instrument_id = clean_text(source.get("instrument_id"))
+            status = normalize_status(source.get("status"))
+            if not main_paper_id or not main_instrument_id or status == "unchecked":
+                continue
+
+            main_instrument = main_index["instrument_name_by_id"].get(main_instrument_id, "")
+            if is_superdarn_instrument(main_instrument):
+                stats["superdarn_skipped"] += 1
+                continue
+
+            target_instrument_name = normalized_mapping.get(normalized_text_key(main_instrument))
+            if not target_instrument_name:
+                stats["unmapped_instrument"] += 1
+                continue
+            if is_superdarn_instrument(target_instrument_name):
+                stats["superdarn_skipped"] += 1
+                continue
+
+            main_paper = main_index["papers_by_id"].get(main_paper_id)
+            if main_paper is None:
+                stats["missing_main_paper"] += 1
+                continue
+            target_paper_id = target_index["paper_id_by_doi"].get(doi_match_key(main_paper.get("DOI")))
+            if not target_paper_id:
+                stats["missing_target_paper"] += 1
+                continue
+
+            target_instrument_id = target_index["instrument_id_by_name"].get(
+                normalized_text_key(target_instrument_name)
+            )
+            if not target_instrument_id:
+                stats["missing_target_instrument"] += 1
+                continue
+
+            target_pair = (target_paper_id, target_instrument_id)
+            if target_pair not in target_index["assigned_pairs"]:
+                stats["missing_target_assignment"] += 1
+                continue
+            if target_pair in existing_verification_pairs:
+                stats["already_had_status"] += 1
+                continue
+
+            rows_to_insert.append(
+                {
+                    "paper_id": target_paper_id,
+                    "instrument_id": target_instrument_id,
+                    "status": status,
+                    "evidence_quote": clean_text(source.get("evidence_quote")),
+                    "checked_date": clean_text(source.get("checked_date"))
+                    or datetime.now().isoformat(timespec="seconds"),
+                    "notes": MAIN_VERIFICATION_TRANSFER_NOTE,
+                }
+            )
+            existing_verification_pairs.add(target_pair)
+            stats["added"] += 1
+
+        if rows_to_insert:
+            insert_supabase_table(
+                "verification",
+                pd.DataFrame(rows_to_insert),
+                REQUIRED_COLUMNS["verification"],
+                url,
+                key,
+                database_id,
+                scoped=scoped,
+            )
+        results[database_id] = stats
+
+    clear_database_caches()
+    return results
 
 
 def normalize_import_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -8814,6 +9038,39 @@ def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
         return
 
     st.success("Supabase is configured. Admin saves will update the online database.")
+    st.subheader("Live verification transfer")
+    st.write(
+        "Transfer Main verification statuses to the other Supabase databases using "
+        "current live DOI + approved instrument matches. This does not seed from CSVs, "
+        "does not replace tables, and does not overwrite existing verification rows."
+    )
+    st.caption("SuperDARN-related instruments are ignored.")
+    if st.button("Transfer Main verification to matched live databases"):
+        try:
+            results = transfer_main_verification_to_live_supabase()
+            total_added = sum(stats["added"] for stats in results.values())
+            st.success(f"Inserted {total_added:,} missing live verification rows.")
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "database": database_label(database_id),
+                            **stats,
+                        }
+                        for database_id, stats in results.items()
+                    ]
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
+        except requests.HTTPError as exc:
+            response = exc.response
+            detail = response.text if response is not None else str(exc)
+            st.error(f"Supabase rejected the live transfer: {detail}")
+        except Exception as exc:
+            st.error(f"Could not transfer live verification statuses: {exc}")
+
+    st.divider()
     st.warning(
         "The sync button replaces only the active Supabase database with the matching "
         "repository CSV database."
