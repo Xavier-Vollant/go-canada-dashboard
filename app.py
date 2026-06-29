@@ -9292,7 +9292,6 @@ def render_admin_editor_page(active_db: str) -> None:
             "Paper Metadata",
             "Add / Import Papers",
             "Shared Presets",
-            "Online Database",
         ],
         horizontal=True,
         key="admin_tool",
@@ -9305,11 +9304,6 @@ def render_admin_editor_page(active_db: str) -> None:
     if admin_tool == "Add / Import Papers":
         tables = load_database(active_db, str(DATA_DIR))
         render_add_import_papers_page(tables, admin_mode=True)
-        return
-
-    if admin_tool == "Online Database":
-        tables = load_database(active_db, str(DATA_DIR))
-        render_database_sync_page(tables)
         return
 
     if admin_tool == "Paper Metadata":
