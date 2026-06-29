@@ -2855,6 +2855,56 @@ def transfer_main_verification_to_live_supabase() -> dict[str, dict[str, int]]:
     return results
 
 
+def undo_main_verification_live_supabase_transfer() -> dict[str, dict[str, int]]:
+    """Delete only live Supabase verification rows created by the transfer action."""
+    config = supabase_config()
+    if not config:
+        raise RuntimeError("Supabase is not configured.")
+
+    url, key = config
+    scoped = require_supabase_database_scoping(url, key, DEFAULT_DATABASE_ID)
+    results: dict[str, dict[str, int]] = {}
+    for database_id in MAIN_VERIFICATION_TRANSFER_MAPPING:
+        require_supabase_database_scoping(url, key, database_id)
+        verification = fetch_supabase_table(
+            "verification",
+            REQUIRED_COLUMNS["verification"],
+            url,
+            key,
+            database_id,
+            scoped=scoped,
+        )
+        stats = {
+            "deleted": 0,
+            "matched_transfer_rows": 0,
+            "missing_key_rows": 0,
+        }
+        transfer_rows = verification[
+            verification["notes"].fillna("").astype(str).str.strip()
+            == MAIN_VERIFICATION_TRANSFER_NOTE
+        ]
+        stats["matched_transfer_rows"] = len(transfer_rows)
+        for _, row in transfer_rows.iterrows():
+            paper_id = clean_text(row.get("paper_id"))
+            instrument_id = clean_text(row.get("instrument_id"))
+            if not paper_id or not instrument_id:
+                stats["missing_key_rows"] += 1
+                continue
+            delete_supabase_verification_row(
+                paper_id,
+                instrument_id,
+                url,
+                key,
+                database_id,
+                scoped=scoped,
+            )
+            stats["deleted"] += 1
+        results[database_id] = stats
+
+    clear_database_caches()
+    return results
+
+
 def normalize_import_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize uploaded CSV column names to the import schema."""
     aliases = {
@@ -9069,6 +9119,44 @@ def render_database_sync_page(tables: dict[str, pd.DataFrame]) -> None:
             st.error(f"Supabase rejected the live transfer: {detail}")
         except Exception as exc:
             st.error(f"Could not transfer live verification statuses: {exc}")
+
+    with st.expander("Undo live verification transfer", expanded=False):
+        st.write(
+            "Remove only verification rows created by the transfer action. "
+            "Rows are identified by the transfer note marker, so existing manual "
+            "verification rows are left alone."
+        )
+        confirm_undo_transfer = st.checkbox(
+            "I understand this will delete transferred verification rows from live Supabase.",
+            key="confirm_undo_live_verification_transfer",
+        )
+        if st.button(
+            "Undo transferred live verification rows",
+            disabled=not confirm_undo_transfer,
+        ):
+            try:
+                results = undo_main_verification_live_supabase_transfer()
+                total_deleted = sum(stats["deleted"] for stats in results.values())
+                st.success(f"Deleted {total_deleted:,} transferred live verification rows.")
+                st.dataframe(
+                    pd.DataFrame(
+                        [
+                            {
+                                "database": database_label(database_id),
+                                **stats,
+                            }
+                            for database_id, stats in results.items()
+                        ]
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            except requests.HTTPError as exc:
+                response = exc.response
+                detail = response.text if response is not None else str(exc)
+                st.error(f"Supabase rejected the transfer undo: {detail}")
+            except Exception as exc:
+                st.error(f"Could not undo transferred verification rows: {exc}")
 
     st.divider()
     st.warning(
