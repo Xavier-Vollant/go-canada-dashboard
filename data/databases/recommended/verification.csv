@@ -1,1 +1,133 @@
 paper_id,instrument_id,status,evidence_quote,checked_date,notes
+P00400,I00001,verified_false,,2026-06-26T21:53:23,
+P02049,I00001,verified_false,,2026-06-29T16:19:54,
+P00782,I00001,verified_false,,2026-06-29T16:20:59,
+P02011,I00003,verified_true,,2026-06-29T16:21:44,
+P02011,I00001,verified_true,,2026-06-29T16:21:44,
+P01942,I00003,verified_true,,2026-06-26T21:58:36,
+P01942,I00001,verified_true,,2026-06-26T21:58:36,
+P02011,I00016,verified_true,,2026-06-29T16:21:44,
+P02011,I00004,verified_true,,2026-06-29T16:21:44,
+P00243,I00001,verified_true,,2026-06-29T16:24:42,
+P01942,I00004,verified_true,,2026-06-26T21:58:36,
+P00243,I00003,verified_true,,2026-06-29T16:28:00,
+P02282,I00006,verified_true,,2026-06-29T16:28:40,
+P02386,I00016,verified_false,Only talks about it,2026-06-26T21:59:45,
+P00243,I00004,verified_true,,2026-06-29T16:28:00,
+P00926,I00002,verified_true,,2026-06-26T22:01:12,
+P00926,I00003,verified_true,,2026-06-26T22:01:12,
+P02071,I00007,verified_true,,2026-06-26T21:05:39,
+P00062,I00001,verified_false,seem to only use Kodiak radar,2026-06-29T14:12:51,
+P00008,I00003,verified_false,,2026-06-29T16:33:20,
+P00008,I00001,verified_true,,2026-06-29T16:33:20,
+P01776,I00005,verified_false,,2026-06-29T14:56:44,
+P00008,I00004,verified_false,,2026-06-29T16:33:20,
+P01515,I00001,verified_false,doesnt use data,2026-06-29T15:02:42,
+P00501,I00007,verified_true,,2026-06-29T15:04:53,
+P00980,I00013,verified_true,,2026-06-29T15:06:11,
+P00980,I00005,verified_true,,2026-06-29T15:07:40,
+P02200,I00005,verified_true,,2026-06-29T15:09:30,
+P02200,I00008,verified_true,,2026-06-29T15:09:30,
+P00064,I00005,verified_true,,2026-06-29T15:11:24,
+P00064,I00006,verified_true,,2026-06-29T15:11:24,
+P00983,I00006,verified_true,used from another paper but still uses it,2026-06-26T21:56:42,transferred_from_main_by_doi_and_instrument_mapping
+P01913,I00014,verified_true,,2026-06-08T16:10:43,transferred_from_main_by_doi_and_instrument_mapping
+P00573,I00014,verified_true,,2026-06-08T16:11:28,transferred_from_main_by_doi_and_instrument_mapping
+P00690,I00014,verified_true,,2026-06-08T16:11:08,transferred_from_main_by_doi_and_instrument_mapping
+P01445,I00002,verified_false,,2026-06-09T10:46:22,transferred_from_main_by_doi_and_instrument_mapping
+P02358,I00018,verified_true,,2026-06-09T11:20:30,transferred_from_main_by_doi_and_instrument_mapping
+P02327,I00002,verified_true,,2026-06-09T10:41:10,transferred_from_main_by_doi_and_instrument_mapping
+P02327,I00015,verified_true,,2026-06-09T11:04:07,transferred_from_main_by_doi_and_instrument_mapping
+P01927,I00002,verified_true,,2026-06-09T10:40:50,transferred_from_main_by_doi_and_instrument_mapping
+P01070,I00012,verified_true,,2026-06-08T15:53:03,transferred_from_main_by_doi_and_instrument_mapping
+P01476,I00008,verified_false,,2026-06-09T10:36:28,transferred_from_main_by_doi_and_instrument_mapping
+P02073,I00019,verified_true,,2026-06-09T11:16:16,transferred_from_main_by_doi_and_instrument_mapping
+P00537,I00007,verified_false,,2026-06-09T10:16:48,transferred_from_main_by_doi_and_instrument_mapping
+P00854,I00006,verified_true,,2026-06-09T11:19:42,transferred_from_main_by_doi_and_instrument_mapping
+P00611,I00006,verified_true,,2026-06-09T11:16:26,transferred_from_main_by_doi_and_instrument_mapping
+P01482,I00013,verified_true,,2026-06-08T16:12:10,transferred_from_main_by_doi_and_instrument_mapping
+P02305,I00013,verified_true,,2026-06-08T16:12:01,transferred_from_main_by_doi_and_instrument_mapping
+P00725,I00006,verified_true,,2026-06-09T11:19:57,transferred_from_main_by_doi_and_instrument_mapping
+P02043,I00006,verified_true,,2026-06-09T11:19:28,transferred_from_main_by_doi_and_instrument_mapping
+P00040,I00006,verified_true,,2026-06-09T11:16:44,transferred_from_main_by_doi_and_instrument_mapping
+P01208,I00018,verified_true,,2026-06-09T11:20:39,transferred_from_main_by_doi_and_instrument_mapping
+P01911,I00015,verified_true,,2026-06-09T11:03:56,transferred_from_main_by_doi_and_instrument_mapping
+P01593,I00013,verified_true,,2026-06-09T10:00:20,transferred_from_main_by_doi_and_instrument_mapping
+P02142,I00017,verified_true,,2026-06-09T10:39:26,transferred_from_main_by_doi_and_instrument_mapping
+P01723,I00017,verified_true,,2026-06-09T10:39:12,transferred_from_main_by_doi_and_instrument_mapping
+P01523,I00007,verified_true,,2026-06-09T10:09:29,transferred_from_main_by_doi_and_instrument_mapping
+P01690,I00016,verified_true,,2026-06-08T15:58:25,transferred_from_main_by_doi_and_instrument_mapping
+P02289,I00016,verified_true,,2026-06-09T10:25:54,transferred_from_main_by_doi_and_instrument_mapping
+P01533,I00016,verified_true,,2026-06-09T10:20:42,transferred_from_main_by_doi_and_instrument_mapping
+P00498,I00013,verified_true,,2026-06-09T09:59:05,transferred_from_main_by_doi_and_instrument_mapping
+P01872,I00016,verified_true,,2026-06-09T10:25:37,transferred_from_main_by_doi_and_instrument_mapping
+P00448,I00007,verified_true,,2026-06-09T10:09:07,transferred_from_main_by_doi_and_instrument_mapping
+P01543,I00013,verified_true,,2026-06-08T16:14:21,transferred_from_main_by_doi_and_instrument_mapping
+P00699,I00007,verified_true,,2026-06-18T17:40:31,transferred_from_main_by_doi_and_instrument_mapping
+P00594,I00013,verified_true,,2026-06-08T16:22:20,transferred_from_main_by_doi_and_instrument_mapping
+P00728,I00013,verified_true,,2026-06-08T16:11:53,transferred_from_main_by_doi_and_instrument_mapping
+P00460,I00013,verified_true,,2026-06-08T16:13:41,transferred_from_main_by_doi_and_instrument_mapping
+P00982,I00013,verified_true,,2026-06-08T16:20:22,transferred_from_main_by_doi_and_instrument_mapping
+P01386,I00013,verified_true,,2026-06-09T10:00:54,transferred_from_main_by_doi_and_instrument_mapping
+P01420,I00013,verified_true,,2026-06-08T16:22:12,transferred_from_main_by_doi_and_instrument_mapping
+P01565,I00013,verified_true,,2026-06-08T16:16:33,transferred_from_main_by_doi_and_instrument_mapping
+P01956,I00013,verified_true,,2026-06-08T16:14:04,transferred_from_main_by_doi_and_instrument_mapping
+P00682,I00013,verified_false,,2026-06-08T16:21:58,transferred_from_main_by_doi_and_instrument_mapping
+P00353,I00013,verified_true,,2026-06-08T16:16:10,transferred_from_main_by_doi_and_instrument_mapping
+P00523,I00005,verified_true,,2026-06-09T10:06:36,transferred_from_main_by_doi_and_instrument_mapping
+P00078,I00005,verified_true,,2026-06-09T10:08:18,transferred_from_main_by_doi_and_instrument_mapping
+P00234,I00005,verified_true,,2026-06-09T10:07:18,transferred_from_main_by_doi_and_instrument_mapping
+P02205,I00005,verified_true,,2026-06-09T10:07:36,transferred_from_main_by_doi_and_instrument_mapping
+P01072,I00009,verified_true,,2026-06-09T10:19:23,transferred_from_main_by_doi_and_instrument_mapping
+P02208,I00005,verified_true,,2026-06-18T16:26:59,transferred_from_main_by_doi_and_instrument_mapping
+P00699,I00005,verified_true,,2026-06-18T17:40:31,transferred_from_main_by_doi_and_instrument_mapping
+P00220,I00007,verified_true,,2026-06-18T16:48:14,transferred_from_main_by_doi_and_instrument_mapping
+P02247,I00013,verified_true,,2026-06-29T14:29:16,transferred_from_main_by_doi_and_instrument_mapping
+P02247,I00005,verified_true,,2026-06-29T14:29:16,transferred_from_main_by_doi_and_instrument_mapping
+P02247,I00007,verified_true,,2026-06-29T14:29:16,transferred_from_main_by_doi_and_instrument_mapping
+P01964,I00016,verified_true,,2026-06-18T18:24:41,transferred_from_main_by_doi_and_instrument_mapping
+P01931,I00002,verified_false,just shows and talks about rego/themis asi,2026-06-18T18:33:55,transferred_from_main_by_doi_and_instrument_mapping
+P01931,I00006,verified_false,just shows and talks about rego/themis asi,2026-06-18T18:33:55,transferred_from_main_by_doi_and_instrument_mapping
+P01869,I00006,verified_false,,2026-06-29T15:52:01,
+P00350,I00001,verified_true,,2026-08-19T20:07:36,
+P02387,I00005,verified_true,,2026-06-29T15:56:25,
+P00811,I00001,verified_false,Not Canadian radars,2026-06-29T16:45:02,
+P01120,I00001,verified_false,,2026-07-13T14:23:02,
+P00350,I00003,verified_true,All SuperDARN radar data available in the northern hemisphere are collected for the selected SI events.,2026-08-19T20:07:36,
+P02387,I00008,verified_true,,2026-06-29T15:56:25,
+P00550,I00005,verified_false,,2026-08-19T20:09:34,
+P00023,I00001,verified_true,,2026-08-19T20:10:08,
+P01411,I00004,verified_true,,2026-06-29T16:03:10,
+P01411,I00003,verified_true,,2026-06-29T16:03:10,
+P01411,I00001,verified_true,,2026-06-29T16:03:10,
+P01378,I00006,verified_false,,2026-08-19T20:13:57,themis but not themis asi
+P01577,I00004,verified_true,,2026-06-29T16:06:17,
+P00181,I00003,verified_true,,2026-08-19T20:15:16,
+P00181,I00001,verified_true,,2026-08-19T20:15:16,
+P01577,I00003,verified_true,,2026-06-29T16:06:17,
+P01577,I00001,verified_true,,2026-06-29T16:06:17,
+P00181,I00004,verified_true,"he operation of the Canadian SuperDARN radars is supported by the Natural Sciences and Engineering Research Council of Canada, the Canada Foundation for Innovation, and the Canadian Space Agency.",2026-08-19T20:15:16,
+P00181,I00006,verified_true,,2026-08-19T20:15:16,
+P00570,I00006,verified_false,,2026-06-26T21:33:00,
+P01073,I00007,verified_false,,2026-06-29T16:08:20,
+P01646,I00007,verified_true,,2026-06-29T16:52:45,
+P00463,I00007,verified_false,uses CADI but not CHAIN,2026-06-26T21:34:18,
+P02307,I00016,verified_true,,2026-06-26T21:37:15,
+P01594,I00007,verified_false,only uses CADI,2026-06-29T16:09:31,
+P00088,I00003,verified_true,,2026-06-29T16:10:28,
+P00857,I00013,verified_true,,2026-06-29T16:11:35,
+P00857,I00004,verified_true,,2026-06-29T16:11:35,
+P02255,I00004,verified_true,,2026-06-29T16:15:25,
+P01406,I00001,verified_false,true superDARN but is def not superDARN Canada,2026-06-26T20:55:14,
+P01002,I00003,verified_true,,2026-06-26T21:40:55,
+P01002,I00001,verified_true,,2026-06-26T21:40:55,
+P00857,I00003,verified_true,,2026-06-29T16:11:35,
+P00857,I00001,verified_true,,2026-06-29T16:11:35,
+P02255,I00003,verified_true,,2026-06-29T16:15:25,
+P02255,I00001,verified_true,,2026-06-29T16:15:25,
+P00856,I00001,verified_true,,2026-06-29T16:58:01,
+P01002,I00004,verified_true,,2026-06-26T21:40:55,
+P00772,I00003,verified_true,,2026-06-29T16:18:47,
+P00772,I00001,verified_true,,2026-06-29T16:18:47,
+P00772,I00008,verified_true,,2026-06-29T16:18:47,
+P00772,I00004,verified_true,,2026-06-29T16:18:47,

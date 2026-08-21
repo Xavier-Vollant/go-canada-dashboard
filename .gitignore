@@ -14,3 +14,6 @@ presets/*.json
 !presets/GO-Canada all instruments to 2026.json
 !presets/GO-Canada with full SuperDARN.json
 !presets/GO-Canada SuperDARN with Canadian PIs.json
+
+# Supabase export staging area (rebuilt on every run)
+data/_supabase_export/

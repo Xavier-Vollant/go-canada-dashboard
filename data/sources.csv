@@ -1,2 +1,5 @@
 source_id,source_name,source_type,notes
-S00001,GO-Canada Database Excel import,excel_import,Metadata filled from DOI post-processing; instruments came from the Excel file.
+S00001,GO-Canada Database Excel import,excel_import,Metadata filled from DOI post-processing
+S00002,New import batch,csv_import,Imported from interface
+S00003,GO-Canada Database 2 after SEC-05 import,csv_import,Filtered from GO-Canada Database 2 Paper_Input rows after first SEC-05 | source_query_ids=SUDARN_CA-30; SUDARN-32 | source_components=SuperDARN_CA; SuperDARN | source_raw_dois=10.1016/s0273-1177(99)00645-6 | Metadata filled automatically from DOI; instruments came from the Excel file. | metadata_retried=Crossref; input_doi=10.1016/s0273-1177(99)00645-6; candidate_doi=10.1016/s0273-1177(99)00645-6; method=original
+S00004,GO-Canada Database 2 unresolved DOI metadata retry,csv_import,Added from output/unresolved_doi_report.csv | original_doi=10.5194/gi-2016-5 | cleaned_doi=10.5194/gi-2016-5 | candidate_doi=10.5194/gi-2016-5 | metadata_source=Crossref

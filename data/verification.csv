@@ -1,4 +1,16 @@
 paper_id,instrument_id,status,evidence_quote,checked_date,notes
+P00085,I00015,verified_true,,2026-06-18T16:22:38,
+P00445,I00005,verified_false,,2026-06-26T21:52:19,
+P00085,I00009,verified_true,,2026-06-18T16:22:38,
+P00470,I00005,verified_true,used from another paper but still uses it,2026-06-26T21:56:42,
+P01022,I00024,verified_true,,2026-06-29T16:22:35,
+P01022,I00003,verified_true,,2026-06-18T16:25:35,
+P01361,I00004,verified_true,,2026-06-29T16:23:13,
+P00713,I00013,verified_true,,2026-06-18T16:24:37,
+P01068,I00004,verified_true,,2026-06-26T21:57:46,
+P01022,I00021,verified_true,,2026-06-29T16:22:35,
+P01022,I00004,verified_true,,2026-06-29T16:22:35,
+P01361,I00003,verified_true,,2026-06-29T16:25:47,
 P00001,I00001,verified_true,,2026-06-08T16:10:43,review_decision=Correct instrument/component | corrected_instrument=AuroraMAX
 P00002,I00001,verified_true,,2026-06-08T16:11:28,review_decision=Correct instrument/component | corrected_instrument=AuroraMAX
 P00003,I00001,verified_true,,2026-06-08T16:11:08,review_decision=Correct instrument/component | corrected_instrument=AuroraMAX
@@ -20,7 +32,6 @@ P00079,I00019,verified_true,,2026-06-08T15:57:15,review_decision=Correct instrum
 P00081,I00017,verified_false,,2026-06-09T10:36:28,review_decision=Incorrect instrument/component | corrected_instrument=GO_RIO
 P00082,I00014,unsure,,2026-06-09T11:05:32,review_decision=Unsure | corrected_instrument=Single Beam Riometer
 P00083,I00020,verified_true,,2026-06-09T11:16:16,review_decision=Correct instrument/component | corrected_instrument=SWAN HSR
-P00085,I00002,verified_false,,2026-06-09T10:50:07,review_decision=Incorrect instrument/component | corrected_instrument=REGO
 P00087,I00021,verified_false,,2026-06-09T10:16:48,review_decision=Incorrect instrument/component | corrected_instrument=CHAIN
 P00098,I00018,verified_true,,2026-06-08T16:23:40,review_decision=Correct instrument/component | corrected_instrument=CANOPUS
 P00100,I00014,verified_true,,2026-06-09T11:07:19,review_decision=Correct instrument/component | corrected_instrument=Single Beam Riometer
@@ -78,7 +89,6 @@ P00676,I00022,verified_true,,2026-06-09T10:00:20,review_decision=Correct instrum
 P00692,I00008,verified_false,,2026-06-09T11:00:50,review_decision=Incorrect instrument/component | corrected_instrument=RISR-C
 P00698,I00008,verified_true,,2026-06-09T10:58:04,review_decision=Correct instrument/component | corrected_instrument=RISR-C
 P00705,I00008,verified_true,,2026-06-09T11:03:47,review_decision=Correct instrument/component | corrected_instrument=RISR-C
-P00713,I00008,verified_false,,2026-06-09T11:03:27,review_decision=Incorrect instrument/component | corrected_instrument=RISR-C
 P00744,I00025,verified_true,,2026-06-09T10:39:26,review_decision=Correct instrument/component | corrected_instrument=ICEBEAR
 P00748,I00025,verified_true,,2026-06-09T10:39:12,review_decision=Correct instrument/component | corrected_instrument=ICEBEAR
 P00794,I00003,verified_true,,2026-06-09T11:13:32,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
@@ -93,7 +103,6 @@ P00994,I00021,verified_true,,2026-06-09T10:17:57,review_decision=Correct instrum
 P00995,I00022,verified_true,,2026-06-08T16:22:40,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
 P00996,I00021,verified_true,,2026-06-09T10:18:18,review_decision=Correct instrument/component | corrected_instrument=CHAIN
 P00998,I00024,verified_true,,2026-06-09T10:25:37,review_decision=Correct instrument/component | corrected_instrument=ECHAIM
-P01022,I00024,verified_false,,2026-06-09T10:25:23,review_decision=Incorrect instrument/component | corrected_instrument=ECHAIM
 P01034,I00021,verified_true,,2026-06-09T10:09:07,review_decision=Correct instrument/component | corrected_instrument=CHAIN
 P01071,I00003,verified_true,,2026-06-09T11:14:57,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
 P01107,I00003,verified_true,,2026-06-09T11:12:53,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
@@ -102,6 +111,8 @@ P01112,I00003,verified_true,,2026-06-09T11:14:46,review_decision=Correct instrum
 P01152,I00003,verified_true,,2026-06-09T11:12:16,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
 P01214,I00004,verified_true,,2026-06-09T11:11:23,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
 P01216,I00022,verified_true,,2026-06-08T16:14:21,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
+P00713,I00003,verified_true,,2026-06-18T16:24:37,
+P00942,I00021,verified_true,,2026-06-18T17:40:31,
 P01251,I00004,verified_true,,2026-06-09T11:08:47,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
 P01257,I00003,verified_true,,2026-06-09T11:13:51,review_decision=Correct instrument/component | corrected_instrument=SuperDARN_CA
 P01276,I00004,verified_true,,2026-06-09T11:08:10,review_decision=Correct instrument/component | corrected_instrument=SuperDARN
@@ -128,7 +139,6 @@ P01957,I00022,verified_true,,2026-06-08T16:16:33,review_decision=Correct instrum
 P01958,I00022,verified_true,,2026-06-08T16:13:52,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
 P01960,I00022,verified_true,,2026-06-08T16:14:04,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
 P01963,I00022,verified_false,,2026-06-08T16:21:58,review_decision=Incorrect instrument/component | corrected_instrument=AUTUMNX
-P01966,I00022,verified_false,,2026-06-08T16:20:10,review_decision=Incorrect instrument/component | corrected_instrument=AUTUMNX
 P01970,I00022,verified_true,,2026-06-08T16:16:10,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
 P01977,I00022,verified_true,,2026-06-08T16:22:54,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
 P01978,I00022,verified_true,,2026-06-08T16:20:49,review_decision=Correct instrument/component | corrected_instrument=AUTUMNX
@@ -144,3 +154,79 @@ P02234,I00027,verified_true,,2026-06-09T10:20:13,review_decision=Correct instrum
 P02235,I00027,verified_true,,2026-06-09T10:20:22,review_decision=Correct instrument/component | corrected_instrument=DNT
 P02264,I00017,verified_true,,2026-06-09T10:38:39,review_decision=Correct instrument/component | corrected_instrument=GO_RIO
 P02268,I00025,verified_true,,2026-06-09T10:39:52,review_decision=Correct instrument/component | corrected_instrument=ICEBEAR
+P01966,I00011,verified_true,,2026-06-18T16:26:59,
+P00942,I00011,verified_true,,2026-06-18T17:40:31,
+P01068,I00003,verified_true,,2026-06-26T21:57:46,
+P01966,I00005,verified_true,,2026-06-18T16:26:59,
+P01360,I00004,verified_true,,2026-06-18T16:42:59,
+P01360,I00003,verified_true,,2026-06-18T16:42:59,
+P01822,I00004,verified_true,,2026-06-29T16:31:55,
+P00773,I00021,verified_true,,2026-06-26T21:05:07,
+P00797,I00021,verified_true,,2026-06-18T16:48:14,
+P01976,I00022,verified_true,,2026-06-18T18:14:07,
+P01976,I00005,verified_true,,2026-06-18T18:14:07,
+P00878,I00022,verified_true,,2026-06-29T14:29:16,
+P00878,I00011,verified_true,,2026-06-29T14:29:16,
+P00878,I00021,verified_true,,2026-06-29T14:29:16,
+P00878,I00004,verified_true,,2026-06-29T14:29:16,
+P00878,I00003,verified_true,,2026-06-29T14:29:16,
+P01976,I00011,verified_true,,2026-06-18T18:14:07,
+P02188,I00011,verified_true,,2026-06-26T21:10:44,
+P02127,I00011,verified_true,,2026-06-18T16:50:35,
+P02311,I00004,verified_false,doesnt use data,2026-06-29T15:02:10,
+P00765,I00021,verified_true,,2026-06-29T15:03:25,
+P01190,I00004,verified_true,,2026-06-18T16:58:57,
+P01948,I00022,verified_true,,2026-06-29T15:05:45,
+P01948,I00011,verified_true,,2026-06-29T15:05:45,
+P02200,I00011,verified_true,,2026-06-29T15:08:29,
+P02200,I00017,verified_true,,2026-06-29T15:08:29,
+P00352,I00011,verified_true,,2026-06-29T15:10:09,
+P00352,I00005,verified_true,,2026-06-29T15:10:09,
+P01190,I00003,verified_true,,2026-06-18T16:58:57,
+P02117,I00011,verified_true,,2026-06-18T17:00:03,
+P00865,I00024,verified_true,,2026-06-18T18:24:41,
+P00865,I00021,verified_true,,2026-06-18T18:24:41,
+P01075,I00003,verified_true,,2026-06-18T18:26:25,
+P01622,I00004,verified_true,but not go canada radars,2026-06-18T17:08:59,
+P01075,I00004,verified_true,,2026-06-18T18:26:25,
+P02206,I00011,verified_true,,2026-08-04T14:38:40,
+P01815,I00004,verified_true,All SuperDARN radar data available in the northern hemisphere are collected for the selected SI events.,2026-08-19T20:06:39,
+P01602,I00004,verified_true,,2026-07-13T14:23:16,
+P02111,I00011,verified_true,,2026-06-18T17:09:52,
+P01849,I00004,verified_true,,2026-06-29T16:46:36,
+P02040,I00011,verified_true,,2026-06-18T17:10:58,
+P00051,I00002,verified_false,just shows and talks about rego/themis asi,2026-06-18T18:33:55,
+P01458,I00004,verified_true,,2026-06-29T15:57:11,
+P00051,I00005,verified_false,just shows and talks about rego/themis asi,2026-06-18T18:33:55,
+P01846,I00004,verified_true,uses superDARN radar but def not canadian ones,2026-06-26T21:29:19,
+P01458,I00003,verified_true,,2026-06-29T16:02:01,
+P01202,I00004,verified_true,,2026-06-18T17:13:48,
+P01315,I00004,verified_true,,2026-06-29T16:05:23,
+P01202,I00003,verified_true,,2026-06-18T17:13:48,
+P01238,I00004,verified_true,,2026-06-18T19:15:34,
+P01238,I00003,verified_true,,2026-06-18T19:15:34,
+P01315,I00003,verified_true,,2026-06-29T16:05:23,
+P01607,I00004,verified_true,,2026-06-18T17:16:06,
+P00109,I00003,verified_true,,2026-08-19T20:17:08,
+P00109,I00004,verified_true,,2026-08-19T20:17:08,
+P00109,I00005,verified_true,,2026-08-19T20:17:08,
+P01244,I00003,verified_true,,2026-06-29T16:10:12,
+P00602,I00018,verified_true,,2026-08-19T20:26:48,
+P01842,I00004,verified_true,uses superDARN canada,2026-06-26T21:39:23,
+P01244,I00004,verified_true,,2026-06-29T16:10:12,
+P00449,I00005,verified_true,,2026-08-19T20:28:56,
+P00257,I00004,verified_true,,2026-06-29T16:11:54,
+P01484,I00003,verified_true,,2026-06-29T16:14:10,
+P01584,I00004,verified_true,,2026-06-29T16:57:44,
+P01610,I00004,verified_true,,2026-08-19T20:29:53,
+P01799,I00004,verified_true,true superDARN but is def not superDARN Canada,2026-06-26T20:54:20,
+P00257,I00022,verified_true,,2026-06-29T16:11:54,
+P00257,I00005,verified_true,,2026-06-29T16:11:54,
+P01484,I00004,verified_true,,2026-06-29T16:13:11,
+P01099,I00004,verified_true,,2026-08-19T20:31:06,
+P00094,I00017,verified_true,,2026-06-29T16:17:52,
+P00094,I00004,verified_true,,2026-06-29T16:17:52,
+P01099,I00003,verified_true,the University of Saskatchewan (https://superdarn.ca/data-download),2026-08-19T20:31:06,
+P00445,I00004,verified_false,,2026-06-26T21:52:19,
+P00094,I00014,verified_true,,2026-06-29T16:17:52,
+P00094,I00003,verified_true,,2026-06-29T16:17:52,
