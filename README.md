@@ -1,40 +1,61 @@
 # GO-Canada Publication Dashboard
 
-A Streamlit dashboard for exploring the GO-Canada publication database.
+GO-Canada operates ground-based instruments across Canada that observe space
+weather. To find published research that used that data, I ran an extensive
+literature search across Scopus, Google Scholar and Publish or Perish, and built
+this dashboard to make the results easy to work with — filter by instrument,
+year, author, journal or publisher, and view it as tables and graphs.
 
-The dashboard lets users search, filter, graph, and export papers by instrument,
-year, author, DOI, journal, publisher, verification status, and other metadata.
-It also includes shared presets for common instrument/year paper lists.
+The dashboard also loads several other literature searches alongside mine, so
+they can be compared directly: same filters, same graphs, side by side. That
+makes it possible to see where different search methods agree, where they don't,
+and what each one missed.
 
-## Use The Dashboard
+## The five databases
 
-Open the deployed Streamlit app and use the sidebar filters to narrow the paper
-database. The main pages provide:
+| Database | Papers | Checked | What it is |
+|---|---|---|---|
+| Main | 2,365 | 231 | My current search, the one I've worked on most |
+| Library | 5,116 | 154 | Older library searches. Some Scopus queries were broken; I repaired them with minimal changes to keep the results comparable |
+| John | 1,174 | 0 | A 2007–2017 database from John. Methodology isn't documented |
+| John Extended | 4,962 | 122 | Extended Scopus exports, tagged by instrument from the file names |
+| Recommended | 2,387 | 132 | A set of recommended queries, also tagged by instrument |
 
-- `Dashboard`: summary metrics and overview tables.
-- `Filter + Paper List`: searchable paper list with links to papers.
-- `Graphs`: visual summaries of the current filtered result.
-- `Data Quality`: missing metadata and verification checks.
-- `Export`: CSV exports of the current view.
+Counts as of 21 August 2026. "Checked" is the number of instrument assignments
+reviewed by hand so far, with the evidence recorded; the rest are search results
+awaiting review.
 
-Preset and custom graphs include controls for titles, axis labels, units, colors,
-palettes, grids, legends, value ranges, scale, data labels, background, and
-height. Compatible count charts can also show the estimated false-positive rate
-in tooltips, as an estimated clean-count overlay, with error bars, as a
-secondary percentage line, or as a shaded band.
+## Where the data lives
 
-Admins can sign in from the app to update papers, metadata, verification status,
-and shared presets.
+The live database is on Supabase. Edits made on the website save there
+immediately.
 
-## Backend Database
+Every 3 days an automatic job copies all of it into this repository as CSV
+files:
 
-The online dashboard is connected to a backend database so approved edits can be
-saved directly from the website. Local CSV files in `data/` are kept in the repo
-as a snapshot/fallback version of the database.
+| Database | Folder |
+|---|---|
+| Main | `data/` |
+| Library | `data/databases/library/` |
+| John | `data/databases/john/` |
+| John Extended | `data/databases/john-extended/` |
+| Recommended | `data/databases/recommended/` |
 
-## Run Locally
+Eight CSVs per folder — papers, authors, instruments, review decisions and the
+links between them. They open in Excel.
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+`data/LAST_BACKUP.txt` holds the date of the last successful copy. If that date
+is old, the backups have stopped and someone should find out why.
+
+## If the website stops working
+
+Nothing is lost. Every paper, author and review decision is saved here in this
+repository as spreadsheet files, and they stay here whether the website is
+running or not.
+
+To get them yourself: click the green **Code** button at the top of this page,
+choose **Download ZIP**, then open any of the folders listed above. The files
+open in Excel. You don't need an account, a password, or any special software.
+
+If someone wants the website itself back, a developer can rebuild it from these
+same files. What they need to set up the database is in the `docs/` folder.
