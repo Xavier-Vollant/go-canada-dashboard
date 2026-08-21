@@ -1,0 +1,62 @@
+#  Pull the live Supabase database into the repo as CSV, on a schedule.
+#
+#   Three jobs at once:
+#     1. Querying Supabase resets its inactivity timer, so a free project never pauses.
+#     2. Committing the CSVs gives the database a versioned backup and change history.
+#     3. Committing on every run keeps the repo "active", so GitHub does not disable
+#        this workflow after 60 days of quiet.
+#
+#   Required repository secrets:
+#     BACKUP_PAT                 - PAT with contents:write on this repo. NOT the default
+#                                  GITHUB_TOKEN: pushes made with it do not reliably count
+#                                  as repo activity for the 60-day rule. Use no expiry, or
+#                                  diarise renewal - an expired token kills this silently.
+#     SUPABASE_URL
+#     SUPABASE_SERVICE_ROLE_KEY
+#
+#   Do not enable this until the first manual export has been reconciled: --apply
+#   overwrites the repo CSVs with whatever Supabase holds.
+name: Backup Supabase to CSV
+
+on:
+  schedule:
+    # Every 3 days, not weekly: a 7-day Supabase timeout with a 7-day cron means
+    # one failed run misses the deadline.
+    - cron: "0 6 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BACKUP_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Export every database from Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 scripts/export_supabase_to_csv.py --apply
+
+      - name: Commit the snapshot
+        run: |
+          set -euo pipefail
+          git config user.name "go-canada-backup"
+          git config user.email "go-canada-backup@users.noreply.github.com"
+          # Always written, even when no data changed, so every run produces a commit.
+          # Doubles as a health check: if this date is stale, the backup has stopped.
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > data/LAST_BACKUP.txt
+          git add -A data
+          git commit -m "Backup Supabase snapshot $(date -u +%Y-%m-%d)"
+          git push
